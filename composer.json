@@ -1,0 +1,28 @@
+{
+    "name": "byjg/micro-orm",
+    "description": "A micro framework for create a very simple decoupled ORM",
+    "authors": [
+        {
+            "name": "João Gilberto Magalhães",
+            "email": "joao@byjg.com.br"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "ByJG\\MicroOrm\\": "src/"
+        }
+    },
+    "prefer-stable": true,
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.5.0",
+        "ext-json": "*",
+        "byjg/anydataset": "2.1.*",
+        "byjg/serializer": "1.0.*"
+    },
+    "suggest": {
+        "ext-curl": "*",
+        "ext-pdo_mysql": "*"
+    },
+    "license": "MIT"
+}
