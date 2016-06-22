@@ -36,6 +36,11 @@ class Mapper
         $this->primaryKey = $primaryKey;
     }
 
+    /**
+     * @param string $property
+     * @param string $fieldName
+     * @return $this
+     */
     public function addFieldMap($property, $fieldName)
     {
         $this[$property] = $fieldName;

@@ -42,6 +42,9 @@ class Repository
         $this->mapper = $mapper;
     }
 
+    /**
+     * @return DBDataset
+     */
     protected function getDbDataset()
     {
         if (is_null($this->dbDataset)) {
@@ -65,7 +68,12 @@ class Repository
         return null;
     }
 
-    public function getByFilter($filter, $params)
+    /**
+     * @param string $filter
+     * @param array $params
+     * @return array
+     */
+    public function getByFilter($filter, array $params)
     {
         $query = new Query();
         $query->table($this->mapper->getTable())
@@ -100,6 +108,9 @@ class Repository
         return $result;
     }
 
+    /**
+     * @param mixed $instance
+     */
     public function save($instance)
     {
         $array = BinderObject::toArrayFrom($instance, true);
@@ -116,15 +127,26 @@ class Repository
         }
 
     }
-    
-    protected function insert(Query $query, $params)
+
+    /**
+     * @param Query $query
+     * @param array $params
+     * @return int
+     * @throws \Exception
+     */
+    protected function insert(Query $query, array $params)
     {
         $sql = $query->getInsert();
         $dbFunctions = $this->getDbDataset()->getDbFunctions();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDataset(), $sql, $params);
     }
-    
-    protected function update(Query $query, $params)
+
+    /**
+     * @param Query $query
+     * @param array $params
+     * @throws \Exception
+     */
+    protected function update(Query $query, array $params)
     {
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
         $query->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);

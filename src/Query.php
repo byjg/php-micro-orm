@@ -22,32 +22,69 @@ class Query
     protected $limitEnd = null;
     protected $top = null;
 
+    /**
+     * Example:
+     *   $query->fields(['name', 'price']);
+     * 
+     * @param array $fields
+     * @return $this
+     */
     public function fields(array $fields)
     {
         $this->fields = array_merge($this->fields, $fields);
         
         return $this;
     }
-    
-    public function table($string) 
+
+    /**
+     * Example
+     *    $query->table('product');
+     * 
+     * @param string $table
+     * @return $this
+     */
+    public function table($table) 
     {
-        $this->table = $string;
+        $this->table = $table;
 
         return $this;
     }
-    
+
+    /**
+     * Example:
+     *    $query->join('sales', 'product.id = sales.id');
+     * 
+     * @param string $table
+     * @param string $filter
+     * @return $this
+     */
     public function join($table, $filter)
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>$filter];
         return $this;
     }
-    
+
+    /**
+     * Example:
+     *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
+     * 
+     * @param string $filter
+     * @param array $params
+     * @return $this
+     */
     public function where($filter, array $params = [])
     {
         $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
         return $this;
     }
 
+    /**
+     * Example:
+     *    $query->groupBy(['name']);
+     * 
+     * @param array $fields
+     * @return $this
+     */
     public function groupBy(array $fields)
     {
         $this->groupBy = array_merge($this->groupBy, $fields);
@@ -55,6 +92,13 @@ class Query
         return $this;
     }
 
+    /**
+     * Example:
+     *     $query->orderBy(['price desc']);
+     * 
+     * @param array $fields
+     * @return $this
+     */
     public function orderBy(array $fields)
     {
         $this->orderBy = array_merge($this->orderBy, $fields);
@@ -108,7 +152,10 @@ class Query
         
         return [ implode(' AND ', $where), $params ];
     }
-    
+
+    /**
+     * @return array
+     */
     public function getSelect()
     {
         $sql = "SELECT " .
@@ -132,7 +179,11 @@ class Query
         
         return [ 'sql' => $sql, 'params' => $params ];
     }
-    
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
     public function getInsert()
     {
         if (empty($this->fields)) {
@@ -148,6 +199,10 @@ class Query
         return $sql;
     }
 
+    /**
+     * @return array
+     * @throws \Exception
+     */
     public function getUpdate()
     {
         if (empty($this->fields)) {
