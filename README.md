@@ -43,13 +43,13 @@ $mapper = new \ByJG\MicroOrm\Mapper(
 $mapper->addFieldMap('createdate', 'created');
 ```
 
-Then you need to create the connection and the repository:
+Then you need to create the dataset object and the repository:
 
 ```php
 <?php
-$connection = new \ByJG\AnyDataset\ConnectionManagement('mysql://user:password@server/schema');
+$dataset = new \ByJG\AnyDataset\Repository\DBDataset('mysql://user:password@server/schema');
 
-$repository = new \ByJG\MicroOrm\Repository($connection, $mapper);
+$repository = new \ByJG\MicroOrm\Repository($dataset, $mapper);
 ```
 
 Some examples with the repository:

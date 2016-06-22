@@ -43,7 +43,7 @@ class Mapper
      */
     public function addFieldMap($property, $fieldName)
     {
-        $this[$property] = $fieldName;
+        $this->fieldMap[$property] = $fieldName;
 
         return $this;
     }

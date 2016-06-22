@@ -21,6 +21,7 @@ class Query
     protected $limitStart = null;
     protected $limitEnd = null;
     protected $top = null;
+    protected $forUpdate = false;
 
     /**
      * Example:
@@ -118,6 +119,13 @@ class Query
         return $this;
     }
     
+    public function forUpdate()
+    {
+        $this->forUpdate = true;
+        
+        return $this;
+    }
+    
     protected function getFields()
     {
         if (empty($this->fields)) {
@@ -176,6 +184,10 @@ class Query
         if (!empty($this->orderBy)) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
+        
+        if ($this->forUpdate) {
+            $sql .= ' FOR UPDATE ';
+        } 
         
         return [ 'sql' => $sql, 'params' => $params ];
     }

@@ -9,17 +9,11 @@
 namespace ByJG\MicroOrm;
 
 
-use ByJG\AnyDataset\ConnectionManagement;
 use ByJG\AnyDataset\Repository\DBDataset;
 use ByJG\Serializer\BinderObject;
 
 class Repository
 {
-
-    /**
-     * @var ConnectionManagement
-     */
-    protected $connection;
 
     /**
      * @var Mapper
@@ -33,12 +27,12 @@ class Repository
 
     /**
      * Repository constructor.
-     * @param ConnectionManagement $connection
+     * @param DBDataset $dbDataset
      * @param Mapper $mapper
      */
-    public function __construct(ConnectionManagement $connection, Mapper $mapper)
+    public function __construct(DBDataset $dbDataset, Mapper $mapper)
     {
-        $this->connection = $connection;
+        $this->dbDataset = $dbDataset;
         $this->mapper = $mapper;
     }
 
@@ -55,9 +49,6 @@ class Repository
      */
     protected function getDbDataset()
     {
-        if (is_null($this->dbDataset)) {
-            $this->dbDataset = new DBDataset($this->connection->getDbConnectionString());
-        }
         return $this->dbDataset;
     }
 
@@ -79,13 +70,18 @@ class Repository
     /**
      * @param string $filter
      * @param array $params
+     * @param bool $forUpdate
      * @return array
      */
-    public function getByFilter($filter, array $params)
+    public function getByFilter($filter, array $params, $forUpdate = false)
     {
         $query = new Query();
         $query->table($this->mapper->getTable())
             ->where($filter, $params);
+        
+        if ($forUpdate) {
+            $query->forUpdate();
+        }
 
         return $this->getByQuery($query);
     }
