@@ -43,6 +43,14 @@ class Repository
     }
 
     /**
+     * @return Mapper
+     */
+    public function getMapper()
+    {
+        return $this->mapper;
+    }
+
+    /**
      * @return DBDataset
      */
     protected function getDbDataset()
