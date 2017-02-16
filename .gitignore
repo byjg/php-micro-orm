@@ -3,5 +3,4 @@ nbproject/private
 composer.lock
 vendor
 
-**/.idea/workspace.xml
-**/.idea/tasks.xml
+.idea

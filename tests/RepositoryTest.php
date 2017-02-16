@@ -169,13 +169,17 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
     {
         $query = new Query();
         $query->table($this->userMapper->getTable())
+            ->fields([
+                'users.id',
+                'users.name',
+                'users.createdate',
+                'info.property'
+            ])
             ->join($this->infoMapper->getTable(), 'users.id = info.iduser')
             ->where('iduser = :id', ['id'=>1])
             ->orderBy(['users.id']);
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
-
-        print_r($result);
 
         $this->assertEquals(1, $result[0][0]->id);
         $this->assertEquals('John Doe', $result[0][0]->name);
@@ -185,22 +189,13 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('John Doe', $result[1][0]->name);
         $this->assertEquals('2017-01-02', $result[1][0]->createdate);
 
-        $this->assertEquals(3, $result[2][0]->id);
-        $this->assertEquals('JG', $result[2][0]->name);
-        $this->assertEquals('1974-01-26', $result[2][0]->createdate);
-
         // - ------------------
 
-        $this->assertEquals(1, $result[0][1]->id);
-        $this->assertEquals(1, $result[0][1]->iduser);
+        $this->assertEmpty($result[0][1]->iduser);
         $this->assertEquals('xxx', $result[0][1]->value);
 
-        $this->assertEquals(2, $result[1][1]->id);
-        $this->assertEquals(1, $result[1][1]->iduser);
+        $this->assertEmpty($result[1][1]->iduser);
         $this->assertEquals('ggg', $result[1][1]->value);
 
-        $this->assertEquals(3, $result[1][1]->id);
-        $this->assertEquals(3, $result[1][1]->iduser);
-        $this->assertEquals('bbb', $result[1][1]->value);
     }
 }
