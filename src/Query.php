@@ -61,7 +61,21 @@ class Query
      */
     public function join($table, $filter)
     {
-        $this->join[] = [ 'table'=>$table, 'filter'=>$filter];
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER'];
+        return $this;
+    }
+
+    /**
+     * Example:
+     *    $query->join('sales', 'product.id = sales.id');
+     *
+     * @param string $table
+     * @param string $filter
+     * @return $this
+     */
+    public function leftJoin($table, $filter)
+    {
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT'];
         return $this;
     }
 
@@ -141,7 +155,7 @@ class Query
     {
         $join = $this->table;
         foreach ($this->join as $item) {
-            $join .= ' INNER JOIN ' . $item['table'] . ' ON ' . $item['filter'];
+            $join .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . ' ON ' . $item['filter'];
         }
         return $join;
     }

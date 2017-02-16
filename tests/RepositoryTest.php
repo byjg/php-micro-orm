@@ -176,7 +176,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
                 'info.property'
             ])
             ->join($this->infoMapper->getTable(), 'users.id = info.iduser')
-            ->where('iduser = :id', ['id'=>1])
+            ->where('users.id = :id', ['id'=>1])
             ->orderBy(['users.id']);
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
@@ -198,4 +198,31 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('ggg', $result[1][1]->value);
 
     }
+
+    public function testLeftJoin()
+    {
+        $query = new Query();
+        $query->table($this->userMapper->getTable())
+            ->fields([
+                'users.id',
+                'users.name',
+                'users.createdate',
+                'info.property'
+            ])
+            ->leftJoin($this->infoMapper->getTable(), 'users.id = info.iduser')
+            ->where('users.id = :id', ['id'=>2])
+            ->orderBy(['users.id']);
+
+        $result = $this->repository->getByQuery($query, [$this->infoMapper]);
+
+        $this->assertEquals(2, $result[0][0]->id);
+        $this->assertEquals('Jane Doe', $result[0][0]->name);
+        $this->assertEquals('2017-01-04', $result[0][0]->createdate);
+
+        // - ------------------
+
+        $this->assertEmpty($result[0][1]->iduser);
+        $this->assertEmpty($result[0][1]->value);
+    }
+
 }
