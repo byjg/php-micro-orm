@@ -9,7 +9,7 @@
 namespace ByJG\MicroOrm;
 
 
-use ByJG\AnyDataset\Repository\DBDataset;
+use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\Serializer\BinderObject;
 
 class Repository
@@ -21,18 +21,18 @@ class Repository
     protected $mapper;
 
     /**
-     * @var DBDataset
+     * @var DbDriverInterface
      */
-    protected $dbDataset = null;
+    protected $dbDriver = null;
 
     /**
      * Repository constructor.
-     * @param DBDataset $dbDataset
+     * @param DbDriverInterface $dbDataset
      * @param Mapper $mapper
      */
-    public function __construct(DBDataset $dbDataset, Mapper $mapper)
+    public function __construct(DbDriverInterface $dbDataset, Mapper $mapper)
     {
-        $this->dbDataset = $dbDataset;
+        $this->dbDriver = $dbDataset;
         $this->mapper = $mapper;
     }
 
@@ -45,11 +45,11 @@ class Repository
     }
 
     /**
-     * @return DBDataset
+     * @return DbDriverInterface
      */
-    protected function getDbDataset()
+    protected function getDbDriver()
     {
-        return $this->dbDataset;
+        return $this->dbDriver;
     }
 
     /**
@@ -65,6 +65,35 @@ class Repository
         }
 
         return null;
+    }
+
+    /**
+     * @param array $id
+     * @return mixed|null
+     */
+    public function delete($id)
+    {
+        $params = ['id' => $id];
+        $query = new Query();
+        $query->table($this->mapper->getTable())
+            ->where($this->mapper->getPrimaryKey() . ' = [[id]]', $params);
+
+        return $this->deleteByQuery($query);
+    }
+
+    /**
+     * @param $query
+     * @return bool
+     */
+    public function deleteByQuery($query)
+    {
+        $delete = $query->getDelete();
+        $sql = $delete['sql'];
+        $params = $delete['params'];
+
+        $this->getDbDriver()->execute($sql, $params);
+
+        return true;
     }
 
     /**
@@ -97,13 +126,17 @@ class Repository
         $query = $query->getSelect();
 
         $result = [];
-        $iterator = $this->getDbDataset()->getIterator($query['sql'], $query['params']);
+        $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);
 
         foreach ($iterator as $row) {
             $collection = [];
             foreach ($mapper as $item) {
                 $instance = $item->getEntity();
                 BinderObject::bindObject($row->toArray(), $instance);
+
+                foreach ((array)$item->getFieldMap() as $property => $fieldName) {
+                    $instance->$property = $row->getField($fieldName);
+                }
                 $collection[] = $instance;
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
@@ -141,8 +174,8 @@ class Repository
     protected function insert(Query $query, array $params)
     {
         $sql = $query->getInsert();
-        $dbFunctions = $this->getDbDataset()->getDbFunctions();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDataset(), $sql, $params);
+        $dbFunctions = $this->getDbDriver()->getDbHelper();
+        return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
 
     /**
@@ -157,6 +190,6 @@ class Repository
         $update = $query->getUpdate();
         $sql = $update['sql'];
         
-        $this->getDbDataset()->execSQL($sql, $params);
+        $this->getDbDriver()->execute($sql, $params);
     }
 }

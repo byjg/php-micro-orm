@@ -109,12 +109,14 @@ class Query
 
     public function limit($start, $end)
     {
-
+        $this->limitStart = $start;
+        $this->limitEnd = $end;
         return $this;
     }
 
     public function top($top)
     {
+        $this->top = $top;
 
         return $this;
     }
@@ -238,5 +240,21 @@ class Query
         return [ 'sql' => $sql, 'params' => $where[1] ];
     }
 
+    /**
+     * @return array
+     * @throws \Exception
+     */
+    public function getDelete()
+    {
+        $where = $this->getWhere();
+        if (is_null($where)) {
+            throw new \Exception('You must specifiy a where clause');
+        }
+
+        $sql = 'DELETE FROM ' . $this->table
+            . ' WHERE ' . $where[0];
+
+        return [ 'sql' => $sql, 'params' => $where[1] ];
+    }
 
 }
