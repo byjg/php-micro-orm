@@ -1,4 +1,8 @@
 # MicroOrm for PHP
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/micro-orm/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/micro-orm/?branch=master)
+[![Build Status](https://travis-ci.org/byjg/micro-orm.svg?branch=master)](https://travis-ci.org/byjg/micro-orm)
+[![Code Coverage](https://scrutinizer-ci.com/g/byjg/micro-orm/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/micro-orm/?branch=master)
+
 
 ## Description
 
@@ -47,7 +51,7 @@ Then you need to create the dataset object and the repository:
 
 ```php
 <?php
-$dataset = new \ByJG\AnyDataset\Repository\DBDataset('mysql://user:password@server/schema');
+$dataset = new ByJG\AnyDataset\Factory('mysql://user:password@server/schema');
 
 $repository = new \ByJG\MicroOrm\Repository($dataset, $mapper);
 ```
@@ -75,7 +79,7 @@ Get a collection using the query object:
 $query = new \ByJG\MicroOrm\Query();
 $query->table('users')
     ->fields(['id', 'name'])
-    ->where('name like [[part]]', ['part' => 'A%']);
+    ->where('name like :part', ['part' => 'A%']);
 
 // Will return a collection o 'Users'
 $collection = $repository->getByQuery($query);
@@ -88,7 +92,7 @@ Returning multiples entities with a query:
 $query = new \ByJG\MicroOrm\Query();
 $query->table('order')
     ->join('item', 'order.id = item.orderid')
-    ->where('name like [[part]]', ['part' => 'A%']);
+    ->where('name like :part', ['part' => 'A%']);
 
 // Will return a collection of Orders and Items:
 // $collection = [
