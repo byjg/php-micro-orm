@@ -111,7 +111,7 @@ $collection = $orderRepository->getByQuery(
 
 ## Install
 
-Just type: `composer require "byjg/micro-orm=1.0.*"`
+Just type: `composer require "byjg/micro-orm=1.1.*"`
 
 ## Running Tests
 

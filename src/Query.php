@@ -18,9 +18,6 @@ class Query
     protected $orderBy = [];
     protected $join = [];
     
-    protected $limitStart = null;
-    protected $limitEnd = null;
-    protected $top = null;
     protected $forUpdate = false;
 
     /**
@@ -121,20 +118,6 @@ class Query
         return $this;
     }
 
-    public function limit($start, $end)
-    {
-        $this->limitStart = $start;
-        $this->limitEnd = $end;
-        return $this;
-    }
-
-    public function top($top)
-    {
-        $this->top = $top;
-
-        return $this;
-    }
-    
     public function forUpdate()
     {
         $this->forUpdate = true;
@@ -203,8 +186,8 @@ class Query
         
         if ($this->forUpdate) {
             $sql .= ' FOR UPDATE ';
-        } 
-        
+        }
+
         return [ 'sql' => $sql, 'params' => $params ];
     }
 

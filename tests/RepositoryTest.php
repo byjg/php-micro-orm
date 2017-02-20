@@ -225,4 +225,31 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
         $this->assertEmpty($result[0][1]->value);
     }
 
+    public function testTop()
+    {
+        $query = new Query();
+        $query->table($this->userMapper->getTable());
+
+        $result = $this->repository->top(1)->getByQuery($query);
+
+        $this->assertEquals(1, $result[0]->id);
+        $this->assertEquals('John Doe', $result[0]->name);
+        $this->assertEquals('2017-01-02', $result[0]->createdate);
+
+        $this->assertEquals(1, count($result));
+    }
+
+    public function testLimit()
+    {
+        $query = new Query();
+        $query->table($this->userMapper->getTable());
+
+        $result = $this->repository->limit(1, 1)->getByQuery($query);
+
+        $this->assertEquals(2, $result[0]->id);
+        $this->assertEquals('Jane Doe', $result[0]->name);
+        $this->assertEquals('2017-01-04', $result[0]->createdate);
+
+        $this->assertEquals(1, count($result));
+    }
 }
