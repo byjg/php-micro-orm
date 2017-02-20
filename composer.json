@@ -17,7 +17,7 @@
     "require": {
         "php": ">=5.5.0",
         "ext-json": "*",
-        "byjg/anydataset": "3.0.0.x-dev",
+        "byjg/anydataset": "3.0.*",
         "byjg/serializer": "1.0.*"
     },
     "suggest": {
