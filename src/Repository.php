@@ -163,7 +163,7 @@ class Repository
                 BinderObject::bindObject($row->toArray(), $instance);
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldName) {
-                    $instance->$property = $row->getField($fieldName);
+                    $instance->$property = $row->get($fieldName);
                 }
                 $collection[] = $instance;
             }
