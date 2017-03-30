@@ -123,6 +123,30 @@ $mapper = new \ByJG\MicroOrm\Mapper(
 );
 ```
 
+#### Applying functions for Select and Update
+
+```php
+<?php
+// Creating the mapping
+$mapper = new \ByJG\MicroOrm\Mapper(...);
+
+$mapper->addFieldMap(
+    $property,
+    $fielname,
+    // Update Closure 
+    // Returns the field value with a pre-processed function before UPDATE
+    // If sets to NULL this field will never be updated/inserted
+    function ($field) {
+        return $field; 
+    },
+    // Select Closure 
+    // Returns the field value with a post-processed value AFTER query from DB
+    function ($field) {
+        return $field; 
+    }
+)
+```
+
 
 
 ## Install

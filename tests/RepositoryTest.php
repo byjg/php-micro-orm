@@ -10,6 +10,7 @@ use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
 
 require_once 'Users.php';
+require_once 'UsersMap.php';
 require_once 'Info.php';
 
 // backward compatibility
@@ -90,6 +91,43 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('2017-01-04', $users->createdate);
     }
 
+    public function testGetSelectMask()
+    {
+        $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
+        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+
+        $this->userMapper->addFieldMap(
+            'name',
+            'name',
+            null,
+            function($field) {
+                return '[' . strtoupper($field) . ']';
+            }
+        );
+
+        $this->userMapper->addFieldMap(
+            'year',
+            'createdate',
+            null,
+            function($field) {
+                $date = new \DateTime($field);
+                return $date->format('Y');
+            }
+        );
+
+        $users = $this->repository->get(1);
+        $this->assertEquals(1, $users->id);
+        $this->assertEquals('[JOHN DOE]', $users->name);
+        $this->assertEquals('2017-01-02', $users->createdate);
+        $this->assertEquals('2017', $users->year);
+
+        $users = $this->repository->get(2);
+        $this->assertEquals(2, $users->id);
+        $this->assertEquals('[JANE DOE]', $users->name);
+        $this->assertEquals('2017-01-04', $users->createdate);
+        $this->assertEquals('2017', $users->year);
+    }
+
     public function testInsert()
     {
         $users = new Users();
@@ -133,6 +171,46 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('2015-08-09', $users2->createdate);
     }
 
+    public function testInsertUpdateMask()
+    {
+        $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
+        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+
+        $this->userMapper->addFieldMap(
+            'name',
+            'name',
+            function ($field) {
+                return 'Sr. ' . $field;
+            }
+        );
+
+        $this->userMapper->addFieldMap(
+            'year',
+            'createdate',
+            null,
+            function($field) {
+                $date = new \DateTime($field);
+                return $date->format('Y');
+            }
+        );
+
+        $users = new UsersMap();
+        $users->name = 'John Doe';
+        $users->createdate = '2015-08-09';
+        $users->year = 'NOT USED!';
+
+        $this->assertEquals(null, $users->id);
+        $this->repository->save($users);
+        $this->assertEquals(4, $users->id);
+
+        $users2 = $this->repository->get(4);
+
+        $this->assertEquals(4, $users2->id);
+        $this->assertEquals('2015-08-09', $users2->createdate);
+        $this->assertEquals('2015', $users2->year);
+        $this->assertEquals('Sr. John Doe', $users2->name);
+    }
+
     public function testUpdate()
     {
         $users = $this->repository->get(1);
@@ -151,6 +229,49 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('Jane Doe', $users2->name);
         $this->assertEquals('2017-01-04', $users2->createdate);
     }
+
+    public function testUpdateMask()
+    {
+        $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
+        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+
+        $this->userMapper->addFieldMap(
+            'name',
+            'name',
+            function ($field) {
+                return 'Sr. ' . $field;
+            }
+        );
+
+        $this->userMapper->addFieldMap(
+            'year',
+            'createdate',
+            null,
+            function($field) {
+                $date = new \DateTime($field);
+                return $date->format('Y');
+            }
+        );
+
+        $users = $this->repository->get(1);
+
+        $users->name = 'New Name';
+        $users->createdate = '2016-01-09';
+        $this->repository->save($users);
+
+        $users2 = $this->repository->get(1);
+        $this->assertEquals(1, $users2->id);
+        $this->assertEquals('Sr. New Name', $users2->name);
+        $this->assertEquals('2016-01-09', $users2->createdate);
+        $this->assertEquals('2016', $users2->year);
+
+        $users2 = $this->repository->get(2);
+        $this->assertEquals(2, $users2->id);
+        $this->assertEquals('Jane Doe', $users2->name);
+        $this->assertEquals('2017-01-04', $users2->createdate);
+        $this->assertEquals('2017', $users2->year);
+    }
+
 
     public function testDelete()
     {

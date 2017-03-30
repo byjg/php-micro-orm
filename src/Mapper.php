@@ -8,7 +8,6 @@
 
 namespace ByJG\MicroOrm;
 
-
 class Mapper
 {
 
@@ -16,6 +15,10 @@ class Mapper
     protected $table;
     protected $primaryKey;
     protected $keygenFunction = null;
+
+    const FIELDMAP_FIELD = 'fieldname';
+    const FIELDMAP_UPDATEMASK = 'updatemask';
+    const FIELDMAP_SELECTMASK = 'selectmask';
 
     protected $fieldMap = [];
 
@@ -42,11 +45,23 @@ class Mapper
     /**
      * @param string $property
      * @param string $fieldName
+     * @param \Closure $updateMask
+     * @param \Closure $selectMask
      * @return $this
      */
-    public function addFieldMap($property, $fieldName)
+    public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {
-        $this->fieldMap[$property] = $fieldName;
+        if (empty($selectMask)) {
+            $selectMask = function ($field) {
+                return $field;
+            };
+        }
+
+        $this->fieldMap[$property] = [
+            self::FIELDMAP_FIELD => $fieldName,
+            self::FIELDMAP_UPDATEMASK => $updateMask,
+            self::FIELDMAP_SELECTMASK => $selectMask
+        ];
 
         return $this;
     }
@@ -77,11 +92,23 @@ class Mapper
     }
 
     /**
+     * @param string|null $property
+     * @param string|null $key
      * @return array
      */
-    public function getFieldMap()
+    public function getFieldMap($property = null, $key = null)
     {
-        return $this->fieldMap;
+        if (empty($property)) {
+            return $this->fieldMap;
+        }
+
+        $fieldMap = $this->fieldMap[$property];
+
+        if (empty($key)) {
+            return $fieldMap;
+        }
+
+        return $fieldMap[$key];
     }
 
     /**

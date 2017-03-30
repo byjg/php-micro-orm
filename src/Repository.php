@@ -162,8 +162,9 @@ class Repository
                 $instance = $item->getEntity();
                 BinderObject::bindObject($row->toArray(), $instance);
 
-                foreach ((array)$item->getFieldMap() as $property => $fieldName) {
-                    $instance->$property = $row->get($fieldName);
+                foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
+                    $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
+                    $instance->$property = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]));
                 }
                 $collection[] = $instance;
             }
@@ -182,6 +183,23 @@ class Repository
     {
         // Get all fields
         $array = BinderObject::toArrayFrom($instance, true);
+
+        // Mapping the data
+        foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldmap) {
+            $fieldname = $fieldmap[Mapper::FIELDMAP_FIELD];
+            $updateMask = $fieldmap[Mapper::FIELDMAP_UPDATEMASK];
+
+            // If no value for UpdateMask, remove from the list;
+            if (empty($updateMask)) {
+                unset($array[$property]);
+                continue;
+            }
+
+            // Get the value from the mapped field name
+            $value = $array[$property];
+            unset($array[$property]);
+            $array[$fieldname] = $updateMask($value);
+        }
 
         // Prepare query to insert
         $query = new Query();
