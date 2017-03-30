@@ -15,6 +15,7 @@ class Mapper
     protected $entity;
     protected $table;
     protected $primaryKey;
+    protected $keygenFunction = null;
 
     protected $fieldMap = [];
 
@@ -24,9 +25,10 @@ class Mapper
      * @param string $entity
      * @param string $table
      * @param string $primaryKey
+     * @param \Closure $keygenFunction
      * @throws \Exception
      */
-    public function __construct($entity, $table, $primaryKey)
+    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null)
     {
         if (!class_exists($entity)) {
             throw new \Exception("Entity '$entity' does not exists");
@@ -34,6 +36,7 @@ class Mapper
         $this->entity = $entity;
         $this->table = $table;
         $this->primaryKey = $primaryKey;
+        $this->keygenFunction = $keygenFunction;
     }
 
     /**
@@ -81,5 +84,17 @@ class Mapper
         return $this->fieldMap;
     }
 
-    
+    /**
+     * @return mixed|null
+     */
+    public function generateKey()
+    {
+        if (empty($this->keygenFunction)) {
+            return null;
+        }
+
+        $func = $this->keygenFunction;
+
+        return $func();
+    }
 }

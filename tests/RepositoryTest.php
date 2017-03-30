@@ -12,7 +12,12 @@ use ByJG\Util\Uri;
 require_once 'Users.php';
 require_once 'Info.php';
 
-class RepositoryTest extends \PHPUnit_Framework_TestCase
+// backward compatibility
+if (!class_exists('\PHPUnit\Framework\TestCase')) {
+    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
+}
+
+class RepositoryTest extends \PHPUnit\Framework\TestCase
 {
 
     const URI='sqlite:///tmp/teste.db';
@@ -90,11 +95,40 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase
         $users = new Users();
         $users->name = 'Bla99991919';
         $users->createdate = '2015-08-09';
+
+        $this->assertEquals(null, $users->id);
         $this->repository->save($users);
+        $this->assertEquals(4, $users->id);
 
         $users2 = $this->repository->get(4);
 
         $this->assertEquals(4, $users2->id);
+        $this->assertEquals('Bla99991919', $users2->name);
+        $this->assertEquals('2015-08-09', $users2->createdate);
+    }
+
+    public function testInsertKeyGen()
+    {
+        $this->infoMapper = new Mapper(
+            Users::class,
+            'users',
+            'id',
+            function () {
+                return 50;
+            }
+        );
+        $this->repository = new Repository($this->dbDriver, $this->infoMapper);
+
+        $users = new Users();
+        $users->name = 'Bla99991919';
+        $users->createdate = '2015-08-09';
+        $this->assertEquals(null, $users->id);
+        $this->repository->save($users);
+        $this->assertEquals(50, $users->id);
+
+        $users2 = $this->repository->get(50);
+
+        $this->assertEquals(50, $users2->id);
         $this->assertEquals('Bla99991919', $users2->name);
         $this->assertEquals('2015-08-09', $users2->createdate);
     }

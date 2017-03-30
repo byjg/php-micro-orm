@@ -89,7 +89,7 @@ class Repository
      * @param $query
      * @return bool
      */
-    public function deleteByQuery($query)
+    public function deleteByQuery(Query $query)
     {
         $delete = $query->getDelete();
         $sql = $delete['sql'];
@@ -180,19 +180,21 @@ class Repository
      */
     public function save($instance)
     {
+        // Get all fields
         $array = BinderObject::toArrayFrom($instance, true);
 
+        // Prepare query to insert
         $query = new Query();
         $query->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
+        // Check if is insert or update
         if (empty($array[$this->mapper->getPrimaryKey()]) || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0)  {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($query, $array);
             BinderObject::bindObject($array, $instance);
         } else {
             $this->update($query, $array);
         }
-
     }
 
     /**
@@ -203,9 +205,26 @@ class Repository
      */
     protected function insert(Query $query, array $params)
     {
+        $keyGen = $this->getMapper()->generateKey();
+        if (empty($keyGen)) {
+            return $this->insertWithAutoinc($query, $params);
+        } else {
+            return $this->insertWithKeyGen($query, $params, $keyGen);
+        }
+    }
+
+    protected function insertWithAutoinc(Query $query, array $params)
+    {
         $sql = $query->getInsert();
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
+    }
+
+    protected function insertWithKeyGen(Query $query, array $params, $keyGen)
+    {
+        $params[$this->mapper->getPrimaryKey()] = $keyGen;
+        $this->getDbDriver()->execute($query->getInsert(), $params);
+        return $keyGen;
     }
 
     /**
