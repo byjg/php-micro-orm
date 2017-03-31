@@ -95,6 +95,10 @@ class Repository
         $sql = $delete['sql'];
         $params = $delete['params'];
 
+        if (is_array($params)) {
+            $sql = $this->processLiteral($sql, $params);
+        }
+
         $this->getDbDriver()->execute($sql, $params);
 
         return true;
@@ -153,8 +157,13 @@ class Repository
             $query['sql'] = $this->getDbDriver()->getDbHelper()->limit($query['sql'], $this->limitStart, $this->limitEnd);
         }
 
+        $params = $query['params'];
+        $sql = $query['sql'];
+        if (is_array($params)) {
+            $sql = $this->processLiteral($sql, $params);
+        }
         $result = [];
-        $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);
+        $iterator = $this->getDbDriver()->getIterator($sql, $params);
 
         foreach ($iterator as $row) {
             $collection = [];

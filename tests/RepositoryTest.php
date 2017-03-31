@@ -90,6 +90,11 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
+
+        $users = $this->repository->get(new Literal(1));
+        $this->assertEquals(1, $users->getId());
+        $this->assertEquals('John Doe', $users->getName());
+        $this->assertEquals('2017-01-02', $users->getCreatedate());
     }
 
     public function testGetSelectMask()
@@ -294,6 +299,17 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
     public function testDelete()
     {
         $this->repository->delete(1);
+        $this->assertEmpty($this->repository->get(1));
+
+        $users = $this->repository->get(2);
+        $this->assertEquals(2, $users->getId());
+        $this->assertEquals('Jane Doe', $users->getName());
+        $this->assertEquals('2017-01-04', $users->getCreatedate());
+    }
+
+    public function testDeleteLiteral()
+    {
+        $this->repository->delete(new Literal(1));
         $this->assertEmpty($this->repository->get(1));
 
         $users = $this->repository->get(2);
