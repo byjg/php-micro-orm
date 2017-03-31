@@ -160,12 +160,13 @@ class Repository
             $collection = [];
             foreach ($mapper as $item) {
                 $instance = $item->getEntity();
-                BinderObject::bindObject($row->toArray(), $instance);
+                $data = $row->toArray();
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $instance->$property = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]));
+                    $data[$property] = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]));
                 }
+                BinderObject::bindObject($data, $instance);
                 $collection[] = $instance;
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;

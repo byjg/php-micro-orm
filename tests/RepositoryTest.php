@@ -82,14 +82,14 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
     public function testGet()
     {
         $users = $this->repository->get(1);
-        $this->assertEquals(1, $users->id);
-        $this->assertEquals('John Doe', $users->name);
-        $this->assertEquals('2017-01-02', $users->createdate);
+        $this->assertEquals(1, $users->getId());
+        $this->assertEquals('John Doe', $users->getName());
+        $this->assertEquals('2017-01-02', $users->getCreatedate());
 
         $users = $this->repository->get(2);
-        $this->assertEquals(2, $users->id);
-        $this->assertEquals('Jane Doe', $users->name);
-        $this->assertEquals('2017-01-04', $users->createdate);
+        $this->assertEquals(2, $users->getId());
+        $this->assertEquals('Jane Doe', $users->getName());
+        $this->assertEquals('2017-01-04', $users->getCreatedate());
     }
 
     public function testGetSelectMask()
@@ -117,50 +117,50 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         );
 
         $users = $this->repository->get(1);
-        $this->assertEquals(1, $users->id);
-        $this->assertEquals('[JOHN DOE]', $users->name);
-        $this->assertEquals('2017-01-02', $users->createdate);
-        $this->assertEquals('2017', $users->year);
+        $this->assertEquals(1, $users->getId());
+        $this->assertEquals('[JOHN DOE]', $users->getName());
+        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2017', $users->getYear());
 
         $users = $this->repository->get(2);
-        $this->assertEquals(2, $users->id);
-        $this->assertEquals('[JANE DOE]', $users->name);
-        $this->assertEquals('2017-01-04', $users->createdate);
-        $this->assertEquals('2017', $users->year);
+        $this->assertEquals(2, $users->getId());
+        $this->assertEquals('[JANE DOE]', $users->getName());
+        $this->assertEquals('2017-01-04', $users->getCreatedate());
+        $this->assertEquals('2017', $users->getYear());
     }
 
     public function testInsert()
     {
         $users = new Users();
-        $users->name = 'Bla99991919';
-        $users->createdate = '2015-08-09';
+        $users->setName('Bla99991919');
+        $users->setCreatedate('2015-08-09');
 
-        $this->assertEquals(null, $users->id);
+        $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertEquals(4, $users->id);
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertEquals(4, $users2->id);
-        $this->assertEquals('Bla99991919', $users2->name);
-        $this->assertEquals('2015-08-09', $users2->createdate);
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('Bla99991919', $users2->getName());
+        $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
     public function testInsertLiteral()
     {
         $users = new Users();
-        $users->name = new Literal("X'6565'");
-        $users->createdate = '2015-08-09';
+        $users->setName(new Literal("X'6565'"));
+        $users->setCreatedate('2015-08-09');
 
-        $this->assertEquals(null, $users->id);
+        $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertEquals(4, $users->id);
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertEquals(4, $users2->id);
-        $this->assertEquals('ee', $users2->name);
-        $this->assertEquals('2015-08-09', $users2->createdate);
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('ee', $users2->getName());
+        $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
     public function testInsertKeyGen()
@@ -176,17 +176,17 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->repository = new Repository($this->dbDriver, $this->infoMapper);
 
         $users = new Users();
-        $users->name = 'Bla99991919';
-        $users->createdate = '2015-08-09';
-        $this->assertEquals(null, $users->id);
+        $users->setName('Bla99991919');
+        $users->setCreatedate('2015-08-09');
+        $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertEquals(50, $users->id);
+        $this->assertEquals(50, $users->getId());
 
         $users2 = $this->repository->get(50);
 
-        $this->assertEquals(50, $users2->id);
-        $this->assertEquals('Bla99991919', $users2->name);
-        $this->assertEquals('2015-08-09', $users2->createdate);
+        $this->assertEquals(50, $users2->getId());
+        $this->assertEquals('Bla99991919', $users2->getName());
+        $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
     public function testInsertUpdateMask()
@@ -213,39 +213,39 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         );
 
         $users = new UsersMap();
-        $users->name = 'John Doe';
-        $users->createdate = '2015-08-09';
-        $users->year = 'NOT USED!';
+        $users->setName('John Doe');
+        $users->setCreatedate('2015-08-09');
+        $users->setYear('NOT USED!');
 
-        $this->assertEquals(null, $users->id);
+        $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertEquals(4, $users->id);
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertEquals(4, $users2->id);
-        $this->assertEquals('2015-08-09', $users2->createdate);
-        $this->assertEquals('2015', $users2->year);
-        $this->assertEquals('Sr. John Doe', $users2->name);
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015', $users2->getYear());
+        $this->assertEquals('Sr. John Doe', $users2->getName());
     }
 
     public function testUpdate()
     {
         $users = $this->repository->get(1);
 
-        $users->name = 'New Name';
-        $users->createdate = '2016-01-09';
+        $users->setName('New Name');
+        $users->setCreatedate('2016-01-09');
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
-        $this->assertEquals(1, $users2->id);
-        $this->assertEquals('New Name', $users2->name);
-        $this->assertEquals('2016-01-09', $users2->createdate);
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('New Name', $users2->getName());
+        $this->assertEquals('2016-01-09', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
-        $this->assertEquals(2, $users2->id);
-        $this->assertEquals('Jane Doe', $users2->name);
-        $this->assertEquals('2017-01-04', $users2->createdate);
+        $this->assertEquals(2, $users2->getId());
+        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
 
     public function testUpdateMask()
@@ -273,21 +273,21 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $users = $this->repository->get(1);
 
-        $users->name = 'New Name';
-        $users->createdate = '2016-01-09';
+        $users->setName('New Name');
+        $users->setCreatedate('2016-01-09');
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
-        $this->assertEquals(1, $users2->id);
-        $this->assertEquals('Sr. New Name', $users2->name);
-        $this->assertEquals('2016-01-09', $users2->createdate);
-        $this->assertEquals('2016', $users2->year);
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('Sr. New Name', $users2->getName());
+        $this->assertEquals('2016-01-09', $users2->getCreatedate());
+        $this->assertEquals('2016', $users2->getYear());
 
         $users2 = $this->repository->get(2);
-        $this->assertEquals(2, $users2->id);
-        $this->assertEquals('Jane Doe', $users2->name);
-        $this->assertEquals('2017-01-04', $users2->createdate);
-        $this->assertEquals('2017', $users2->year);
+        $this->assertEquals(2, $users2->getId());
+        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+        $this->assertEquals('2017', $users2->getYear());
     }
 
 
@@ -297,9 +297,9 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($this->repository->get(1));
 
         $users = $this->repository->get(2);
-        $this->assertEquals(2, $users->id);
-        $this->assertEquals('Jane Doe', $users->name);
-        $this->assertEquals('2017-01-04', $users->createdate);
+        $this->assertEquals(2, $users->getId());
+        $this->assertEquals('Jane Doe', $users->getName());
+        $this->assertEquals('2017-01-04', $users->getCreatedate());
     }
 
     public function testDelete2()
@@ -311,9 +311,9 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->repository->deleteByQuery($query);
 
         $users = $this->repository->get(1);
-        $this->assertEquals(1, $users->id);
-        $this->assertEquals('John Doe', $users->name);
-        $this->assertEquals('2017-01-02', $users->createdate);
+        $this->assertEquals(1, $users->getId());
+        $this->assertEquals('John Doe', $users->getName());
+        $this->assertEquals('2017-01-02', $users->getCreatedate());
 
         $users = $this->repository->get(2);
         $this->assertEmpty($users);
@@ -329,13 +329,13 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        $this->assertEquals(2, $result[0]->id);
-        $this->assertEquals(1, $result[0]->iduser);
-        $this->assertEquals('ggg', $result[0]->value);
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals(1, $result[0]->getIduser());
+        $this->assertEquals('ggg', $result[0]->getValue());
 
-        $this->assertEquals(1, $result[1]->id);
-        $this->assertEquals(1, $result[1]->iduser);
-        $this->assertEquals('xxx', $result[1]->value);
+        $this->assertEquals(1, $result[1]->getId());
+        $this->assertEquals(1, $result[1]->getIduser());
+        $this->assertEquals('xxx', $result[1]->getValue());
     }
 
     public function testJoin()
@@ -354,21 +354,21 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
 
-        $this->assertEquals(1, $result[0][0]->id);
-        $this->assertEquals('John Doe', $result[0][0]->name);
-        $this->assertEquals('2017-01-02', $result[0][0]->createdate);
+        $this->assertEquals(1, $result[0][0]->getId());
+        $this->assertEquals('John Doe', $result[0][0]->getName());
+        $this->assertEquals('2017-01-02', $result[0][0]->getCreatedate());
 
-        $this->assertEquals(1, $result[1][0]->id);
-        $this->assertEquals('John Doe', $result[1][0]->name);
-        $this->assertEquals('2017-01-02', $result[1][0]->createdate);
+        $this->assertEquals(1, $result[1][0]->getId());
+        $this->assertEquals('John Doe', $result[1][0]->getName());
+        $this->assertEquals('2017-01-02', $result[1][0]->getCreatedate());
 
         // - ------------------
 
-        $this->assertEmpty($result[0][1]->iduser);
-        $this->assertEquals('xxx', $result[0][1]->value);
+        $this->assertEmpty($result[0][1]->getIduser());
+        $this->assertEquals('xxx', $result[0][1]->getValue());
 
-        $this->assertEmpty($result[1][1]->iduser);
-        $this->assertEquals('ggg', $result[1][1]->value);
+        $this->assertEmpty($result[1][1]->getIduser());
+        $this->assertEquals('ggg', $result[1][1]->getValue());
 
     }
 
@@ -388,14 +388,14 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
 
-        $this->assertEquals(2, $result[0][0]->id);
-        $this->assertEquals('Jane Doe', $result[0][0]->name);
-        $this->assertEquals('2017-01-04', $result[0][0]->createdate);
+        $this->assertEquals(2, $result[0][0]->getId());
+        $this->assertEquals('Jane Doe', $result[0][0]->getName());
+        $this->assertEquals('2017-01-04', $result[0][0]->getCreatedate());
 
         // - ------------------
 
-        $this->assertEmpty($result[0][1]->iduser);
-        $this->assertEmpty($result[0][1]->value);
+        $this->assertEmpty($result[0][1]->getIduser());
+        $this->assertEmpty($result[0][1]->getValue());
     }
 
     public function testTop()
@@ -405,9 +405,9 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $result = $this->repository->top(1)->getByQuery($query);
 
-        $this->assertEquals(1, $result[0]->id);
-        $this->assertEquals('John Doe', $result[0]->name);
-        $this->assertEquals('2017-01-02', $result[0]->createdate);
+        $this->assertEquals(1, $result[0]->getId());
+        $this->assertEquals('John Doe', $result[0]->getName());
+        $this->assertEquals('2017-01-02', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
@@ -419,9 +419,9 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $result = $this->repository->limit(1, 1)->getByQuery($query);
 
-        $this->assertEquals(2, $result[0]->id);
-        $this->assertEquals('Jane Doe', $result[0]->name);
-        $this->assertEquals('2017-01-04', $result[0]->createdate);
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals('Jane Doe', $result[0]->getName());
+        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
