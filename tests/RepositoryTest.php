@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\AnyDataset\Factory;
+use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
@@ -142,6 +143,23 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
         $this->assertEquals(4, $users2->id);
         $this->assertEquals('Bla99991919', $users2->name);
+        $this->assertEquals('2015-08-09', $users2->createdate);
+    }
+
+    public function testInsertLiteral()
+    {
+        $users = new Users();
+        $users->name = new Literal("X'6565'");
+        $users->createdate = '2015-08-09';
+
+        $this->assertEquals(null, $users->id);
+        $this->repository->save($users);
+        $this->assertEquals(4, $users->id);
+
+        $users2 = $this->repository->get(4);
+
+        $this->assertEquals(4, $users2->id);
+        $this->assertEquals('ee', $users2->name);
         $this->assertEquals('2015-08-09', $users2->createdate);
     }
 

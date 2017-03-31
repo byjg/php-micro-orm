@@ -233,7 +233,7 @@ class Repository
 
     protected function insertWithAutoinc(Query $query, array $params)
     {
-        $sql = $query->getInsert();
+        $sql = $this->processLiteral($query->getInsert(), $params);
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
@@ -241,7 +241,8 @@ class Repository
     protected function insertWithKeyGen(Query $query, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;
-        $this->getDbDriver()->execute($query->getInsert(), $params);
+        $sql = $this->processLiteral($query->getInsert(), $params);
+        $this->getDbDriver()->execute($sql, $params);
         return $keyGen;
     }
 
@@ -255,8 +256,20 @@ class Repository
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
         $query->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
         $update = $query->getUpdate();
-        $sql = $update['sql'];
-        
+        $sql = $this->processLiteral($update['sql'], $params);
+
         $this->getDbDriver()->execute($sql, $params);
+    }
+
+    protected function processLiteral($sql, array &$params)
+    {
+        foreach ($params as $field => $param) {
+            if ($param instanceof Literal) {
+                $sql = str_replace('[[' . $field . ']]', $param->getLiteralValue(), $sql);
+                unset($params[$field]);
+            }
+        }
+
+        return $sql;
     }
 }
