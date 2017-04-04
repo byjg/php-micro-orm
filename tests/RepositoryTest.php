@@ -253,6 +253,19 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
 
+    public function testUpdateLiteral()
+    {
+        $users = $this->repository->get(1);
+        $users->setName(new Literal("X'6565'"));
+        $this->repository->save($users);
+
+        $users2 = $this->repository->get(1);
+
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('ee', $users2->getName());
+        $this->assertEquals('2017-01-02', $users2->getCreatedate());
+    }
+
     public function testUpdateMask()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');

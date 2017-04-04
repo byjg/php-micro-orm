@@ -9,6 +9,8 @@
 namespace ByJG\MicroOrm;
 
 
+use ByJG\AnyDataset\DbFunctionsInterface;
+
 class Query
 {
     protected $fields = [];
@@ -29,7 +31,7 @@ class Query
      */
     public function fields(array $fields)
     {
-        $this->fields = array_merge($this->fields, $fields);
+        $this->fields = array_merge($this->fields, (array)$fields);
         
         return $this;
     }
@@ -192,18 +194,29 @@ class Query
     }
 
     /**
+     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @return string
      * @throws \Exception
      */
-    public function getInsert()
+    public function getInsert(DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
             throw new \Exception('You must specifiy the fields for insert');
         }
-        
+
+        $fields = $this->fields;
+        if (!is_null($dbHelper)) {
+            $fields = $dbHelper->delimiterField($fields);
+        }
+
+        $table = $this->table;
+        if (!is_null($dbHelper)) {
+            $table = $dbHelper->delimiterTable($table);
+        }
+
         $sql = 'INSERT INTO '
-            . $this->table
-            . '( ' . implode(', ', $this->fields) . ' ) '
+            . $table
+            . '( ' . implode(', ', $fields) . ' ) '
             . ' values '
             . '( [[' . implode(']], [[', $this->fields) . ']] ) ';
         
@@ -211,10 +224,11 @@ class Query
     }
 
     /**
+     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @return array
      * @throws \Exception
      */
-    public function getUpdate()
+    public function getUpdate(DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
             throw new \Exception('You must specifiy the fields for insert');
@@ -222,7 +236,11 @@ class Query
         
         $fields = [];
         foreach ($this->fields as $field) {
-            $fields[] = "$field = [[$field]] ";
+            $fieldName = $field;
+            if (!is_null($dbHelper)) {
+                $fieldName = $dbHelper->delimiterField($fieldName);
+            }
+            $fields[] = "$fieldName = [[$field]] ";
         }
         
         $where = $this->getWhere();
@@ -230,7 +248,12 @@ class Query
             throw new \Exception('You must specifiy a where clause');
         }
 
-        $sql = 'UPDATE ' . $this->table . ' SET '
+        $tableName = $this->table;
+        if (!is_null($dbHelper)) {
+            $tableName = $dbHelper->delimiterTable($tableName);
+        }
+
+        $sql = 'UPDATE ' . $tableName . ' SET '
             . implode(', ', $fields)
             . ' WHERE ' . $where[0];
 
