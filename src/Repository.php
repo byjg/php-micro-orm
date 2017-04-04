@@ -246,7 +246,7 @@ class Repository
 
     protected function insertWithAutoinc(Query $query, array $params)
     {
-        $sql = $this->processLiteral($query->getInsert(), $params);
+        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
@@ -254,7 +254,7 @@ class Repository
     protected function insertWithKeyGen(Query $query, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;
-        $sql = $this->processLiteral($query->getInsert(), $params);
+        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
         $this->getDbDriver()->execute($sql, $params);
         return $keyGen;
     }
@@ -268,7 +268,7 @@ class Repository
     {
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
         $query->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
-        $update = $query->getUpdate();
+        $update = $query->getUpdate($this->getDbDriver()->getDbHelper());
         $sql = $this->processLiteral($update['sql'], $params);
 
         $this->getDbDriver()->execute($sql, $params);
