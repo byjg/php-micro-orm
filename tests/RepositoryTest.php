@@ -106,8 +106,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
             'name',
             'name',
             null,
-            function($field) {
-                return '[' . strtoupper($field) . ']';
+            function ($value, $instance) {
+                return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
             }
         );
 
@@ -115,21 +115,21 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
             'year',
             'createdate',
             null,
-            function($field) {
-                $date = new \DateTime($field);
+            function ($value, $instance) {
+                $date = new \DateTime($value);
                 return $date->format('Y');
             }
         );
 
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
-        $this->assertEquals('[JOHN DOE]', $users->getName());
+        $this->assertEquals('[JOHN DOE] - 2017-01-02', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
         $this->assertEquals('2017', $users->getYear());
 
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
-        $this->assertEquals('[JANE DOE]', $users->getName());
+        $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
         $this->assertEquals('2017', $users->getYear());
     }
@@ -202,8 +202,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->userMapper->addFieldMap(
             'name',
             'name',
-            function ($field) {
-                return 'Sr. ' . $field;
+            function ($value, $instance) {
+                return 'Sr. ' . $value . ' - ' . $instance->getCreatedate();
             }
         );
 
@@ -211,8 +211,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
             'year',
             'createdate',
             null,
-            function($field) {
-                $date = new \DateTime($field);
+            function ($value, $instance) {
+                $date = new \DateTime($value);
                 return $date->format('Y');
             }
         );
@@ -231,7 +231,7 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
         $this->assertEquals('2015', $users2->getYear());
-        $this->assertEquals('Sr. John Doe', $users2->getName());
+        $this->assertEquals('Sr. John Doe - 2015-08-09', $users2->getName());
     }
 
     public function testUpdate()
@@ -261,8 +261,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->userMapper->addFieldMap(
             'name',
             'name',
-            function ($field) {
-                return 'Sr. ' . $field;
+            function ($value, $instance) {
+                return 'Sr. ' . $value;
             }
         );
 
@@ -270,8 +270,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
             'year',
             'createdate',
             null,
-            function($field) {
-                $date = new \DateTime($field);
+            function ($value, $instance) {
+                $date = new \DateTime($value);
                 return $date->format('Y');
             }
         );

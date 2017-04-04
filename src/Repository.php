@@ -171,11 +171,14 @@ class Repository
                 $instance = $item->getEntity();
                 $data = $row->toArray();
 
+                BinderObject::bindObject($data, $instance);
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $data[$property] = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]));
+                    $data[$property] = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]), $instance);
                 }
-                BinderObject::bindObject($data, $instance);
+                if (count($item->getFieldMap()) > 0) {
+                    BinderObject::bindObject($data, $instance);
+                }
                 $collection[] = $instance;
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
@@ -208,7 +211,7 @@ class Repository
             // Get the value from the mapped field name
             $value = $array[$property];
             unset($array[$property]);
-            $array[$fieldname] = $updateMask($value);
+            $array[$fieldname] = $updateMask($value, $instance);
         }
 
         // Prepare query to insert

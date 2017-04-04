@@ -52,8 +52,8 @@ class Mapper
     public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {
         if (empty($selectMask)) {
-            $selectMask = function ($field) {
-                return $field;
+            $selectMask = function ($value, $instance) {
+                return $value;
             };
         }
 
