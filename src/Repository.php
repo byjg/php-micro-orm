@@ -25,10 +25,6 @@ class Repository
      */
     protected $dbDriver = null;
 
-    protected $limitStart = null;
-    protected $limitEnd = null;
-    protected $top = null;
-
     /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
@@ -104,22 +100,6 @@ class Repository
         return true;
     }
 
-    public function limit($start, $end)
-    {
-        $this->limitStart = $start;
-        $this->limitEnd = $end;
-        $this->top = null;
-        return $this;
-    }
-
-    public function top($top)
-    {
-        $this->top = $top;
-        $this->limitStart = $this->limitEnd = null;
-
-        return $this;
-    }
-
     /**
      * @param string $filter
      * @param array $params
@@ -147,15 +127,7 @@ class Repository
     public function getByQuery(Query $query, array $mapper = [])
     {
         $mapper = array_merge([$this->mapper], $mapper);
-        $query = $query->build();
-
-        if (!empty($this->top)) {
-            $query['sql'] = $this->getDbDriver()->getDbHelper()->top($query['sql'], $this->top);
-        }
-
-        if (!empty($this->limitStart)) {
-            $query['sql'] = $this->getDbDriver()->getDbHelper()->limit($query['sql'], $this->limitStart, $this->limitEnd);
-        }
+        $query = $query->build($this->getDbDriver());
 
         $params = $query['params'];
         $sql = $query['sql'];
@@ -183,8 +155,6 @@ class Repository
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
         }
-
-        $this->limitStart = $this->limitEnd = $this->top = null;
 
         return $result;
     }

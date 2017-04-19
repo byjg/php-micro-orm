@@ -430,10 +430,11 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testTop()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable());
+        $query = Query::getInstance()
+            ->table($this->userMapper->getTable())
+            ->top(1);
 
-        $result = $this->repository->top(1)->getByQuery($query);
+        $result = $this->repository->getByQuery($query);
 
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
@@ -444,10 +445,11 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testLimit()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable());
+        $query = Query::getInstance()
+            ->table($this->userMapper->getTable())
+            ->limit(1, 1);
 
-        $result = $this->repository->limit(1, 1)->getByQuery($query);
+        $result = $this->repository->getByQuery($query);
 
         $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());

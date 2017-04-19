@@ -8,6 +8,8 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\DbDriverInterface;
+
 class Query
 {
     protected $fields = [];
@@ -16,7 +18,10 @@ class Query
     protected $groupBy = [];
     protected $orderBy = [];
     protected $join = [];
-    
+    protected $limitStart = null;
+    protected $limitEnd = null;
+    protected $top = null;
+
     protected $forUpdate = false;
 
     public static function getInstance()
@@ -128,7 +133,26 @@ class Query
         
         return $this;
     }
-    
+
+    public function limit($start, $end)
+    {
+        if (!is_null($this->top)) {
+            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+        }
+        $this->limitStart = $start;
+        $this->limitEnd = $end;
+        return $this;
+    }
+
+    public function top($top)
+    {
+        if (!is_null($this->limitStart)) {
+            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+        }
+        $this->top = $top;
+        return $this;
+    }
+
     protected function getFields()
     {
         if (empty($this->fields)) {
@@ -165,9 +189,10 @@ class Query
     }
 
     /**
+     * @param \ByJG\AnyDataset\DbDriverInterface|null $dbDriver
      * @return array
      */
-    public function build()
+    public function build(DbDriverInterface $dbDriver = null)
     {
         $sql = "SELECT " .
             $this->getFields() . 
@@ -190,6 +215,20 @@ class Query
         
         if ($this->forUpdate) {
             $sql .= ' FOR UPDATE ';
+        }
+
+        if (!empty($this->top)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
+        }
+
+        if (!empty($this->limitStart)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
         }
 
         return [ 'sql' => $sql, 'params' => $params ];
