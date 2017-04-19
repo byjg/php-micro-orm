@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
 
 require_once 'Users.php';
@@ -333,8 +334,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testDelete2()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = Updatable::getInstance()
+            ->table($this->userMapper->getTable())
             ->where('name like :name', ['name'=>'Jane%']);
 
         $this->repository->deleteByQuery($query);

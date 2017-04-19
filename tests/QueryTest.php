@@ -8,8 +8,10 @@
 namespace Test;
 
 use ByJG\AnyDataset\Store\Helpers\DbSqliteFunctions;
+use ByJG\MicroOrm\Insert;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
+use ByJG\MicroOrm\Updatable;
 
 // backward compatibility
 if (!class_exists('\PHPUnit\Framework\TestCase')) {
@@ -41,7 +43,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  * FROM test',
                 'params' => null
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
 
@@ -54,7 +56,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test',
                 'params' => null
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
         $this->object
@@ -65,7 +67,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1',
                 'params' => null
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
         $this->object
@@ -76,7 +78,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1',
                 'params' => null
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
         $this->object
@@ -87,7 +89,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste GROUP BY fld1, fld2, fld3 ORDER BY fld1',
                 'params' => [ 'teste' => 10 ]
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
         $this->object
@@ -98,7 +100,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 GROUP BY fld1, fld2, fld3 ORDER BY fld1',
                 'params' => [ 'teste' => 10 ]
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
 
         $this->object
@@ -109,43 +111,45 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]] GROUP BY fld1, fld2, fld3 ORDER BY fld1',
                 'params' => [ 'teste' => 10, 'teste2' => 40 ]
             ],
-            $this->object->getSelect()
+            $this->object->build()
         );
     }
 
     public function testInsert()
     {
-        $this->object->table('test');
+        $object = new Updatable();
+        $object->table('test');
 
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
+        $object->fields(['fld1']);
+        $object->fields(['fld2', 'fld3']);
 
         $this->assertEquals(
             'INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-            $this->object->getInsert()
+            $object->buildInsert()
         );
 
         $this->assertEquals(
             'INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-            $this->object->getInsert(new DbSqliteFunctions())
+            $object->buildInsert(new DbSqliteFunctions())
         );
     }
 
     public function testUpdate()
     {
-        $this->object->table('test');
+        $object = new Updatable();
+        $object->table('test');
 
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
+        $object->fields(['fld1']);
+        $object->fields(['fld2', 'fld3']);
 
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
+        $object->where('fld1 = [[id]]', ['id' => 10]);
 
         $this->assertEquals(
             [
                 'sql' => 'UPDATE test SET fld1 = [[fld1]] , fld2 = [[fld2]] , fld3 = [[fld3]]  WHERE fld1 = [[id]]',
                 'params' => [ 'id' => 10 ]
             ],
-            $this->object->getUpdate()
+            $object->buildUpdate()
         );
 
         $this->assertEquals(
@@ -153,7 +157,7 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'sql' => 'UPDATE `test` SET `fld1` = [[fld1]] , `fld2` = [[fld2]] , `fld3` = [[fld3]]  WHERE fld1 = [[id]]',
                 'params' => [ 'id' => 10 ]
             ],
-            $this->object->getUpdate(new DbSqliteFunctions())
+            $object->buildUpdate(new DbSqliteFunctions())
         );
     }
 
@@ -162,25 +166,27 @@ class QueryTest extends \PHPUnit\Framework\TestCase
      */
     public function testUpdateError()
     {
-        $this->object->table('test');
+        $object = new Updatable();
+        $object->table('test');
 
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
+        $object->fields(['fld1']);
+        $object->fields(['fld2', 'fld3']);
 
-        $this->object->getUpdate();
+        $object->buildUpdate();
     }
 
     public function testDelete()
     {
-        $this->object->table('test');
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
+        $object = new Updatable();
+        $object->table('test');
+        $object->where('fld1 = [[id]]', ['id' => 10]);
 
         $this->assertEquals(
             [
                 'sql' => 'DELETE FROM test WHERE fld1 = [[id]]',
                 'params' => [ 'id' => 10 ]
             ],
-            $this->object->getDelete()
+            $object->buildDelete()
         );
     }
 
@@ -189,7 +195,8 @@ class QueryTest extends \PHPUnit\Framework\TestCase
      */
     public function testDeleteError()
     {
-        $this->object->table('test');
-        $this->object->getDelete();
+        $object = new Updatable();
+        $object->table('test');
+        $object->buildDelete();
     }
 }
