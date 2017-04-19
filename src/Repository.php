@@ -89,11 +89,15 @@ class Repository
      * @param $query
      * @return bool
      */
-    public function deleteByQuery($query)
+    public function deleteByQuery(Query $query)
     {
         $delete = $query->getDelete();
         $sql = $delete['sql'];
         $params = $delete['params'];
+
+        if (is_array($params)) {
+            $sql = $this->processLiteral($sql, $params);
+        }
 
         $this->getDbDriver()->execute($sql, $params);
 
@@ -153,17 +157,27 @@ class Repository
             $query['sql'] = $this->getDbDriver()->getDbHelper()->limit($query['sql'], $this->limitStart, $this->limitEnd);
         }
 
+        $params = $query['params'];
+        $sql = $query['sql'];
+        if (is_array($params)) {
+            $sql = $this->processLiteral($sql, $params);
+        }
         $result = [];
-        $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);
+        $iterator = $this->getDbDriver()->getIterator($sql, $params);
 
         foreach ($iterator as $row) {
             $collection = [];
             foreach ($mapper as $item) {
                 $instance = $item->getEntity();
-                BinderObject::bindObject($row->toArray(), $instance);
+                $data = $row->toArray();
 
-                foreach ((array)$item->getFieldMap() as $property => $fieldName) {
-                    $instance->$property = $row->get($fieldName);
+                BinderObject::bindObject($data, $instance);
+                foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
+                    $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
+                    $data[$property] = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]), $instance);
+                }
+                if (count($item->getFieldMap()) > 0) {
+                    BinderObject::bindObject($data, $instance);
                 }
                 $collection[] = $instance;
             }
@@ -180,19 +194,38 @@ class Repository
      */
     public function save($instance)
     {
+        // Get all fields
         $array = BinderObject::toArrayFrom($instance, true);
 
+        // Mapping the data
+        foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldmap) {
+            $fieldname = $fieldmap[Mapper::FIELDMAP_FIELD];
+            $updateMask = $fieldmap[Mapper::FIELDMAP_UPDATEMASK];
+
+            // If no value for UpdateMask, remove from the list;
+            if (empty($updateMask)) {
+                unset($array[$property]);
+                continue;
+            }
+
+            // Get the value from the mapped field name
+            $value = $array[$property];
+            unset($array[$property]);
+            $array[$fieldname] = $updateMask($value, $instance);
+        }
+
+        // Prepare query to insert
         $query = new Query();
         $query->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
+        // Check if is insert or update
         if (empty($array[$this->mapper->getPrimaryKey()]) || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0)  {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($query, $array);
             BinderObject::bindObject($array, $instance);
         } else {
             $this->update($query, $array);
         }
-
     }
 
     /**
@@ -203,9 +236,27 @@ class Repository
      */
     protected function insert(Query $query, array $params)
     {
-        $sql = $query->getInsert();
+        $keyGen = $this->getMapper()->generateKey();
+        if (empty($keyGen)) {
+            return $this->insertWithAutoinc($query, $params);
+        } else {
+            return $this->insertWithKeyGen($query, $params, $keyGen);
+        }
+    }
+
+    protected function insertWithAutoinc(Query $query, array $params)
+    {
+        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
+    }
+
+    protected function insertWithKeyGen(Query $query, array $params, $keyGen)
+    {
+        $params[$this->mapper->getPrimaryKey()] = $keyGen;
+        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
+        $this->getDbDriver()->execute($sql, $params);
+        return $keyGen;
     }
 
     /**
@@ -217,9 +268,21 @@ class Repository
     {
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
         $query->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
-        $update = $query->getUpdate();
-        $sql = $update['sql'];
-        
+        $update = $query->getUpdate($this->getDbDriver()->getDbHelper());
+        $sql = $this->processLiteral($update['sql'], $params);
+
         $this->getDbDriver()->execute($sql, $params);
+    }
+
+    protected function processLiteral($sql, array &$params)
+    {
+        foreach ($params as $field => $param) {
+            if ($param instanceof Literal) {
+                $sql = str_replace('[[' . $field . ']]', $param->getLiteralValue(), $sql);
+                unset($params[$field]);
+            }
+        }
+
+        return $sql;
     }
 }
