@@ -2,11 +2,11 @@
 
 namespace Test;
 
-class Users
+class Customer
 {
     protected $id;
-    protected $name;
-    protected $createdate;
+    protected $customer_name;
+    protected $age;
 
     /**
      * @return mixed
@@ -27,32 +27,33 @@ class Users
     /**
      * @return mixed
      */
-    public function getName()
+    public function getCustomerName()
     {
-        return $this->name;
+        return $this->customer_name;
     }
 
     /**
-     * @param mixed $name
+     * @param mixed $customer_name
      */
-    public function setName($name)
+    public function setCustomerName($customer_name)
     {
-        $this->name = $name;
+        $this->customer_name = $customer_name;
     }
 
     /**
      * @return mixed
      */
-    public function getCreatedate()
+    public function getAge()
     {
-        return $this->createdate;
+        return $this->age;
     }
 
     /**
-     * @param mixed $createdate
+     * @param mixed $age
      */
-    public function setCreatedate($createdate)
+    public function setAge($age)
     {
-        $this->createdate = $createdate;
+        $this->age = $age;
     }
+
 }

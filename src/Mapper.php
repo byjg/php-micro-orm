@@ -45,16 +45,22 @@ class Mapper
     /**
      * @param string $property
      * @param string $fieldName
-     * @param \Closure $updateMask
+     * @param \Closure|null|bool $updateMask
      * @param \Closure $selectMask
      * @return $this
      */
-    public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
+    public function addFieldMap($property, $fieldName, $updateMask = false, \Closure $selectMask = null)
     {
         if (empty($selectMask)) {
-            $selectMask = function ($value, $instance) {
-                return $value;
-            };
+            $selectMask = Mapper::defaultClosure();
+        }
+
+        if ($updateMask === false) {
+            $updateMask = Mapper::defaultClosure();
+        }
+
+        if (!is_null($updateMask) && !($updateMask instanceof \Closure)) {
+            throw new \InvalidArgumentException('UpdateMask must be a \Closure or NULL');
         }
 
         $this->fieldMap[$property] = [
@@ -123,5 +129,12 @@ class Mapper
         $func = $this->keygenFunction;
 
         return $func();
+    }
+
+    public static function defaultClosure()
+    {
+        return function ($value, $instance) {
+            return $value;
+        };
     }
 }
