@@ -76,8 +76,8 @@ Get a collection using the query object:
 
 ```php
 <?php
-$query = new \ByJG\MicroOrm\Query();
-$query->table('users')
+$query = \ByJG\MicroOrm\Query::getInstance()
+    ->table('users')
     ->fields(['id', 'name'])
     ->where('name like :part', ['part' => 'A%']);
 
@@ -89,8 +89,8 @@ Returning multiples entities with a query:
 
 ```php
 <?php
-$query = new \ByJG\MicroOrm\Query();
-$query->table('order')
+$query = \ByJG\MicroOrm\Query::getInstance()
+    ->table('order')
     ->join('item', 'order.id = item.orderid')
     ->where('name like :part', ['part' => 'A%']);
 
@@ -108,7 +108,7 @@ $collection = $orderRepository->getByQuery(
 );
 ```
 
-#### Tables with no AutoIncrements fields
+#### Tables without auto increments fields
 
 ```php
 <?php
@@ -136,22 +136,22 @@ $mapper->addFieldMap(
     // Update Closure 
     // Returns the field value with a pre-processed function before UPDATE
     // If sets to NULL this field will never be updated/inserted
-    function ($field) {
+    function ($field, $instance) {
         return $field; 
     },
     // Select Closure 
     // Returns the field value with a post-processed value AFTER query from DB
-    function ($field) {
+    function ($field, $instance) {
         return $field; 
     }
-)
+);
 ```
 
 
 
 ## Install
 
-Just type: `composer require "byjg/micro-orm=1.1.*"`
+Just type: `composer require "byjg/micro-orm=2.0.*"`
 
 ## Running Tests
 
