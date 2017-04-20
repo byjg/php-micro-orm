@@ -108,6 +108,47 @@ $collection = $orderRepository->getByQuery(
 );
 ```
 
+#### Using FieldAlias
+
+Field alias is an alternate name for a field. This is usefull for disambiguation on join and leftjoin queries. 
+Imagine in the example above if both tables ITEM and ORDER have the same field called 'ID'. 
+
+In that scenario, the value of ID will be overriden. The solution is use the FieldAlias like below:
+
+```php
+<?php
+// Create the Mapper and the proper fieldAlias
+$orderMapper  = new \ByJG\MicroOrm\Mapper(...);
+$orderMapper->addFieldAlias('id', 'orderid');
+$itemMapper  = new \ByJG\MicroOrm\Mapper(...);
+$itemMapper->addFieldAlias('id', 'itemid');
+
+$query = \ByJG\MicroOrm\Query::getInstance()
+    ->fields([
+        'order.id as orderid',
+        'item.id as itemid',
+        /* Other fields here */
+    ])
+    ->table('order')
+    ->join('item', 'order.id = item.orderid')
+    ->where('name like :part', ['part' => 'A%']);
+
+// Will return a collection of Orders and Items:
+// $collection = [
+//     [ $order, $item ],
+//     [ $order, $item ],
+//     ...
+// ];
+$collection = $orderRepository->getByQuery(
+    $query,
+    [
+        $itemRepository->getMapper()
+    ]
+);
+```
+
+
+
 #### Tables without auto increments fields
 
 ```php

@@ -5,6 +5,7 @@ namespace Test;
 use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\AnyDataset\Factory;
 use ByJG\MicroOrm\Mapper;
+use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
 
@@ -50,6 +51,8 @@ class Repository2Test extends \PHPUnit\Framework\TestCase
         $this->customerMapper->addFieldMap('customername', 'customer_name');
         $this->customerMapper->addFieldMap('age', 'customer_age');
 
+        $this->customerMapper->addFieldAlias('customer_age', 'custage');
+
         $this->repository = new Repository($this->dbDriver, $this->customerMapper);
     }
 
@@ -88,4 +91,29 @@ class Repository2Test extends \PHPUnit\Framework\TestCase
         $this->assertEquals('Bla99991919', $customer2->getCustomerName());
         $this->assertEquals(50, $customer2->getAge());
     }
+
+    public function testQueryWithAlias()
+    {
+        $query = Query::getInstance()
+            ->table('customers')
+            ->fields(
+                [
+                    'id',
+                    'customer_name',
+                    'customer_age as custage'
+                ]
+            )
+            ->where('id = 1');
+
+        $customerList = $this->repository->getByQuery($query);
+
+        $this->assertEquals(1, count($customerList));
+
+        $customer = $customerList[0];
+
+        $this->assertEquals(1, $customer->getId());
+        $this->assertEquals('John Doe', $customer->getCustomerName());
+        $this->assertEquals(40, $customer->getAge());
+    }
+
 }
