@@ -7,11 +7,8 @@
 
 namespace Test;
 
-use ByJG\AnyDataset\Store\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Insert;
-use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
-use ByJG\MicroOrm\Updatable;
 
 // backward compatibility
 if (!class_exists('\PHPUnit\Framework\TestCase')) {

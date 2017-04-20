@@ -8,7 +8,7 @@ use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
 
-require_once 'Customer.php';
+require_once __DIR__ . '/Model/Customer.php';
 
 // backward compatibility
 if (!class_exists('\PHPUnit\Framework\TestCase')) {

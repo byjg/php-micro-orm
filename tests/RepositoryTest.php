@@ -11,9 +11,9 @@ use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
 
-require_once 'Users.php';
-require_once 'UsersMap.php';
-require_once 'Info.php';
+require_once __DIR__ . '/Model/Users.php';
+require_once __DIR__ . '/Model/UsersMap.php';
+require_once __DIR__ . '/Model/Info.php';
 
 // backward compatibility
 if (!class_exists('\PHPUnit\Framework\TestCase')) {
