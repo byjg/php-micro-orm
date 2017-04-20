@@ -130,8 +130,12 @@ class Mapper
         return $fieldMap[$key];
     }
 
-    public function getFieldAlias($fieldName)
+    public function getFieldAlias($fieldName = null)
     {
+        if (empty($fieldName)) {
+            return $this->fieldAlias;
+        }
+        
         if (!isset($this->fieldAlias[$fieldName])) {
             return null;
         }

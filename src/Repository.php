@@ -143,15 +143,18 @@ class Repository
                 $instance = $item->getEntity();
                 $data = $row->toArray();
 
-                BinderObject::bindObject($data, $instance);
-                foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
-                    $fieldValue = $row->get($fieldmap[Mapper::FIELDMAP_FIELD]);
-                    $fieldNameAlias = $this->getMapper()->getFieldAlias($fieldmap[Mapper::FIELDMAP_FIELD]);
-                    if (!is_null($fieldNameAlias) && !empty($row->get($fieldNameAlias))) {
-                        $fieldValue = $row->get($fieldNameAlias);
+                foreach ((array)$item->getFieldAlias() as $fieldname => $fieldalias) {
+                    if (isset($data[$fieldalias])) {
+                        $data[$fieldname] = $data[$fieldalias];
+                        unset($fieldalias);
                     }
+                }
+                BinderObject::bindObject($data, $instance);
+
+                foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $data[$property] = $selectMask($fieldValue, $instance);
+                    $value = isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]]) ? $data[$fieldmap[Mapper::FIELDMAP_FIELD]] : "";
+                    $data[$property] = $selectMask($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
                     BinderObject::bindObject($data, $instance);
