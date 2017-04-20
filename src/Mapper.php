@@ -117,6 +117,10 @@ class Mapper
             return $this->fieldMap;
         }
 
+        if (!isset($this->fieldMap[$property])) {
+            return null;
+        }
+
         $fieldMap = $this->fieldMap[$property];
 
         if (empty($key)) {

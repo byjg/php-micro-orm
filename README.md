@@ -147,6 +147,16 @@ $collection = $orderRepository->getByQuery(
 );
 ```
 
+You can also add a MAPPER as a Field. In that case the MAPPER will create the field and the correct aliases.
+
+```php
+<?php
+$query = \ByJG\MicroOrm\Query::getInstance()
+    ->fields([
+        $orderRepository->getMapper(),
+        $itemRepository->getMapper,
+    ]);
+```
 
 
 #### Tables without auto increments fields

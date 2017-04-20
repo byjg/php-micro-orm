@@ -116,4 +116,24 @@ class Repository2Test extends \PHPUnit\Framework\TestCase
         $this->assertEquals(40, $customer->getAge());
     }
 
+    public function testQueryWithAlias2()
+    {
+        $query = Query::getInstance()
+            ->table('customers')
+            ->fields([
+                $this->repository->getMapper()
+            ])
+            ->where('id = 1');
+
+        $customerList = $this->repository->getByQuery($query);
+
+        $this->assertEquals(1, count($customerList));
+
+        $customer = $customerList[0];
+
+        $this->assertEquals(1, $customer->getId());
+        $this->assertEquals('John Doe', $customer->getCustomerName());
+        $this->assertEquals(40, $customer->getAge());
+    }
+
 }

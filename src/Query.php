@@ -9,6 +9,8 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\Serializer\BinderObject;
+use ByJG\Serializer\SerializerObject;
 
 class Query
 {
@@ -38,9 +40,36 @@ class Query
      */
     public function fields(array $fields)
     {
-        $this->fields = array_merge($this->fields, (array)$fields);
-        
+        foreach ($fields as $field) {
+            if ($field instanceof Mapper) {
+                $this->addFieldFromMapper($field);
+                continue;
+            }
+            $this->fields[] = $field;
+        }
+
         return $this;
+    }
+
+    private function addFieldFromMapper(Mapper $mapper)
+    {
+        $entityClass = $mapper->getEntity();
+        $entity = new $entityClass();
+        $serialized = BinderObject::toArrayFrom($entity);
+
+        foreach (array_keys($serialized) as $fieldName) {
+            $mapField = $mapper->getFieldMap($fieldName, Mapper::FIELDMAP_FIELD);
+            if (empty($mapField)) {
+                $mapField = $fieldName;
+            }
+
+            $alias = $mapper->getFieldAlias($mapField);
+            if (!empty($alias)) {
+                $alias = ' as ' . $alias;
+            }
+
+            $this->fields[] = $mapper->getTable() . '.' . $mapField . $alias;
+        }
     }
 
     /**
