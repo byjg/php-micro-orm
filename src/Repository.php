@@ -256,7 +256,18 @@ class Repository
     {
         foreach ($params as $field => $param) {
             if ($param instanceof Literal) {
-                $sql = str_replace('[[' . $field . ']]', $param->getLiteralValue(), $sql);
+                $literalValue = $param->getLiteralValue();
+                $sql = preg_replace(
+                    [
+                        "/\\[\\[$field\\]\\]/",
+                        "/:$field([^\\d\\w]|$)/"
+                    ],
+                    [
+                        $literalValue,
+                        $literalValue
+                    ],
+                    $sql
+                );
                 unset($params[$field]);
             }
         }
