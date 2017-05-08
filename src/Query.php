@@ -253,7 +253,7 @@ class Query
             $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
         }
 
-        if (!empty($this->limitStart)) {
+        if (!empty($this->limitStart) || ($this->limitStart === 0)) {
             if (is_null($dbDriver)) {
                 throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
             }
