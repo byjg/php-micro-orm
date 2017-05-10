@@ -16,7 +16,7 @@ if (!class_exists('\PHPUnit\Framework\TestCase')) {
     class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
 }
 
-class Repository2Test extends \PHPUnit\Framework\TestCase
+class RepositoryAliasTest extends \PHPUnit\Framework\TestCase
 {
 
     const URI='sqlite:///tmp/teste.db';

@@ -10,7 +10,6 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\Serializer\BinderObject;
-use ByJG\Serializer\SerializerObject;
 
 class Query
 {
@@ -241,9 +240,12 @@ class Query
         if (!empty($this->orderBy)) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
-        
-        if ($this->forUpdate) {
-            $sql .= ' FOR UPDATE ';
+
+        if (!empty($this->forUpdate)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->forUpdate($sql);
         }
 
         if (!empty($this->top)) {
