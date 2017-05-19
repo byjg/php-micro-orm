@@ -129,4 +129,22 @@ class QueryTest extends \PHPUnit\Framework\TestCase
             $result
         );
     }
+
+    public function testLiteral2()
+    {
+        $query = Query::getInstance()
+            ->table('test')
+            ->where('field = :field', ['field' => new Literal('ABC')])
+            ->where('other = :other', ['other' => 'test']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM test WHERE field = ABC AND other = :other',
+                'params' => ['other' => 'test']
+            ],
+            $result
+        );
+    }
 }

@@ -26,7 +26,7 @@ class ORMHelper
                     ],
                     [
                         $literalValue,
-                        $literalValue
+                        "$literalValue\$1"
                     ],
                     $sql
                 );
