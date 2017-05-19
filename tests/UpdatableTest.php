@@ -39,14 +39,30 @@ class UpdatableTest extends \PHPUnit\Framework\TestCase
         $this->object->fields(['fld1']);
         $this->object->fields(['fld2', 'fld3']);
 
+        $params = [];
+        $sql = $this->object->buildInsert($params);
         $this->assertEquals(
-            'INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-            $this->object->buildInsert()
+            [
+                'INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
+                []
+            ],
+            [
+                $sql,
+                $params
+            ]
         );
 
+        $params = [];
+        $sql = $this->object->buildInsert($params, new DbSqliteFunctions());
         $this->assertEquals(
-            'INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-            $this->object->buildInsert(new DbSqliteFunctions())
+            [
+                'INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
+                []
+            ],
+            [
+                $sql,
+                $params
+            ]
         );
     }
 
@@ -59,25 +75,35 @@ class UpdatableTest extends \PHPUnit\Framework\TestCase
 
         $this->object->where('fld1 = [[id]]', ['id' => 10]);
 
+        $params = [];
+        $sql = $this->object->buildUpdate($params);
         $this->assertEquals(
             [
-                'sql' => 'UPDATE test SET fld1 = [[fld1]] , fld2 = [[fld2]] , fld3 = [[fld3]]  WHERE fld1 = [[id]]',
-                'params' => [ 'id' => 10 ]
+                'UPDATE test SET fld1 = [[fld1]] , fld2 = [[fld2]] , fld3 = [[fld3]]  WHERE fld1 = [[id]]',
+                [ 'id' => 10 ]
             ],
-            $this->object->buildUpdate()
+            [
+                $sql,
+                $params
+            ]
         );
 
+        $params = [];
+        $sql = $this->object->buildUpdate($params, new DbSqliteFunctions());
         $this->assertEquals(
             [
-                'sql' => 'UPDATE `test` SET `fld1` = [[fld1]] , `fld2` = [[fld2]] , `fld3` = [[fld3]]  WHERE fld1 = [[id]]',
-                'params' => [ 'id' => 10 ]
+                'UPDATE `test` SET `fld1` = [[fld1]] , `fld2` = [[fld2]] , `fld3` = [[fld3]]  WHERE fld1 = [[id]]',
+                [ 'id' => 10 ]
             ],
-            $this->object->buildUpdate(new DbSqliteFunctions())
+            [
+                $sql,
+                $params
+            ]
         );
     }
 
     /**
-     * @expectedException \Exception
+     * @expectedException \InvalidArgumentException
      */
     public function testUpdateError()
     {
@@ -86,7 +112,8 @@ class UpdatableTest extends \PHPUnit\Framework\TestCase
         $this->object->fields(['fld1']);
         $this->object->fields(['fld2', 'fld3']);
 
-        $this->object->buildUpdate();
+        $params = [];
+        $this->object->buildUpdate($params);
     }
 
     public function testDelete()
@@ -94,21 +121,29 @@ class UpdatableTest extends \PHPUnit\Framework\TestCase
         $this->object->table('test');
         $this->object->where('fld1 = [[id]]', ['id' => 10]);
 
+        $params = [];
+        $sql = $this->object->buildDelete($params);
         $this->assertEquals(
             [
-                'sql' => 'DELETE FROM test WHERE fld1 = [[id]]',
-                'params' => [ 'id' => 10 ]
+                'DELETE FROM test WHERE fld1 = [[id]]',
+                [ 'id' => 10 ]
             ],
-            $this->object->buildDelete()
+            [
+                $sql,
+                $params
+            ]
+
         );
     }
 
     /**
-     * @expectedException \Exception
+     * @expectedException \InvalidArgumentException
      */
     public function testDeleteError()
     {
+        $params = [];
+
         $this->object->table('test');
-        $this->object->buildDelete();
+        $this->object->buildDelete($params);
     }
 }

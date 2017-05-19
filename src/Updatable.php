@@ -92,10 +92,11 @@ class Updatable
 
     /**
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
+     * @param $params
      * @return string
      * @throws \Exception
      */
-    public function buildInsert(DbFunctionsInterface $dbHelper = null)
+    public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
             throw new \Exception('You must specifiy the fields for insert');
@@ -116,19 +117,22 @@ class Updatable
             . '( ' . implode(', ', $fields) . ' ) '
             . ' values '
             . '( [[' . implode(']], [[', $this->fields) . ']] ) ';
-        
+
+        $sql = ORMHelper::processLiteral($sql, $params);
+
         return $sql;
     }
 
     /**
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
+     * @param $params
      * @return array
      * @throws \Exception
      */
-    public function buildUpdate(DbFunctionsInterface $dbHelper = null)
+    public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
-            throw new \Exception('You must specifiy the fields for insert');
+            throw new \InvalidArgumentException('You must specifiy the fields for insert');
         }
         
         $fields = [];
@@ -142,7 +146,7 @@ class Updatable
         
         $where = $this->getWhere();
         if (is_null($where)) {
-            throw new \Exception('You must specifiy a where clause');
+            throw new \InvalidArgumentException('You must specifiy a where clause');
         }
 
         $tableName = $this->table;
@@ -154,23 +158,32 @@ class Updatable
             . implode(', ', $fields)
             . ' WHERE ' . $where[0];
 
-        return [ 'sql' => $sql, 'params' => $where[1] ];
+        $params = array_merge($params, $where[1]);
+
+        $sql = ORMHelper::processLiteral($sql, $params);
+
+        return $sql;
     }
 
     /**
+     * @param $params
      * @return array
      * @throws \Exception
      */
-    public function buildDelete()
+    public function buildDelete(&$params)
     {
         $where = $this->getWhere();
         if (is_null($where)) {
-            throw new \Exception('You must specifiy a where clause');
+            throw new \InvalidArgumentException('You must specifiy a where clause');
         }
 
         $sql = 'DELETE FROM ' . $this->table
             . ' WHERE ' . $where[0];
 
-        return [ 'sql' => $sql, 'params' => $where[1] ];
+        $params = array_merge($params, $where[1]);
+
+        $sql = ORMHelper::processLiteral($sql, $params);
+
+        return $sql;
     }
 }

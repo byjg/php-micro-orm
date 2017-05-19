@@ -87,13 +87,8 @@ class Repository
      */
     public function deleteByQuery(Updatable $updatable)
     {
-        $delete = $updatable->buildDelete();
-        $sql = $delete['sql'];
-        $params = $delete['params'];
-
-        if (is_array($params)) {
-            $sql = $this->processLiteral($sql, $params);
-        }
+        $params = [];
+        $sql = $updatable->buildDelete($params);
 
         $this->getDbDriver()->execute($sql, $params);
 
@@ -131,9 +126,6 @@ class Repository
 
         $params = $query['params'];
         $sql = $query['sql'];
-        if (is_array($params)) {
-            $sql = $this->processLiteral($sql, $params);
-        }
         $result = [];
         $iterator = $this->getDbDriver()->getIterator($sql, $params);
 
@@ -224,7 +216,7 @@ class Repository
 
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
-        $sql = $this->processLiteral($updatable->buildInsert($this->getDbDriver()->getDbHelper()), $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
@@ -232,7 +224,7 @@ class Repository
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;
-        $sql = $this->processLiteral($updatable->buildInsert($this->getDbDriver()->getDbHelper()), $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
         $this->getDbDriver()->execute($sql, $params);
         return $keyGen;
     }
@@ -246,32 +238,9 @@ class Repository
     {
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
         $updatable->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
-        $update = $updatable->buildUpdate($this->getDbDriver()->getDbHelper());
-        $sql = $this->processLiteral($update['sql'], $params);
+
+        $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
         $this->getDbDriver()->execute($sql, $params);
-    }
-
-    protected function processLiteral($sql, array &$params)
-    {
-        foreach ($params as $field => $param) {
-            if ($param instanceof Literal) {
-                $literalValue = $param->getLiteralValue();
-                $sql = preg_replace(
-                    [
-                        "/\\[\\[$field\\]\\]/",
-                        "/:$field([^\\d\\w]|$)/"
-                    ],
-                    [
-                        $literalValue,
-                        $literalValue
-                    ],
-                    $sql
-                );
-                unset($params[$field]);
-            }
-        }
-
-        return $sql;
     }
 }

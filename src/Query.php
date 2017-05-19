@@ -262,6 +262,8 @@ class Query
             $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
         }
 
+        $sql = ORMHelper::processLiteral($sql, $params);
+
         return [ 'sql' => $sql, 'params' => $params ];
     }
 }

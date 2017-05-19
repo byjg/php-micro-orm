@@ -8,6 +8,7 @@
 namespace Test;
 
 use ByJG\MicroOrm\Insert;
+use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
 
 // backward compatibility
@@ -109,6 +110,23 @@ class QueryTest extends \PHPUnit\Framework\TestCase
                 'params' => [ 'teste' => 10, 'teste2' => 40 ]
             ],
             $this->object->build()
+        );
+    }
+
+    public function testLiteral()
+    {
+        $query = Query::getInstance()
+            ->table('test')
+            ->where('field = :field', ['field' => new Literal('ABC')]);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM test WHERE field = ABC',
+                'params' => []
+            ],
+            $result
         );
     }
 }
