@@ -1,6 +1,6 @@
 {
     "name": "byjg/micro-orm",
-    "description": "A micro framework for create a very simple decoupled ORM",
+    "description": "A micro framework for create a very simple decoupled ORM (sqlite, mysql, postgres, sqlserver)",
     "authors": [
         {
             "name": "João Gilberto Magalhães",
