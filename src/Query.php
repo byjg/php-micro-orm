@@ -8,8 +8,8 @@
 
 namespace ByJG\MicroOrm;
 
-
-use ByJG\AnyDataset\DbFunctionsInterface;
+use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\Serializer\BinderObject;
 
 class Query
 {
@@ -19,8 +19,16 @@ class Query
     protected $groupBy = [];
     protected $orderBy = [];
     protected $join = [];
-    
+    protected $limitStart = null;
+    protected $limitEnd = null;
+    protected $top = null;
+
     protected $forUpdate = false;
+
+    public static function getInstance()
+    {
+        return new Query();
+    }
 
     /**
      * Example:
@@ -31,9 +39,36 @@ class Query
      */
     public function fields(array $fields)
     {
-        $this->fields = array_merge($this->fields, (array)$fields);
-        
+        foreach ($fields as $field) {
+            if ($field instanceof Mapper) {
+                $this->addFieldFromMapper($field);
+                continue;
+            }
+            $this->fields[] = $field;
+        }
+
         return $this;
+    }
+
+    private function addFieldFromMapper(Mapper $mapper)
+    {
+        $entityClass = $mapper->getEntity();
+        $entity = new $entityClass();
+        $serialized = BinderObject::toArrayFrom($entity);
+
+        foreach (array_keys($serialized) as $fieldName) {
+            $mapField = $mapper->getFieldMap($fieldName, Mapper::FIELDMAP_FIELD);
+            if (empty($mapField)) {
+                $mapField = $fieldName;
+            }
+
+            $alias = $mapper->getFieldAlias($mapField);
+            if (!empty($alias)) {
+                $alias = ' as ' . $alias;
+            }
+
+            $this->fields[] = $mapper->getTable() . '.' . $mapField . $alias;
+        }
     }
 
     /**
@@ -126,7 +161,26 @@ class Query
         
         return $this;
     }
-    
+
+    public function limit($start, $end)
+    {
+        if (!is_null($this->top)) {
+            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+        }
+        $this->limitStart = $start;
+        $this->limitEnd = $end;
+        return $this;
+    }
+
+    public function top($top)
+    {
+        if (!is_null($this->limitStart)) {
+            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+        }
+        $this->top = $top;
+        return $this;
+    }
+
     protected function getFields()
     {
         if (empty($this->fields)) {
@@ -163,9 +217,10 @@ class Query
     }
 
     /**
+     * @param \ByJG\AnyDataset\DbDriverInterface|null $dbDriver
      * @return array
      */
-    public function getSelect()
+    public function build(DbDriverInterface $dbDriver = null)
     {
         $sql = "SELECT " .
             $this->getFields() . 
@@ -185,96 +240,30 @@ class Query
         if (!empty($this->orderBy)) {
             $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
-        
-        if ($this->forUpdate) {
-            $sql .= ' FOR UPDATE ';
+
+        if (!empty($this->forUpdate)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->forUpdate($sql);
         }
+
+        if (!empty($this->top)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
+        }
+
+        if (!empty($this->limitStart) || ($this->limitStart === 0)) {
+            if (is_null($dbDriver)) {
+                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+            }
+            $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
+        }
+
+        $sql = ORMHelper::processLiteral($sql, $params);
 
         return [ 'sql' => $sql, 'params' => $params ];
     }
-
-    /**
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
-     * @return string
-     * @throws \Exception
-     */
-    public function getInsert(DbFunctionsInterface $dbHelper = null)
-    {
-        if (empty($this->fields)) {
-            throw new \Exception('You must specifiy the fields for insert');
-        }
-
-        $fields = $this->fields;
-        if (!is_null($dbHelper)) {
-            $fields = $dbHelper->delimiterField($fields);
-        }
-
-        $table = $this->table;
-        if (!is_null($dbHelper)) {
-            $table = $dbHelper->delimiterTable($table);
-        }
-
-        $sql = 'INSERT INTO '
-            . $table
-            . '( ' . implode(', ', $fields) . ' ) '
-            . ' values '
-            . '( [[' . implode(']], [[', $this->fields) . ']] ) ';
-        
-        return $sql;
-    }
-
-    /**
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
-     * @return array
-     * @throws \Exception
-     */
-    public function getUpdate(DbFunctionsInterface $dbHelper = null)
-    {
-        if (empty($this->fields)) {
-            throw new \Exception('You must specifiy the fields for insert');
-        }
-        
-        $fields = [];
-        foreach ($this->fields as $field) {
-            $fieldName = $field;
-            if (!is_null($dbHelper)) {
-                $fieldName = $dbHelper->delimiterField($fieldName);
-            }
-            $fields[] = "$fieldName = [[$field]] ";
-        }
-        
-        $where = $this->getWhere();
-        if (is_null($where)) {
-            throw new \Exception('You must specifiy a where clause');
-        }
-
-        $tableName = $this->table;
-        if (!is_null($dbHelper)) {
-            $tableName = $dbHelper->delimiterTable($tableName);
-        }
-
-        $sql = 'UPDATE ' . $tableName . ' SET '
-            . implode(', ', $fields)
-            . ' WHERE ' . $where[0];
-
-        return [ 'sql' => $sql, 'params' => $where[1] ];
-    }
-
-    /**
-     * @return array
-     * @throws \Exception
-     */
-    public function getDelete()
-    {
-        $where = $this->getWhere();
-        if (is_null($where)) {
-            throw new \Exception('You must specifiy a where clause');
-        }
-
-        $sql = 'DELETE FROM ' . $this->table
-            . ' WHERE ' . $where[0];
-
-        return [ 'sql' => $sql, 'params' => $where[1] ];
-    }
-
 }

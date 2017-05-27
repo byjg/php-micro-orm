@@ -8,11 +8,12 @@ use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
 
-require_once 'Users.php';
-require_once 'UsersMap.php';
-require_once 'Info.php';
+require_once __DIR__ . '/Model/Users.php';
+require_once __DIR__ . '/Model/UsersMap.php';
+require_once __DIR__ . '/Model/Info.php';
 
 // backward compatibility
 if (!class_exists('\PHPUnit\Framework\TestCase')) {
@@ -333,8 +334,8 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testDelete2()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = Updatable::getInstance()
+            ->table($this->userMapper->getTable())
             ->where('name like :name', ['name'=>'Jane%']);
 
         $this->repository->deleteByQuery($query);
@@ -429,10 +430,11 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testTop()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable());
+        $query = Query::getInstance()
+            ->table($this->userMapper->getTable())
+            ->top(1);
 
-        $result = $this->repository->top(1)->getByQuery($query);
+        $result = $this->repository->getByQuery($query);
 
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
@@ -443,10 +445,11 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
 
     public function testLimit()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable());
+        $query = Query::getInstance()
+            ->table($this->userMapper->getTable())
+            ->limit(1, 1);
 
-        $result = $this->repository->limit(1, 1)->getByQuery($query);
+        $result = $this->repository->getByQuery($query);
 
         $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());

@@ -25,10 +25,6 @@ class Repository
      */
     protected $dbDriver = null;
 
-    protected $limitStart = null;
-    protected $limitEnd = null;
-    protected $top = null;
-
     /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
@@ -78,46 +74,25 @@ class Repository
     public function delete($id)
     {
         $params = ['id' => $id];
-        $query = new Query();
-        $query->table($this->mapper->getTable())
+        $updatable = Updatable::getInstance()
+            ->table($this->mapper->getTable())
             ->where($this->mapper->getPrimaryKey() . ' = [[id]]', $params);
 
-        return $this->deleteByQuery($query);
+        return $this->deleteByQuery($updatable);
     }
 
     /**
-     * @param $query
+     * @param $updatable
      * @return bool
      */
-    public function deleteByQuery(Query $query)
+    public function deleteByQuery(Updatable $updatable)
     {
-        $delete = $query->getDelete();
-        $sql = $delete['sql'];
-        $params = $delete['params'];
-
-        if (is_array($params)) {
-            $sql = $this->processLiteral($sql, $params);
-        }
+        $params = [];
+        $sql = $updatable->buildDelete($params);
 
         $this->getDbDriver()->execute($sql, $params);
 
         return true;
-    }
-
-    public function limit($start, $end)
-    {
-        $this->limitStart = $start;
-        $this->limitEnd = $end;
-        $this->top = null;
-        return $this;
-    }
-
-    public function top($top)
-    {
-        $this->top = $top;
-        $this->limitStart = $this->limitEnd = null;
-
-        return $this;
     }
 
     /**
@@ -147,21 +122,10 @@ class Repository
     public function getByQuery(Query $query, array $mapper = [])
     {
         $mapper = array_merge([$this->mapper], $mapper);
-        $query = $query->getSelect();
-
-        if (!empty($this->top)) {
-            $query['sql'] = $this->getDbDriver()->getDbHelper()->top($query['sql'], $this->top);
-        }
-
-        if (!empty($this->limitStart)) {
-            $query['sql'] = $this->getDbDriver()->getDbHelper()->limit($query['sql'], $this->limitStart, $this->limitEnd);
-        }
+        $query = $query->build($this->getDbDriver());
 
         $params = $query['params'];
         $sql = $query['sql'];
-        if (is_array($params)) {
-            $sql = $this->processLiteral($sql, $params);
-        }
         $result = [];
         $iterator = $this->getDbDriver()->getIterator($sql, $params);
 
@@ -171,10 +135,18 @@ class Repository
                 $instance = $item->getEntity();
                 $data = $row->toArray();
 
+                foreach ((array)$item->getFieldAlias() as $fieldname => $fieldalias) {
+                    if (isset($data[$fieldalias])) {
+                        $data[$fieldname] = $data[$fieldalias];
+                        unset($fieldalias);
+                    }
+                }
                 BinderObject::bindObject($data, $instance);
+
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $data[$property] = $selectMask($row->get($fieldmap[Mapper::FIELDMAP_FIELD]), $instance);
+                    $value = isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]]) ? $data[$fieldmap[Mapper::FIELDMAP_FIELD]] : "";
+                    $data[$property] = $selectMask($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
                     BinderObject::bindObject($data, $instance);
@@ -183,8 +155,6 @@ class Repository
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
         }
-
-        $this->limitStart = $this->limitEnd = $this->top = null;
 
         return $result;
     }
@@ -215,74 +185,62 @@ class Repository
         }
 
         // Prepare query to insert
-        $query = new Query();
-        $query->table($this->mapper->getTable())
+        $updatable = Updatable::getInstance()
+            ->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
         // Check if is insert or update
         if (empty($array[$this->mapper->getPrimaryKey()]) || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0)  {
-            $array[$this->mapper->getPrimaryKey()] = $this->insert($query, $array);
+            $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
             BinderObject::bindObject($array, $instance);
         } else {
-            $this->update($query, $array);
+            $this->update($updatable, $array);
         }
     }
 
     /**
-     * @param Query $query
+     * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
      * @throws \Exception
      */
-    protected function insert(Query $query, array $params)
+    protected function insert(Updatable $updatable, array $params)
     {
         $keyGen = $this->getMapper()->generateKey();
         if (empty($keyGen)) {
-            return $this->insertWithAutoinc($query, $params);
+            return $this->insertWithAutoinc($updatable, $params);
         } else {
-            return $this->insertWithKeyGen($query, $params, $keyGen);
+            return $this->insertWithKeyGen($updatable, $params, $keyGen);
         }
     }
 
-    protected function insertWithAutoinc(Query $query, array $params)
+    protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
-        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
         $dbFunctions = $this->getDbDriver()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
 
-    protected function insertWithKeyGen(Query $query, array $params, $keyGen)
+    protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;
-        $sql = $this->processLiteral($query->getInsert($this->getDbDriver()->getDbHelper()), $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
         $this->getDbDriver()->execute($sql, $params);
         return $keyGen;
     }
 
     /**
-     * @param Query $query
+     * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @throws \Exception
      */
-    protected function update(Query $query, array $params)
+    protected function update(Updatable $updatable, array $params)
     {
         $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
-        $query->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
-        $update = $query->getUpdate($this->getDbDriver()->getDbHelper());
-        $sql = $this->processLiteral($update['sql'], $params);
+        $updatable->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
+
+        $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
         $this->getDbDriver()->execute($sql, $params);
-    }
-
-    protected function processLiteral($sql, array &$params)
-    {
-        foreach ($params as $field => $param) {
-            if ($param instanceof Literal) {
-                $sql = str_replace('[[' . $field . ']]', $param->getLiteralValue(), $sql);
-                unset($params[$field]);
-            }
-        }
-
-        return $sql;
     }
 }

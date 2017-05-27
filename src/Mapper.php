@@ -11,16 +11,16 @@ namespace ByJG\MicroOrm;
 class Mapper
 {
 
-    protected $entity;
-    protected $table;
-    protected $primaryKey;
-    protected $keygenFunction = null;
-
     const FIELDMAP_FIELD = 'fieldname';
     const FIELDMAP_UPDATEMASK = 'updatemask';
     const FIELDMAP_SELECTMASK = 'selectmask';
 
-    protected $fieldMap = [];
+    private $entity;
+    private $table;
+    private $primaryKey;
+    private $keygenFunction = null;
+    private $fieldMap = [];
+    private $fieldAlias = [];
 
     /**
      * Mapper constructor.
@@ -73,6 +73,15 @@ class Mapper
     }
 
     /**
+     * @param $fieldName
+     * @param $alias
+     */
+    public function addFieldAlias($fieldName, $alias)
+    {
+        $this->fieldAlias[$fieldName] = $alias;
+    }
+
+    /**
      * @return string
      */
     public function getEntity()
@@ -108,6 +117,10 @@ class Mapper
             return $this->fieldMap;
         }
 
+        if (!isset($this->fieldMap[$property])) {
+            return null;
+        }
+
         $fieldMap = $this->fieldMap[$property];
 
         if (empty($key)) {
@@ -115,6 +128,19 @@ class Mapper
         }
 
         return $fieldMap[$key];
+    }
+
+    public function getFieldAlias($fieldName = null)
+    {
+        if (empty($fieldName)) {
+            return $this->fieldAlias;
+        }
+        
+        if (!isset($this->fieldAlias[$fieldName])) {
+            return null;
+        }
+
+        return $this->fieldAlias[$fieldName];
     }
 
     /**
