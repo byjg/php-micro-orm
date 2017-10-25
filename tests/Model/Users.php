@@ -4,7 +4,7 @@ namespace Test;
 
 class Users
 {
-    protected $id;
+    protected $Id;
     protected $name;
     protected $createdate;
 
@@ -13,15 +13,15 @@ class Users
      */
     public function getId()
     {
-        return $this->id;
+        return $this->Id;
     }
 
     /**
-     * @param mixed $id
+     * @param mixed $Id
      */
-    public function setId($id)
+    public function setId($Id)
     {
-        $this->id = $id;
+        $this->Id = $Id;
     }
 
     /**

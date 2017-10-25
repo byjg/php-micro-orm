@@ -21,6 +21,7 @@ class Mapper
     private $keygenFunction = null;
     private $fieldMap = [];
     private $fieldAlias = [];
+    private $preserveCasename = false;
 
     /**
      * Mapper constructor.
@@ -29,17 +30,36 @@ class Mapper
      * @param string $table
      * @param string $primaryKey
      * @param \Closure $keygenFunction
+     * @param bool $preserveCasename
      * @throws \Exception
      */
-    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null)
+    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null, $preserveCasename = false)
     {
         if (!class_exists($entity)) {
             throw new \Exception("Entity '$entity' does not exists");
         }
         $this->entity = $entity;
         $this->table = $table;
-        $this->primaryKey = $primaryKey;
+        $this->preserveCasename = $preserveCasename;
+        $this->primaryKey = $this->prepareField($primaryKey);
         $this->keygenFunction = $keygenFunction;
+    }
+
+    public function prepareField($field)
+    {
+        if (!$this->preserveCasename) {
+            if (!is_array($field)) {
+                return strtolower($field);
+            }
+
+            $result = [];
+            foreach ($field as $key => $value) {
+                $result[strtolower($key)] = $value;
+            }
+            return $result;
+        }
+
+        return $field;
     }
 
     /**
@@ -63,8 +83,8 @@ class Mapper
             throw new \InvalidArgumentException('UpdateMask must be a \Closure or NULL');
         }
 
-        $this->fieldMap[$property] = [
-            self::FIELDMAP_FIELD => $fieldName,
+        $this->fieldMap[$this->prepareField($property)] = [
+            self::FIELDMAP_FIELD => $this->prepareField($fieldName),
             self::FIELDMAP_UPDATEMASK => $updateMask,
             self::FIELDMAP_SELECTMASK => $selectMask
         ];
@@ -78,7 +98,7 @@ class Mapper
      */
     public function addFieldAlias($fieldName, $alias)
     {
-        $this->fieldAlias[$fieldName] = $alias;
+        $this->fieldAlias[$this->prepareField($fieldName)] = $this->prepareField($alias);
     }
 
     /**
@@ -107,6 +127,14 @@ class Mapper
     }
 
     /**
+     * @return bool
+     */
+    public function isPreserveCasename()
+    {
+        return $this->preserveCasename;
+    }
+
+    /**
      * @param string|null $property
      * @param string|null $key
      * @return array
@@ -116,6 +144,8 @@ class Mapper
         if (empty($property)) {
             return $this->fieldMap;
         }
+
+        $property = $this->prepareField($property);
 
         if (!isset($this->fieldMap[$property])) {
             return null;

@@ -48,10 +48,10 @@ class RepositoryAliasTest extends \PHPUnit\Framework\TestCase
         $this->dbDriver->execute("insert into customers (customer_name, customer_age) values ('John Doe', 40)");
         $this->dbDriver->execute("insert into customers (customer_name, customer_age) values ('Jane Doe', 37)");
         $this->customerMapper = new Mapper(Customer::class, 'customers', 'id');
-        $this->customerMapper->addFieldMap('customername', 'customer_name');
-        $this->customerMapper->addFieldMap('age', 'customer_age');
+        $this->customerMapper->addFieldMap('customerName', 'customer_Name');
+        $this->customerMapper->addFieldMap('Age', 'customer_Age');
 
-        $this->customerMapper->addFieldAlias('customer_age', 'custage');
+        $this->customerMapper->addFieldAlias('custoMer_age', 'custAge');
 
         $this->repository = new Repository($this->dbDriver, $this->customerMapper);
     }

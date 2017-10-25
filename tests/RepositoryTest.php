@@ -57,7 +57,7 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
         $this->dbDriver->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
         $this->dbDriver->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
-        $this->userMapper = new Mapper(Users::class, 'users', 'id');
+        $this->userMapper = new Mapper(Users::class, 'users', 'Id');
 
 
         $this->dbDriver->execute('create table info (
