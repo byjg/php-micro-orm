@@ -166,6 +166,7 @@ class Repository
     {
         // Get all fields
         $array = BinderObject::toArrayFrom($instance, true);
+        $array = $this->getMapper()->prepareField($array);
 
         // Mapping the data
         foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldmap) {
