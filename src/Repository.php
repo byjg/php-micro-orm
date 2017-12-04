@@ -84,6 +84,7 @@ class Repository
     /**
      * @param $updatable
      * @return bool
+     * @throws \Exception
      */
     public function deleteByQuery(Updatable $updatable)
     {
@@ -173,16 +174,16 @@ class Repository
             $fieldname = $fieldmap[Mapper::FIELDMAP_FIELD];
             $updateMask = $fieldmap[Mapper::FIELDMAP_UPDATEMASK];
 
-            // If no value for UpdateMask, remove from the list;
-            if (empty($updateMask)) {
-                unset($array[$property]);
-                continue;
-            }
-
             // Get the value from the mapped field name
             $value = $array[$property];
             unset($array[$property]);
-            $array[$fieldname] = $updateMask($value, $instance);
+            $updateValue = $updateMask($value, $instance);
+
+            // If no value for UpdateMask, remove from the list;
+            if ($updateValue === false) {
+                continue;
+            }
+            $array[$fieldname] = $updateValue;
         }
 
         // Prepare query to insert

@@ -211,7 +211,7 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->userMapper->addFieldMap(
             'year',
             'createdate',
-            null,
+            Mapper::doNotUpdateClosure(),
             function ($value, $instance) {
                 $date = new \DateTime($value);
                 return $date->format('Y');
@@ -283,7 +283,7 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->userMapper->addFieldMap(
             'year',
             'createdate',
-            null,
+            Mapper::doNotUpdateClosure(),
             function ($value, $instance) {
                 $date = new \DateTime($value);
                 return $date->format('Y');
