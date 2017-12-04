@@ -198,7 +198,17 @@ $mapper->addFieldMap(
 );
 ```
 
+Pre-defined closures for field map:
 
+*Mapper::defaultClosure()*
+
+Defines the basic behavior for select and update fields;
+
+*Mapper::doNotUpdateClosure()*
+
+If set in the update field map will make the field not updatable by the micro-orm. 
+It is usefull for fields that are pre-defined like 'Primary Key'; timestamp fields based on the
+update and the creation; and others
 
 ## Install
 
