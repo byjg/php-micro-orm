@@ -237,38 +237,89 @@ class Query
             $sql .= ' WHERE ' . $where[0];
             $params = $where[1];
         }
-        
-        if (!empty($this->groupBy)) {
-            $sql .= ' GROUP BY ' . implode(', ', $this->groupBy);
-        }
 
-        if (!empty($this->orderBy)) {
-            $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
-        }
+        $sql .= $this->addGroupBy();
 
-        if (!empty($this->forUpdate)) {
-            if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->forUpdate($sql);
-        }
+        $sql .= $this->addOrderBy();
 
-        if (!empty($this->top)) {
-            if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
-        }
+        $sql = $this->addforUpdate($dbDriver, $sql);
 
-        if (!empty($this->limitStart) || ($this->limitStart === 0)) {
-            if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
-        }
+        $sql = $this->addTop($dbDriver, $sql);
+
+        $sql = $this->addLimit($dbDriver, $sql);
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
         return [ 'sql' => $sql, 'params' => $params ];
+    }
+
+    private function addOrderBy()
+    {
+        if (empty($this->orderBy)) {
+            return "";
+        }
+        return ' ORDER BY ' . implode(', ', $this->orderBy);
+    }
+
+    private function addGroupBy()
+    {
+        if (empty($this->groupBy)) {
+            return "";
+        }
+        return ' GROUP BY ' . implode(', ', $this->groupBy);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addforUpdate($dbDriver, $sql)
+    {
+        if (empty($this->forUpdate)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new \InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->forUpdate($sql);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addTop($dbDriver, $sql)
+    {
+        if (empty($this->top)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->top($sql, $this->top);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addLimit($dbDriver, $sql)
+    {
+        if (empty($this->limitStart) && ($this->limitStart !== 0)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
     }
 }
