@@ -33,8 +33,13 @@ class Mapper
      * @param bool $preserveCasename
      * @throws \Exception
      */
-    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null, $preserveCasename = false)
-    {
+    public function __construct(
+        $entity,
+        $table,
+        $primaryKey,
+        \Closure $keygenFunction = null,
+        $preserveCasename = false
+    ) {
         if (!class_exists($entity)) {
             throw new \Exception("Entity '$entity' does not exists");
         }
@@ -69,18 +74,14 @@ class Mapper
      * @param \Closure $selectMask
      * @return $this
      */
-    public function addFieldMap($property, $fieldName, $updateMask = false, \Closure $selectMask = null)
+    public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {
         if (empty($selectMask)) {
             $selectMask = Mapper::defaultClosure();
         }
 
-        if ($updateMask === false) {
+        if (empty($updateMask)) {
             $updateMask = Mapper::defaultClosure();
-        }
-
-        if (!is_null($updateMask) && !($updateMask instanceof \Closure)) {
-            throw new \InvalidArgumentException('UpdateMask must be a \Closure or NULL');
         }
 
         $this->fieldMap[$this->prepareField($property)] = [
@@ -189,8 +190,15 @@ class Mapper
 
     public static function defaultClosure()
     {
-        return function ($value, $instance) {
+        return function ($value) {
             return $value;
+        };
+    }
+
+    public static function doNotUpdateClosure()
+    {
+        return function () {
+            return false;
         };
     }
 }
