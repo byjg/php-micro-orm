@@ -33,9 +33,10 @@ class Query
     /**
      * Example:
      *   $query->fields(['name', 'price']);
-     * 
+     *
      * @param array $fields
      * @return $this
+     * @throws \Exception
      */
     public function fields(array $fields)
     {
@@ -50,6 +51,10 @@ class Query
         return $this;
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Mapper $mapper
+     * @throws \Exception
+     */
     private function addFieldFromMapper(Mapper $mapper)
     {
         $entityClass = $mapper->getEntity();
@@ -74,11 +79,11 @@ class Query
     /**
      * Example
      *    $query->table('product');
-     * 
+     *
      * @param string $table
      * @return $this
      */
-    public function table($table) 
+    public function table($table)
     {
         $this->table = $table;
 
@@ -88,7 +93,7 @@ class Query
     /**
      * Example:
      *    $query->join('sales', 'product.id = sales.id');
-     * 
+     *
      * @param string $table
      * @param string $filter
      * @return $this
@@ -116,7 +121,7 @@ class Query
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     * 
+     *
      * @param string $filter
      * @param array $params
      * @return $this
@@ -130,7 +135,7 @@ class Query
     /**
      * Example:
      *    $query->groupBy(['name']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -144,7 +149,7 @@ class Query
     /**
      * Example:
      *     $query->orderBy(['price desc']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -199,7 +204,7 @@ class Query
         return $join;
     }
     
-    protected function getWhere() 
+    protected function getWhere()
     {
         $where = [];
         $params = [];
@@ -223,7 +228,7 @@ class Query
     public function build(DbDriverInterface $dbDriver = null)
     {
         $sql = "SELECT " .
-            $this->getFields() . 
+            $this->getFields() .
             "FROM " . $this->getJoin();
         
         $where = $this->getWhere();

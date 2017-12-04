@@ -1,12 +1,6 @@
 <?php
-/**
- * User: jg
- * Date: 19/05/17
- * Time: 16:54
- */
 
 namespace ByJG\MicroOrm;
-
 
 class ORMHelper
 {

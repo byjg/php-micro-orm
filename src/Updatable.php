@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 12:01
- */
 
 namespace ByJG\MicroOrm;
-
 
 use ByJG\AnyDataset\DbFunctionsInterface;
 
@@ -25,7 +18,7 @@ class Updatable
     /**
      * Example:
      *   $query->fields(['name', 'price']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -39,11 +32,11 @@ class Updatable
     /**
      * Example
      *    $query->table('product');
-     * 
+     *
      * @param string $table
      * @return $this
      */
-    public function table($table) 
+    public function table($table)
     {
         $this->table = $table;
 
@@ -53,7 +46,7 @@ class Updatable
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     * 
+     *
      * @param string $filter
      * @param array $params
      * @return $this

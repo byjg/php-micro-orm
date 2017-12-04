@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 16:17
- */
 
 namespace ByJG\MicroOrm;
-
 
 use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\Serializer\BinderObject;
@@ -53,12 +46,12 @@ class Repository
     }
 
     /**
-     * @param array|string $id
+     * @param array|string $pkId
      * @return mixed|null
      */
-    public function get($id)
+    public function get($pkId)
     {
-        $result = $this->getByFilter($this->mapper->getPrimaryKey() . ' = [[id]]', ['id' => $id]);
+        $result = $this->getByFilter($this->mapper->getPrimaryKey() . ' = [[id]]', ['id' => $pkId]);
 
         if (count($result) === 1) {
             return $result[0];
@@ -68,12 +61,13 @@ class Repository
     }
 
     /**
-     * @param array $id
+     * @param array $pkId
      * @return mixed|null
+     * @throws \Exception
      */
-    public function delete($id)
+    public function delete($pkId)
     {
-        $params = ['id' => $id];
+        $params = ['id' => $pkId];
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
             ->where($this->mapper->getPrimaryKey() . ' = [[id]]', $params);
@@ -146,7 +140,10 @@ class Repository
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $value = isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]]) ? $data[$fieldmap[Mapper::FIELDMAP_FIELD]] : "";
+                    $value = "";
+                    if (isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]])) {
+                        $value = $data[$fieldmap[Mapper::FIELDMAP_FIELD]];
+                    }
                     $data[$property] = $selectMask($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
@@ -162,6 +159,7 @@ class Repository
 
     /**
      * @param mixed $instance
+     * @throws \Exception
      */
     public function save($instance)
     {
@@ -192,7 +190,9 @@ class Repository
             ->fields(array_keys($array));
 
         // Check if is insert or update
-        if (empty($array[$this->mapper->getPrimaryKey()]) || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0)  {
+        if (empty($array[$this->mapper->getPrimaryKey()])
+            || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0
+        ) {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
             BinderObject::bindObject($array, $instance);
         } else {
@@ -216,6 +216,12 @@ class Repository
         }
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param array $params
+     * @return int
+     * @throws \Exception
+     */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
         $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
@@ -223,6 +229,13 @@ class Repository
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param array $params
+     * @param $keyGen
+     * @return mixed
+     * @throws \Exception
+     */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;

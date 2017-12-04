@@ -33,8 +33,13 @@ class Mapper
      * @param bool $preserveCasename
      * @throws \Exception
      */
-    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null, $preserveCasename = false)
-    {
+    public function __construct(
+        $entity,
+        $table,
+        $primaryKey,
+        \Closure $keygenFunction = null,
+        $preserveCasename = false
+    ) {
         if (!class_exists($entity)) {
             throw new \Exception("Entity '$entity' does not exists");
         }
@@ -185,14 +190,14 @@ class Mapper
 
     public static function defaultClosure()
     {
-        return function ($value, $instance) {
+        return function ($value) {
             return $value;
         };
     }
 
     public static function doNotUpdateClosure()
     {
-        return function ($value, $instance) {
+        return function () {
             return false;
         };
     }
