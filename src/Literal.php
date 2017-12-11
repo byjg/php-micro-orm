@@ -36,4 +36,9 @@ class Literal
     {
         $this->literalValue = $literalValue;
     }
+
+    public function __toString()
+    {
+        return $this->getLiteralValue();
+    }
 }
