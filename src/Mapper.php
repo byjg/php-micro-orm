@@ -8,6 +8,8 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+
 class Mapper
 {
 
@@ -31,7 +33,7 @@ class Mapper
      * @param string $primaryKey
      * @param \Closure $keygenFunction
      * @param bool $preserveCasename
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
      */
     public function __construct(
         $entity,
@@ -41,7 +43,7 @@ class Mapper
         $preserveCasename = false
     ) {
         if (!class_exists($entity)) {
-            throw new \Exception("Entity '$entity' does not exists");
+            throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
         $this->entity = $entity;
         $this->table = $table;

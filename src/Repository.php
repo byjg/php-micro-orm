@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\Serializer\BinderObject;
 
 class Repository
@@ -94,7 +95,6 @@ class Repository
     /**
      * @param $updatable
      * @return bool
-     * @throws \Exception
      */
     public function deleteByQuery(Updatable $updatable)
     {
@@ -175,6 +175,9 @@ class Repository
 
     /**
      * @param mixed $instance
+     * @return mixed
+     * @throws \ByJG\MicroOrm\Exception\OrmBeforeInvalidException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      * @throws \Exception
      */
     public function save($instance)
@@ -220,7 +223,7 @@ class Repository
 
         // Check if is OK
         if (empty($array) || !is_array($array)) {
-            throw new \Exception('Invalid Before Insert Closure');
+            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
         }
 
         // Execute the Insert or Update
@@ -239,7 +242,7 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insert(Updatable $updatable, array $params)
     {
@@ -255,7 +258,7 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
@@ -269,7 +272,7 @@ class Repository
      * @param array $params
      * @param $keyGen
      * @return mixed
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
@@ -282,7 +285,6 @@ class Repository
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
-     * @throws \Exception
      */
     protected function update(Updatable $updatable, array $params)
     {

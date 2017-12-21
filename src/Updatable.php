@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbFunctionsInterface;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class Updatable
 {
@@ -87,12 +88,12 @@ class Updatable
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @param $params
      * @return string
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
-            throw new \Exception('You must specifiy the fields for insert');
+            throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
         }
 
         $fields = $this->fields;
@@ -120,7 +121,6 @@ class Updatable
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @param $params
      * @return array
-     * @throws \Exception
      */
     public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
     {
@@ -161,7 +161,6 @@ class Updatable
     /**
      * @param $params
      * @return array
-     * @throws \Exception
      */
     public function buildDelete(&$params)
     {
