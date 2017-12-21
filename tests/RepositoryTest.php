@@ -152,6 +152,28 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
+    public function testInsert_beforeInsert()
+    {
+        $users = new Users();
+        $users->setName('Bla');
+
+        $this->repository->setBeforeInsert(function ($instance) {
+            $instance['name'] .= "-add";
+            $instance['createdate'] .= "2017-12-21";
+            return $instance;
+        });
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->save($users);
+        $this->assertEquals(4, $users->getId());
+
+        $users2 = $this->repository->get(4);
+
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('Bla-add', $users2->getName());
+        $this->assertEquals('2017-12-21', $users2->getCreatedate());
+    }
+
     public function testInsertLiteral()
     {
         $users = new Users();
@@ -247,6 +269,31 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('New Name', $users2->getName());
         $this->assertEquals('2016-01-09', $users2->getCreatedate());
+
+        $users2 = $this->repository->get(2);
+        $this->assertEquals(2, $users2->getId());
+        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+    }
+
+    public function testUpdate_beforeUpdate()
+    {
+        $users = $this->repository->get(1);
+
+        $users->setName('New Name');
+
+        $this->repository->setBeforeUpdate(function ($instance) {
+            $instance['name'] .= "-upd";
+            $instance['createdate'] = "2017-12-21";
+            return $instance;
+        });
+
+        $this->repository->save($users);
+
+        $users2 = $this->repository->get(1);
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('New Name-upd', $users2->getName());
+        $this->assertEquals('2017-12-21', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());

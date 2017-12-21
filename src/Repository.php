@@ -19,6 +19,16 @@ class Repository
     protected $dbDriver = null;
 
     /**
+     * @var \Closure
+     */
+    protected $beforeUpdate = null;
+
+    /**
+     * @var \Closure
+     */
+    protected $beforeInsert = null;
+
+    /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
      * @param Mapper $mapper
@@ -27,6 +37,12 @@ class Repository
     {
         $this->dbDriver = $dbDataset;
         $this->mapper = $mapper;
+        $this->beforeInsert = function ($instance) {
+            return $instance;
+        };
+        $this->beforeUpdate = function ($instance) {
+            return $instance;
+        };
     }
 
     /**
@@ -184,20 +200,39 @@ class Repository
             $array[$fieldname] = $updateValue;
         }
 
+        // Defines if is Insert or Update
+        $isInsert =
+            empty($array[$this->mapper->getPrimaryKey()])
+            || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0
+        ;
+
         // Prepare query to insert
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
-        // Check if is insert or update
-        if (empty($array[$this->mapper->getPrimaryKey()])
-            || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0
-        ) {
+        // Execute Before Statements
+        if ($isInsert) {
+            $array = ($this->beforeInsert)($array);
+        } else {
+            $array = ($this->beforeUpdate)($array);
+        }
+
+        // Check if is OK
+        if (empty($array) || !is_array($array)) {
+            throw new \Exception('Invalid Before Insert Closure');
+        }
+
+        // Execute the Insert or Update
+        if ($isInsert) {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
-            BinderObject::bindObject($array, $instance);
         } else {
             $this->update($updatable, $array);
         }
+
+        BinderObject::bindObject($array, $instance);
+
+        return $instance;
     }
 
     /**
@@ -257,5 +292,15 @@ class Repository
         $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
         $this->getDbDriver()->execute($sql, $params);
+    }
+
+    public function setBeforeUpdate(\Closure $closure)
+    {
+        $this->beforeUpdate = $closure;
+    }
+
+    public function setBeforeInsert(\Closure $closure)
+    {
+        $this->beforeInsert = $closure;
     }
 }
