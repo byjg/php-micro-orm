@@ -216,9 +216,11 @@ class Repository
 
         // Execute Before Statements
         if ($isInsert) {
-            $array = ($this->beforeInsert)($array);
+            $closure = $this->beforeInsert;
+            $array = $closure($array);
         } else {
-            $array = ($this->beforeUpdate)($array);
+            $closure = $this->beforeUpdate;
+            $array = $closure($array);
         }
 
         // Check if is OK
