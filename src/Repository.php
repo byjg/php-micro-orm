@@ -206,7 +206,7 @@ class Repository
         // Defines if is Insert or Update
         $isInsert =
             empty($array[$this->mapper->getPrimaryKey()])
-            || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0
+            || ($this->get($array[$this->mapper->getPrimaryKey()]) === null)
         ;
 
         // Prepare query to insert
