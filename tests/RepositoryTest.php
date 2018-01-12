@@ -396,7 +396,37 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEmpty($users);
     }
 
-    public function testWhere()
+    public function testGetByQueryNone()
+    {
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>1000])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        $this->assertEquals(count($result), 0);
+    }
+
+    public function testGetByQueryOne()
+    {
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(3, $result[0]->getId());
+        $this->assertEquals(3, $result[0]->getIduser());
+        $this->assertEquals('bbb', $result[0]->getValue());
+    }
+
+    public function testGetByQueryMoreThanOne()
     {
         $query = new Query();
         $query->table($this->infoMapper->getTable())
