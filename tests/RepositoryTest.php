@@ -426,6 +426,22 @@ class RepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals('bbb', $result[0]->getValue());
     }
 
+    /**
+     * @throws \Exception
+     */
+    public function testGetScalar()
+    {
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->fields(['property'])
+            ->where('iduser = :id', ['id'=>3]);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getScalar($query);
+
+        $this->assertEquals('bbb', $result);
+    }
+
     public function testGetByQueryMoreThanOne()
     {
         $query = new Query();

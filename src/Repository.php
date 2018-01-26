@@ -125,6 +125,15 @@ class Repository
         return $this->getByQuery($query);
     }
 
+    public function getScalar(Query $query)
+    {
+        $query = $query->build($this->getDbDriver());
+
+        $params = $query['params'];
+        $sql = $query['sql'];
+        return $this->getDbDriver()->getScalar($sql, $params);
+    }
+
     /**
      * @param Query $query
      * @param Mapper[] $mapper
