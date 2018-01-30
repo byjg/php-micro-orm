@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\Serializer\BinderObject;
 
 class Repository
@@ -19,6 +20,16 @@ class Repository
     protected $dbDriver = null;
 
     /**
+     * @var \Closure
+     */
+    protected $beforeUpdate = null;
+
+    /**
+     * @var \Closure
+     */
+    protected $beforeInsert = null;
+
+    /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
      * @param Mapper $mapper
@@ -27,6 +38,12 @@ class Repository
     {
         $this->dbDriver = $dbDataset;
         $this->mapper = $mapper;
+        $this->beforeInsert = function ($instance) {
+            return $instance;
+        };
+        $this->beforeUpdate = function ($instance) {
+            return $instance;
+        };
     }
 
     /**
@@ -78,7 +95,6 @@ class Repository
     /**
      * @param $updatable
      * @return bool
-     * @throws \Exception
      */
     public function deleteByQuery(Updatable $updatable)
     {
@@ -107,6 +123,15 @@ class Repository
         }
 
         return $this->getByQuery($query);
+    }
+
+    public function getScalar(Query $query)
+    {
+        $query = $query->build($this->getDbDriver());
+
+        $params = $query['params'];
+        $sql = $query['sql'];
+        return $this->getDbDriver()->getScalar($sql, $params);
     }
 
     /**
@@ -159,6 +184,9 @@ class Repository
 
     /**
      * @param mixed $instance
+     * @return mixed
+     * @throws \ByJG\MicroOrm\Exception\OrmBeforeInvalidException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      * @throws \Exception
      */
     public function save($instance)
@@ -184,27 +212,48 @@ class Repository
             $array[$fieldname] = $updateValue;
         }
 
+        // Defines if is Insert or Update
+        $isInsert =
+            empty($array[$this->mapper->getPrimaryKey()])
+            || ($this->get($array[$this->mapper->getPrimaryKey()]) === null)
+        ;
+
         // Prepare query to insert
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
-        // Check if is insert or update
-        if (empty($array[$this->mapper->getPrimaryKey()])
-            || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0
-        ) {
+        // Execute Before Statements
+        if ($isInsert) {
+            $closure = $this->beforeInsert;
+            $array = $closure($array);
+        } else {
+            $closure = $this->beforeUpdate;
+            $array = $closure($array);
+        }
+
+        // Check if is OK
+        if (empty($array) || !is_array($array)) {
+            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
+        }
+
+        // Execute the Insert or Update
+        if ($isInsert) {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
-            BinderObject::bindObject($array, $instance);
         } else {
             $this->update($updatable, $array);
         }
+
+        BinderObject::bindObject($array, $instance);
+
+        return $instance;
     }
 
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insert(Updatable $updatable, array $params)
     {
@@ -220,7 +269,7 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
@@ -234,7 +283,7 @@ class Repository
      * @param array $params
      * @param $keyGen
      * @return mixed
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
@@ -247,7 +296,6 @@ class Repository
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
-     * @throws \Exception
      */
     protected function update(Updatable $updatable, array $params)
     {
@@ -257,5 +305,15 @@ class Repository
         $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
         $this->getDbDriver()->execute($sql, $params);
+    }
+
+    public function setBeforeUpdate(\Closure $closure)
+    {
+        $this->beforeUpdate = $closure;
+    }
+
+    public function setBeforeInsert(\Closure $closure)
+    {
+        $this->beforeInsert = $closure;
     }
 }
