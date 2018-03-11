@@ -55,6 +55,8 @@ class Repository
     /**
      * @param array|string $id
      * @return mixed|null
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function get($id)
     {
@@ -70,6 +72,7 @@ class Repository
     /**
      * @param array $id
      * @return mixed|null
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function delete($id)
     {
@@ -82,8 +85,9 @@ class Repository
     }
 
     /**
-     * @param $updatable
+     * @param \ByJG\MicroOrm\Updatable $updatable
      * @return bool
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function deleteByQuery(Updatable $updatable)
     {
@@ -100,6 +104,8 @@ class Repository
      * @param array $params
      * @param bool $forUpdate
      * @return array
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function getByFilter($filter, array $params, $forUpdate = false)
     {
@@ -118,6 +124,8 @@ class Repository
      * @param Query $query
      * @param Mapper[] $mapper
      * @return array
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function getByQuery(Query $query, array $mapper = [])
     {
@@ -161,6 +169,8 @@ class Repository
 
     /**
      * @param mixed $instance
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function save($instance)
     {
@@ -203,7 +213,7 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     protected function insert(Updatable $updatable, array $params)
     {
@@ -215,6 +225,12 @@ class Repository
         }
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param array $params
+     * @return int
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
         $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
@@ -222,6 +238,13 @@ class Repository
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param array $params
+     * @param $keyGen
+     * @return mixed
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()] = $keyGen;
@@ -233,7 +256,7 @@ class Repository
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     protected function update(Updatable $updatable, array $params)
     {

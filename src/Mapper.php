@@ -68,6 +68,7 @@ class Mapper
      * @param \Closure|null|bool $updateMask
      * @param \Closure $selectMask
      * @return $this
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function addFieldMap($property, $fieldName, $updateMask = false, \Closure $selectMask = null)
     {
@@ -80,7 +81,7 @@ class Mapper
         }
 
         if (!is_null($updateMask) && !($updateMask instanceof \Closure)) {
-            throw new \InvalidArgumentException('UpdateMask must be a \Closure or NULL');
+            throw new InvalidArgumentException('UpdateMask must be a \Closure or NULL');
         }
 
         $this->fieldMap[$this->prepareField($property)] = [

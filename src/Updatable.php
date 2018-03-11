@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 12:01
- */
 
 namespace ByJG\MicroOrm;
-
 
 use ByJG\AnyDataset\DbFunctionsInterface;
 
@@ -90,16 +83,17 @@ class Updatable
         return [ implode(' AND ', $where), $params ];
     }
 
+
     /**
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @param $params
-     * @return string
-     * @throws \Exception
+     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
+     * @return null|string|string[]
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
-            throw new \Exception('You must specifiy the fields for insert');
+            throw new InvalidArgumentException('You must specifiy the fields for insert');
         }
 
         $fields = $this->fields;
@@ -124,15 +118,15 @@ class Updatable
     }
 
     /**
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @param $params
+     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @return array
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
-            throw new \InvalidArgumentException('You must specifiy the fields for insert');
+            throw new InvalidArgumentException('You must specifiy the fields for insert');
         }
         
         $fields = [];
@@ -146,7 +140,7 @@ class Updatable
         
         $where = $this->getWhere();
         if (is_null($where)) {
-            throw new \InvalidArgumentException('You must specifiy a where clause');
+            throw new InvalidArgumentException('You must specifiy a where clause');
         }
 
         $tableName = $this->table;
@@ -168,13 +162,13 @@ class Updatable
     /**
      * @param $params
      * @return array
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function buildDelete(&$params)
     {
         $where = $this->getWhere();
         if (is_null($where)) {
-            throw new \InvalidArgumentException('You must specifiy a where clause');
+            throw new InvalidArgumentException('You must specifiy a where clause');
         }
 
         $sql = 'DELETE FROM ' . $this->table

@@ -33,9 +33,10 @@ class Query
     /**
      * Example:
      *   $query->fields(['name', 'price']);
-     * 
+     *
      * @param array $fields
      * @return $this
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function fields(array $fields)
     {
@@ -50,6 +51,10 @@ class Query
         return $this;
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Mapper $mapper
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
     private function addFieldFromMapper(Mapper $mapper)
     {
         $entityClass = $mapper->getEntity();
@@ -162,20 +167,31 @@ class Query
         return $this;
     }
 
+    /**
+     * @param $start
+     * @param $end
+     * @return $this
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     */
     public function limit($start, $end)
     {
         if (!is_null($this->top)) {
-            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+            throw new InvalidArgumentException('You cannot mix TOP and LIMIT');
         }
         $this->limitStart = $start;
         $this->limitEnd = $end;
         return $this;
     }
 
+    /**
+     * @param $top
+     * @return $this
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     */
     public function top($top)
     {
         if (!is_null($this->limitStart)) {
-            throw new \InvalidArgumentException('You cannot mix TOP and LIMIT');
+            throw new InvalidArgumentException('You cannot mix TOP and LIMIT');
         }
         $this->top = $top;
         return $this;
@@ -219,6 +235,7 @@ class Query
     /**
      * @param \ByJG\AnyDataset\DbDriverInterface|null $dbDriver
      * @return array
+     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function build(DbDriverInterface $dbDriver = null)
     {
@@ -243,21 +260,21 @@ class Query
 
         if (!empty($this->forUpdate)) {
             if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
+                throw new InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
             }
             $sql = $dbDriver->getDbHelper()->forUpdate($sql);
         }
 
         if (!empty($this->top)) {
             if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+                throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
             }
             $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
         }
 
         if (!empty($this->limitStart) || ($this->limitStart === 0)) {
             if (is_null($dbDriver)) {
-                throw new \InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+                throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
             }
             $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
         }
