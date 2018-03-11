@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbFunctionsInterface;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class Updatable
 {
@@ -18,7 +19,7 @@ class Updatable
     /**
      * Example:
      *   $query->fields(['name', 'price']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -32,11 +33,11 @@ class Updatable
     /**
      * Example
      *    $query->table('product');
-     * 
+     *
      * @param string $table
      * @return $this
      */
-    public function table($table) 
+    public function table($table)
     {
         $this->table = $table;
 
@@ -46,7 +47,7 @@ class Updatable
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     * 
+     *
      * @param string $filter
      * @param array $params
      * @return $this
@@ -93,7 +94,7 @@ class Updatable
     public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
     {
         if (empty($this->fields)) {
-            throw new InvalidArgumentException('You must specifiy the fields for insert');
+            throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
         }
 
         $fields = $this->fields;

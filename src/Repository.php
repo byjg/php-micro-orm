@@ -1,15 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 16:17
- */
 
 namespace ByJG\MicroOrm;
 
-
 use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\Serializer\BinderObject;
 
 class Repository
@@ -26,6 +20,16 @@ class Repository
     protected $dbDriver = null;
 
     /**
+     * @var \Closure
+     */
+    protected $beforeUpdate = null;
+
+    /**
+     * @var \Closure
+     */
+    protected $beforeInsert = null;
+
+    /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
      * @param Mapper $mapper
@@ -34,6 +38,12 @@ class Repository
     {
         $this->dbDriver = $dbDataset;
         $this->mapper = $mapper;
+        $this->beforeInsert = function ($instance) {
+            return $instance;
+        };
+        $this->beforeUpdate = function ($instance) {
+            return $instance;
+        };
     }
 
     /**
@@ -53,14 +63,14 @@ class Repository
     }
 
     /**
-     * @param array|string $id
+     * @param array|string $pkId
      * @return mixed|null
      * @throws \ByJG\MicroOrm\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function get($id)
+    public function get($pkId)
     {
-        $result = $this->getByFilter($this->mapper->getPrimaryKey() . ' = [[id]]', ['id' => $id]);
+        $result = $this->getByFilter($this->mapper->getPrimaryKey() . ' = [[id]]', ['id' => $pkId]);
 
         if (count($result) === 1) {
             return $result[0];
@@ -70,13 +80,13 @@ class Repository
     }
 
     /**
-     * @param array $id
+     * @param array $pkId
      * @return mixed|null
      * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
-    public function delete($id)
+    public function delete($pkId)
     {
-        $params = ['id' => $id];
+        $params = ['id' => $pkId];
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
             ->where($this->mapper->getPrimaryKey() . ' = [[id]]', $params);
@@ -120,6 +130,15 @@ class Repository
         return $this->getByQuery($query);
     }
 
+    public function getScalar(Query $query)
+    {
+        $query = $query->build($this->getDbDriver());
+
+        $params = $query['params'];
+        $sql = $query['sql'];
+        return $this->getDbDriver()->getScalar($sql, $params);
+    }
+
     /**
      * @param Query $query
      * @param Mapper[] $mapper
@@ -153,7 +172,10 @@ class Repository
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
-                    $value = isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]]) ? $data[$fieldmap[Mapper::FIELDMAP_FIELD]] : "";
+                    $value = "";
+                    if (isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]])) {
+                        $value = $data[$fieldmap[Mapper::FIELDMAP_FIELD]];
+                    }
                     $data[$property] = $selectMask($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
@@ -169,6 +191,7 @@ class Repository
 
     /**
      * @param mixed $instance
+     * @return mixed
      * @throws \ByJG\MicroOrm\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
@@ -183,30 +206,53 @@ class Repository
             $fieldname = $fieldmap[Mapper::FIELDMAP_FIELD];
             $updateMask = $fieldmap[Mapper::FIELDMAP_UPDATEMASK];
 
-            // If no value for UpdateMask, remove from the list;
-            if (empty($updateMask)) {
-                unset($array[$property]);
-                continue;
-            }
-
             // Get the value from the mapped field name
             $value = $array[$property];
             unset($array[$property]);
-            $array[$fieldname] = $updateMask($value, $instance);
+            $updateValue = $updateMask($value, $instance);
+
+            // If no value for UpdateMask, remove from the list;
+            if ($updateValue === false) {
+                continue;
+            }
+            $array[$fieldname] = $updateValue;
         }
+
+        // Defines if is Insert or Update
+        $isInsert =
+            empty($array[$this->mapper->getPrimaryKey()])
+            || ($this->get($array[$this->mapper->getPrimaryKey()]) === null)
+        ;
 
         // Prepare query to insert
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
             ->fields(array_keys($array));
 
-        // Check if is insert or update
-        if (empty($array[$this->mapper->getPrimaryKey()]) || count($this->get($array[$this->mapper->getPrimaryKey()])) === 0)  {
+        // Execute Before Statements
+        if ($isInsert) {
+            $closure = $this->beforeInsert;
+            $array = $closure($array);
+        } else {
+            $closure = $this->beforeUpdate;
+            $array = $closure($array);
+        }
+
+        // Check if is OK
+        if (empty($array) || !is_array($array)) {
+            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
+        }
+
+        // Execute the Insert or Update
+        if ($isInsert) {
             $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
-            BinderObject::bindObject($array, $instance);
         } else {
             $this->update($updatable, $array);
         }
+
+        BinderObject::bindObject($array, $instance);
+
+        return $instance;
     }
 
     /**
@@ -214,6 +260,7 @@ class Repository
      * @param array $params
      * @return int
      * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insert(Updatable $updatable, array $params)
     {
@@ -266,5 +313,15 @@ class Repository
         $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
         $this->getDbDriver()->execute($sql, $params);
+    }
+
+    public function setBeforeUpdate(\Closure $closure)
+    {
+        $this->beforeUpdate = $closure;
+    }
+
+    public function setBeforeInsert(\Closure $closure)
+    {
+        $this->beforeInsert = $closure;
     }
 }

@@ -8,6 +8,8 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+
 class Mapper
 {
 
@@ -31,12 +33,17 @@ class Mapper
      * @param string $primaryKey
      * @param \Closure $keygenFunction
      * @param bool $preserveCasename
-     * @throws \Exception
+     * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
      */
-    public function __construct($entity, $table, $primaryKey, \Closure $keygenFunction = null, $preserveCasename = false)
-    {
+    public function __construct(
+        $entity,
+        $table,
+        $primaryKey,
+        \Closure $keygenFunction = null,
+        $preserveCasename = false
+    ) {
         if (!class_exists($entity)) {
-            throw new \Exception("Entity '$entity' does not exists");
+            throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
         $this->entity = $entity;
         $this->table = $table;
@@ -70,13 +77,13 @@ class Mapper
      * @return $this
      * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
-    public function addFieldMap($property, $fieldName, $updateMask = false, \Closure $selectMask = null)
+    public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {
         if (empty($selectMask)) {
             $selectMask = Mapper::defaultClosure();
         }
 
-        if ($updateMask === false) {
+        if (empty($updateMask)) {
             $updateMask = Mapper::defaultClosure();
         }
 
@@ -190,8 +197,18 @@ class Mapper
 
     public static function defaultClosure()
     {
-        return function ($value, $instance) {
+        return function ($value) {
+            if (empty($value)) {
+                return null;
+            }
             return $value;
+        };
+    }
+
+    public static function doNotUpdateClosure()
+    {
+        return function () {
+            return false;
         };
     }
 }

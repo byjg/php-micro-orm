@@ -198,7 +198,33 @@ $mapper->addFieldMap(
 );
 ```
 
+#### Pre-defined closures for field map:
 
+*Mapper::defaultClosure($value, $instance)*
+
+Defines the basic behavior for select and update fields;
+
+*Mapper::doNotUpdateClosure($value, $instance)*
+
+If set in the update field map will make the field not updatable by the micro-orm. 
+It is usefull for fields that are pre-defined like 'Primary Key'; timestamp fields based on the
+update and the creation; and others
+
+#### Before insert and update functions
+
+You can also set closure to be applied before insert or update a record. 
+In this case will set in the Repository:
+
+```php
+<?php
+Repository::setBeforeInsert(function ($instance) {
+    return $instance;
+});
+
+Repository::setBeforeUpdate(function ($instance) {
+    return $instance;
+});
+```
 
 ## Install
 

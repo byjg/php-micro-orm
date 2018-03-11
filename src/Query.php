@@ -79,11 +79,11 @@ class Query
     /**
      * Example
      *    $query->table('product');
-     * 
+     *
      * @param string $table
      * @return $this
      */
-    public function table($table) 
+    public function table($table)
     {
         $this->table = $table;
 
@@ -93,7 +93,7 @@ class Query
     /**
      * Example:
      *    $query->join('sales', 'product.id = sales.id');
-     * 
+     *
      * @param string $table
      * @param string $filter
      * @return $this
@@ -121,7 +121,7 @@ class Query
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     * 
+     *
      * @param string $filter
      * @param array $params
      * @return $this
@@ -135,7 +135,7 @@ class Query
     /**
      * Example:
      *    $query->groupBy(['name']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -149,7 +149,7 @@ class Query
     /**
      * Example:
      *     $query->orderBy(['price desc']);
-     * 
+     *
      * @param array $fields
      * @return $this
      */
@@ -215,7 +215,7 @@ class Query
         return $join;
     }
     
-    protected function getWhere() 
+    protected function getWhere()
     {
         $where = [];
         $params = [];
@@ -240,7 +240,7 @@ class Query
     public function build(DbDriverInterface $dbDriver = null)
     {
         $sql = "SELECT " .
-            $this->getFields() . 
+            $this->getFields() .
             "FROM " . $this->getJoin();
         
         $where = $this->getWhere();
@@ -249,38 +249,89 @@ class Query
             $sql .= ' WHERE ' . $where[0];
             $params = $where[1];
         }
-        
-        if (!empty($this->groupBy)) {
-            $sql .= ' GROUP BY ' . implode(', ', $this->groupBy);
-        }
 
-        if (!empty($this->orderBy)) {
-            $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
-        }
+        $sql .= $this->addGroupBy();
 
-        if (!empty($this->forUpdate)) {
-            if (is_null($dbDriver)) {
-                throw new InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->forUpdate($sql);
-        }
+        $sql .= $this->addOrderBy();
 
-        if (!empty($this->top)) {
-            if (is_null($dbDriver)) {
-                throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->top($sql, $this->top);
-        }
+        $sql = $this->addforUpdate($dbDriver, $sql);
 
-        if (!empty($this->limitStart) || ($this->limitStart === 0)) {
-            if (is_null($dbDriver)) {
-                throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
-            }
-            $sql = $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
-        }
+        $sql = $this->addTop($dbDriver, $sql);
+
+        $sql = $this->addLimit($dbDriver, $sql);
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
         return [ 'sql' => $sql, 'params' => $params ];
+    }
+
+    private function addOrderBy()
+    {
+        if (empty($this->orderBy)) {
+            return "";
+        }
+        return ' ORDER BY ' . implode(', ', $this->orderBy);
+    }
+
+    private function addGroupBy()
+    {
+        if (empty($this->groupBy)) {
+            return "";
+        }
+        return ' GROUP BY ' . implode(', ', $this->groupBy);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addforUpdate($dbDriver, $sql)
+    {
+        if (empty($this->forUpdate)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->forUpdate($sql);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addTop($dbDriver, $sql)
+    {
+        if (empty($this->top)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->top($sql, $this->top);
+    }
+
+    /**
+     * @param DbDriverInterface $dbDriver
+     * @param string $sql
+     * @return string
+     */
+    private function addLimit($dbDriver, $sql)
+    {
+        if (empty($this->limitStart) && ($this->limitStart !== 0)) {
+            return $sql;
+        }
+
+        if (is_null($dbDriver)) {
+            throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
+        }
+
+        return $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
     }
 }

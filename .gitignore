@@ -3,4 +3,5 @@ nbproject/private
 composer.lock
 vendor
 
-.idea
+.idea/*
+!.idea/runConfigurations
