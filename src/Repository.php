@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\Serializer\BinderObject;
 
 class Repository
@@ -65,7 +66,7 @@ class Repository
     /**
      * @param array|string $pkId
      * @return mixed|null
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function get($pkId)
@@ -82,7 +83,7 @@ class Repository
     /**
      * @param array $pkId
      * @return mixed|null
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function delete($pkId)
     {
@@ -97,7 +98,7 @@ class Repository
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @return bool
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function deleteByQuery(Updatable $updatable)
     {
@@ -114,7 +115,7 @@ class Repository
      * @param array $params
      * @param bool $forUpdate
      * @return array
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function getByFilter($filter, array $params, $forUpdate = false)
@@ -130,6 +131,11 @@ class Repository
         return $this->getByQuery($query);
     }
 
+    /**
+     * @param \ByJG\MicroOrm\Query $query
+     * @return mixed
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     */
     public function getScalar(Query $query)
     {
         $query = $query->build($this->getDbDriver());
@@ -143,7 +149,7 @@ class Repository
      * @param Query $query
      * @param Mapper[] $mapper
      * @return array
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function getByQuery(Query $query, array $mapper = [])
@@ -192,7 +198,9 @@ class Repository
     /**
      * @param mixed $instance
      * @return mixed
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\OrmBeforeInvalidException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function save($instance)
@@ -259,7 +267,6 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
      * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insert(Updatable $updatable, array $params)
@@ -276,7 +283,7 @@ class Repository
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
@@ -290,7 +297,7 @@ class Repository
      * @param array $params
      * @param $keyGen
      * @return mixed
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
@@ -303,7 +310,7 @@ class Repository
     /**
      * @param \ByJG\MicroOrm\Updatable $updatable
      * @param array $params
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     protected function update(Updatable $updatable, array $params)
     {

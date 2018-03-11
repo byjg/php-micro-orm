@@ -1,6 +1,6 @@
 <?php
 
-namespace ByJG\MicroOrm;
+namespace ByJG\MicroOrm\Exception;
 
 class InvalidArgumentException extends \Exception
 {

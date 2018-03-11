@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 13:55
- */
 
 namespace ByJG\MicroOrm;
 
@@ -75,7 +69,6 @@ class Mapper
      * @param \Closure|null|bool $updateMask
      * @param \Closure $selectMask
      * @return $this
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
      */
     public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {

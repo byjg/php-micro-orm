@@ -1,9 +1,4 @@
 <?php
-/**
- * User: jg
- * Date: 30/03/17
- * Time: 22:26
- */
 
 namespace ByJG\MicroOrm;
 

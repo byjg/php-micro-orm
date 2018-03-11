@@ -94,7 +94,7 @@ class UpdatableTest extends TestCase
     }
 
     /**
-     * @expectedException \ByJG\MicroOrm\InvalidArgumentException
+     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function testUpdateError()
     {
@@ -128,7 +128,7 @@ class UpdatableTest extends TestCase
     }
 
     /**
-     * @expectedException \ByJG\MicroOrm\InvalidArgumentException
+     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function testDeleteError()
     {

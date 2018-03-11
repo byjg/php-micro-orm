@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbFunctionsInterface;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class Updatable
@@ -89,7 +90,7 @@ class Updatable
      * @param $params
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
     public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
     {
@@ -122,7 +123,7 @@ class Updatable
      * @param $params
      * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
      * @return array
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
     {
@@ -163,7 +164,7 @@ class Updatable
     /**
      * @param $params
      * @return array
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function buildDelete(&$params)
     {

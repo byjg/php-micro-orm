@@ -1,14 +1,9 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: jg
- * Date: 21/06/16
- * Time: 12:01
- */
 
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\Serializer\BinderObject;
 
 class Query
@@ -171,7 +166,7 @@ class Query
      * @param $start
      * @param $end
      * @return $this
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function limit($start, $end)
     {
@@ -186,7 +181,7 @@ class Query
     /**
      * @param $top
      * @return $this
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function top($top)
     {
@@ -235,7 +230,7 @@ class Query
     /**
      * @param \ByJG\AnyDataset\DbDriverInterface|null $dbDriver
      * @return array
-     * @throws \ByJG\MicroOrm\InvalidArgumentException
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     public function build(DbDriverInterface $dbDriver = null)
     {
@@ -285,6 +280,7 @@ class Query
      * @param DbDriverInterface $dbDriver
      * @param string $sql
      * @return string
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     private function addforUpdate($dbDriver, $sql)
     {
@@ -303,6 +299,7 @@ class Query
      * @param DbDriverInterface $dbDriver
      * @param string $sql
      * @return string
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     private function addTop($dbDriver, $sql)
     {
@@ -321,6 +318,7 @@ class Query
      * @param DbDriverInterface $dbDriver
      * @param string $sql
      * @return string
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
     private function addLimit($dbDriver, $sql)
     {
