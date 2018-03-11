@@ -1,22 +1,13 @@
 <?php
-/**
- * User: jg
- * Date: 04/04/17
- * Time: 19:18
- */
 
 namespace Test;
 
 use ByJG\MicroOrm\Insert;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
+use PHPUnit\Framework\TestCase;
 
-// backward compatibility
-if (!class_exists('\PHPUnit\Framework\TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
-class QueryTest extends \PHPUnit\Framework\TestCase
+class QueryTest extends TestCase
 {
     /**
      * @var Query

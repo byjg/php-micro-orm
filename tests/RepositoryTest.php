@@ -10,17 +10,13 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
+use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/Model/Users.php';
 require_once __DIR__ . '/Model/UsersMap.php';
 require_once __DIR__ . '/Model/Info.php';
 
-// backward compatibility
-if (!class_exists('\PHPUnit\Framework\TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
-class RepositoryTest extends \PHPUnit\Framework\TestCase
+class RepositoryTest extends TestCase
 {
 
     const URI='sqlite:///tmp/teste.db';

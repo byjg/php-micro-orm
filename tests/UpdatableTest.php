@@ -1,21 +1,12 @@
 <?php
-/**
- * User: jg
- * Date: 04/04/17
- * Time: 19:18
- */
 
 namespace Test;
 
 use ByJG\AnyDataset\Store\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Updatable;
+use PHPUnit\Framework\TestCase;
 
-// backward compatibility
-if (!class_exists('\PHPUnit\Framework\TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
-class UpdatableTest extends \PHPUnit\Framework\TestCase
+class UpdatableTest extends TestCase
 {
     /**
      * @var Updatable

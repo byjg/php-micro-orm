@@ -8,15 +8,11 @@ use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
+use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/Model/Customer.php';
 
-// backward compatibility
-if (!class_exists('\PHPUnit\Framework\TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
-class RepositoryAliasTest extends \PHPUnit\Framework\TestCase
+class RepositoryAliasTest extends TestCase
 {
 
     const URI='sqlite:///tmp/teste.db';
