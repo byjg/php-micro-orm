@@ -1,4 +1,6 @@
 # MicroOrm for PHP
+
+[![Opensource ByJG](https://img.shields.io/badge/opensource-byjg.com-brightgreen.svg)](http://opensource.byjg.com)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/byjg/micro-orm/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/byjg/micro-orm/?branch=master)
 [![Build Status](https://travis-ci.org/byjg/micro-orm.svg?branch=master)](https://travis-ci.org/byjg/micro-orm)
 [![Code Coverage](https://scrutinizer-ci.com/g/byjg/micro-orm/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/micro-orm/?branch=master)
@@ -235,6 +237,17 @@ Just type: `composer require "byjg/micro-orm=2.0.*"`
 ```php
 phpunit 
 ```
+
+## Related Projects
+
+- [Database Migration](https://github.com/byjg/migration)
+- [Anydataset](https://github.com/byjg/anydataset)
+- [PHP Rest Template](https://github.com/byjg/php-rest-template)
+- [USDocker](https://github.com/usdocker/usdocker)
+- [Serializer](https://github.com/byjg/serializer)
+
+
+
 
 
 ----
