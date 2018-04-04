@@ -228,6 +228,48 @@ Repository::setBeforeUpdate(function ($instance) {
 });
 ```
 
+#### Reuse Connection
+
+The Repository receives a DbDriverInterface instance (connection). 
+It is normal we create everytime a new connection. 
+But if we need to reuse a previous connection we can use the
+ConnectionManager object to handle it easier. 
+
+```php
+<?php
+$connectionManager = new ConnectionManager();
+
+$repo1 = new Repository($connectionManager->addConnection("uri://host"));
+
+...
+
+// If you the same Uri string the ConnectionManager will reuse 
+// the last DbDriver instance created
+$repo2 = new Repository($connectionManager->addConnection("uri://host"));
+
+```
+
+#### Transaction
+
+If all of DbDriver instance as created by the ConnectionManager you can create
+database transactions including across different databases:
+
+```php
+<?php
+$connectionManager = new ConnectionManager();
+
+$connectionManager->beginTransaction();
+$repo1 = new Repository($connectionManager->addConnection("uri1://host1"));
+$repo2 = new Repository($connectionManager->addConnection("uri2://host2"));
+
+// Do some Repository operations;
+// ...
+
+// commit (or rollback all transactions)
+$connection->commitTransaction();
+```
+
+
 ## Install
 
 Just type: `composer require "byjg/micro-orm=2.0.*"`
