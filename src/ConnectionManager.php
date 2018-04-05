@@ -19,11 +19,15 @@ class ConnectionManager
     protected static $connectionList = [];
 
     /**
+     * It has an active transaction?
+     *
      * @var bool
      */
     protected static $transaction = false;
 
     /**
+     * Add or reuse a connection
+     *
      * @param $uriString
      * @return \ByJG\AnyDataset\DbDriverInterface
      */
@@ -40,6 +44,19 @@ class ConnectionManager
         return self::$connectionList[$uriString];
     }
 
+    /**
+     * @return int
+     */
+    public function count()
+    {
+        return count(self::$connectionList);
+    }
+
+    /**
+     * Start a database transaction with the opened connections
+     *
+     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     */
     public function beginTransaction()
     {
         if (self::$transaction) {
@@ -53,6 +70,11 @@ class ConnectionManager
     }
 
 
+    /**
+     * Commit all open transactions
+     *
+     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     */
     public function commitTransaction()
     {
         if (!self::$transaction) {
@@ -66,6 +88,11 @@ class ConnectionManager
     }
 
 
+    /**
+     * Rollback all open transactions
+     *
+     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     */
     public function rollbackTransaction()
     {
         if (!self::$transaction) {
@@ -78,5 +105,17 @@ class ConnectionManager
         }
     }
 
-
+    /**
+     * Destroy all connections
+     */
+    public function destroy()
+    {
+        foreach (self::$connectionList as $dbDriver) {
+            if (self::$transaction) {
+                $dbDriver->commitTransaction();
+            }
+        }
+        self::$transaction = false;
+        self::$connectionList = [];
+    }
 }
