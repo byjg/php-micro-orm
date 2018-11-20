@@ -2,9 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
-use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\Serializer\BinderObject;
 
 class Repository

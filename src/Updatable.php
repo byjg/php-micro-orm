@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
@@ -88,7 +88,7 @@ class Updatable
 
     /**
      * @param $params
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
+     * @param \ByJG\AnyDataset\Db\DbFunctionsInterface|null $dbHelper
      * @return null|string|string[]
      * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
@@ -121,7 +121,7 @@ class Updatable
 
     /**
      * @param $params
-     * @param \ByJG\AnyDataset\DbFunctionsInterface|null $dbHelper
+     * @param \ByJG\AnyDataset\Db\DbFunctionsInterface|null $dbHelper
      * @return array
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */

@@ -2,7 +2,7 @@
 
 namespace Test;
 
-use ByJG\AnyDataset\Store\Helpers\DbSqliteFunctions;
+use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Updatable;
 use PHPUnit\Framework\TestCase;
 

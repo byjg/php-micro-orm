@@ -2,13 +2,9 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\DbDriverInterface;
-use ByJG\AnyDataset\Factory;
-use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
-use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
-use ByJG\Serializer\BinderObject;
-use ByJG\Util\Uri;
 
 class ConnectionManager
 {
@@ -29,7 +25,7 @@ class ConnectionManager
      * Add or reuse a connection
      *
      * @param $uriString
-     * @return \ByJG\AnyDataset\DbDriverInterface
+     * @return \ByJG\AnyDataset\Db\DbDriverInterface
      */
     public function addConnection($uriString)
     {

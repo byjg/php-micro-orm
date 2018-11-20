@@ -2,8 +2,8 @@
 
 namespace Test;
 
-use ByJG\AnyDataset\DbDriverInterface;
-use ByJG\AnyDataset\Factory;
+use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;

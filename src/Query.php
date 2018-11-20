@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\DbDriverInterface;
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\Serializer\BinderObject;
 
@@ -228,7 +228,7 @@ class Query
     }
 
     /**
-     * @param \ByJG\AnyDataset\DbDriverInterface|null $dbDriver
+     * @param \ByJG\AnyDataset\Db\DbDriverInterface|null $dbDriver
      * @return array
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
