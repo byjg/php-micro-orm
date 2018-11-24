@@ -272,7 +272,11 @@ $connection->commitTransaction();
 
 ## Install
 
-Just type: `composer require "byjg/micro-orm=2.0.*"`
+Just type: 
+
+```
+composer require "byjg/micro-orm=4.0.*"
+```
 
 ## Running Tests
 

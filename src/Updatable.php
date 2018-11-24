@@ -70,19 +70,19 @@ class Updatable
     
     protected function getWhere()
     {
-        $where = [];
+        $whereStr = [];
         $params = [];
 
         foreach ($this->where as $item) {
-            $where[] = $item['filter'];
+            $whereStr[] = $item['filter'];
             $params = array_merge($params, $item['params']);
         }
         
-        if (empty($where)) {
+        if (empty($whereStr)) {
             return null;
         }
         
-        return [ implode(' AND ', $where), $params ];
+        return [ implode(' AND ', $whereStr), $params ];
     }
 
 
@@ -98,25 +98,23 @@ class Updatable
             throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
         }
 
-        $fields = $this->fields;
+        $fieldsStr = $this->fields;
         if (!is_null($dbHelper)) {
-            $fields = $dbHelper->delimiterField($fields);
+            $fieldsStr = $dbHelper->delimiterField($fieldsStr);
         }
 
-        $table = $this->table;
+        $tableStr = $this->table;
         if (!is_null($dbHelper)) {
-            $table = $dbHelper->delimiterTable($table);
+            $tableStr = $dbHelper->delimiterTable($tableStr);
         }
 
         $sql = 'INSERT INTO '
-            . $table
-            . '( ' . implode(', ', $fields) . ' ) '
+            . $tableStr
+            . '( ' . implode(', ', $fieldsStr) . ' ) '
             . ' values '
             . '( [[' . implode(']], [[', $this->fields) . ']] ) ';
 
-        $sql = ORMHelper::processLiteral($sql, $params);
-
-        return $sql;
+        return ORMHelper::processLiteral($sql, $params);
     }
 
     /**
@@ -131,17 +129,17 @@ class Updatable
             throw new InvalidArgumentException('You must specifiy the fields for insert');
         }
         
-        $fields = [];
+        $fieldsStr = [];
         foreach ($this->fields as $field) {
             $fieldName = $field;
             if (!is_null($dbHelper)) {
                 $fieldName = $dbHelper->delimiterField($fieldName);
             }
-            $fields[] = "$fieldName = [[$field]] ";
+            $fieldsStr[] = "$fieldName = [[$field]] ";
         }
         
-        $where = $this->getWhere();
-        if (is_null($where)) {
+        $whereStr = $this->getWhere();
+        if (is_null($whereStr)) {
             throw new InvalidArgumentException('You must specifiy a where clause');
         }
 
@@ -151,14 +149,12 @@ class Updatable
         }
 
         $sql = 'UPDATE ' . $tableName . ' SET '
-            . implode(', ', $fields)
-            . ' WHERE ' . $where[0];
+            . implode(', ', $fieldsStr)
+            . ' WHERE ' . $whereStr[0];
 
-        $params = array_merge($params, $where[1]);
+        $params = array_merge($params, $whereStr[1]);
 
-        $sql = ORMHelper::processLiteral($sql, $params);
-
-        return $sql;
+        return ORMHelper::processLiteral($sql, $params);
     }
 
     /**
@@ -168,18 +164,16 @@ class Updatable
      */
     public function buildDelete(&$params)
     {
-        $where = $this->getWhere();
-        if (is_null($where)) {
+        $whereStr = $this->getWhere();
+        if (is_null($whereStr)) {
             throw new InvalidArgumentException('You must specifiy a where clause');
         }
 
         $sql = 'DELETE FROM ' . $this->table
-            . ' WHERE ' . $where[0];
+            . ' WHERE ' . $whereStr[0];
 
-        $params = array_merge($params, $where[1]);
+        $params = array_merge($params, $whereStr[1]);
 
-        $sql = ORMHelper::processLiteral($sql, $params);
-
-        return $sql;
+        return ORMHelper::processLiteral($sql, $params);
     }
 }

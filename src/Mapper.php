@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 
 class Mapper
@@ -69,6 +70,7 @@ class Mapper
      * @param \Closure|null|bool $updateMask
      * @param \Closure $selectMask
      * @return $this
+     * @throws InvalidArgumentException
      */
     public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
     {

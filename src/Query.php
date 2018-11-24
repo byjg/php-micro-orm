@@ -203,28 +203,28 @@ class Query
     
     protected function getJoin()
     {
-        $join = $this->table;
+        $joinStr = $this->table;
         foreach ($this->join as $item) {
-            $join .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . ' ON ' . $item['filter'];
+            $joinStr .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . ' ON ' . $item['filter'];
         }
-        return $join;
+        return $joinStr;
     }
     
     protected function getWhere()
     {
-        $where = [];
+        $whereStr = [];
         $params = [];
 
         foreach ($this->where as $item) {
-            $where[] = $item['filter'];
+            $whereStr[] = $item['filter'];
             $params = array_merge($params, $item['params']);
         }
         
-        if (empty($where)) {
+        if (empty($whereStr)) {
             return null;
         }
         
-        return [ implode(' AND ', $where), $params ];
+        return [ implode(' AND ', $whereStr), $params ];
     }
 
     /**
@@ -238,11 +238,11 @@ class Query
             $this->getFields() .
             "FROM " . $this->getJoin();
         
-        $where = $this->getWhere();
+        $whereStr = $this->getWhere();
         $params = null;
-        if (!is_null($where)) {
-            $sql .= ' WHERE ' . $where[0];
-            $params = $where[1];
+        if (!is_null($whereStr)) {
+            $sql .= ' WHERE ' . $whereStr[0];
+            $params = $whereStr[1];
         }
 
         $sql .= $this->addGroupBy();
