@@ -6,8 +6,6 @@
 [![Code Coverage](https://scrutinizer-ci.com/g/byjg/micro-orm/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/byjg/micro-orm/?branch=master)
 
 
-## Description
-
 A micro framework for create a very simple decoupled ORM.
 This library intended to be very small and very simple to use;
 
@@ -18,7 +16,7 @@ This library intended to be very small and very simple to use;
 * A class Mapper is used for mapping the Entity and the repository
 * Small and simple to use
 
-## Examples
+# Examples
 
 For the examples below we will use the class 'Users';
 
@@ -72,7 +70,7 @@ $users->name = "New name";
 $repository->save($users);
 ```
 
-#### Advanced uses
+# Advanced uses
 
 Get a collection using the query object:
 
@@ -110,7 +108,7 @@ $collection = $orderRepository->getByQuery(
 );
 ```
 
-#### Using FieldAlias
+# Using FieldAlias
 
 Field alias is an alternate name for a field. This is usefull for disambiguation on join and leftjoin queries. 
 Imagine in the example above if both tables ITEM and ORDER have the same field called 'ID'. 
@@ -161,7 +159,7 @@ $query = \ByJG\MicroOrm\Query::getInstance()
 ```
 
 
-#### Tables without auto increments fields
+# Tables without auto increments fields
 
 ```php
 <?php
@@ -176,7 +174,7 @@ $mapper = new \ByJG\MicroOrm\Mapper(
 );
 ```
 
-#### Applying functions for Select and Update
+# Applying functions for Select and Update
 
 ```php
 <?php
@@ -200,7 +198,7 @@ $mapper->addFieldMap(
 );
 ```
 
-#### Pre-defined closures for field map:
+# Pre-defined closures for field map:
 
 *Mapper::defaultClosure($value, $instance)*
 
@@ -212,7 +210,7 @@ If set in the update field map will make the field not updatable by the micro-or
 It is usefull for fields that are pre-defined like 'Primary Key'; timestamp fields based on the
 update and the creation; and others
 
-#### Before insert and update functions
+# Before insert and update functions
 
 You can also set closure to be applied before insert or update a record. 
 In this case will set in the Repository:
@@ -228,7 +226,7 @@ Repository::setBeforeUpdate(function ($instance) {
 });
 ```
 
-#### Reuse Connection
+# Reuse Connection
 
 The Repository receives a DbDriverInterface instance (connection). 
 It is normal we create everytime a new connection. 
@@ -249,7 +247,7 @@ $repo2 = new Repository($connectionManager->addConnection("uri://host"));
 
 ```
 
-#### Transaction
+# Transaction
 
 If all of DbDriver instance as created by the ConnectionManager you can create
 database transactions including across different databases:
@@ -270,7 +268,7 @@ $connection->commitTransaction();
 ```
 
 
-## Install
+# Install
 
 Just type: 
 
@@ -278,20 +276,19 @@ Just type:
 composer require "byjg/micro-orm=4.0.*"
 ```
 
-## Running Tests
+# Running Tests
 
 ```php
 phpunit 
 ```
 
-## Related Projects
+# Related Projects
 
 - [Database Migration](https://github.com/byjg/migration)
 - [Anydataset](https://github.com/byjg/anydataset)
 - [PHP Rest Template](https://github.com/byjg/php-rest-template)
 - [USDocker](https://github.com/usdocker/usdocker)
 - [Serializer](https://github.com/byjg/serializer)
-
 
 
 
