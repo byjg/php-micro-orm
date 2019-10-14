@@ -131,6 +131,26 @@ class Repository
     }
 
     /**
+     * @param array $arrValues
+     * @param $field
+     * @return array
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
+    public function filterIn($arrValues, $field = "") {
+        $arrValues = (array) $arrValues;
+
+        if (empty($field)) {
+            $field = $this->getMapper()->getPrimaryKey();
+        }
+
+        return $this->getByFilter(
+            $field . " in (:" . implode(',:', array_keys($arrValues)) . ')',
+            $arrValues
+        );
+    }
+
+    /**
      * @param \ByJG\MicroOrm\Query $query
      * @return mixed
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException

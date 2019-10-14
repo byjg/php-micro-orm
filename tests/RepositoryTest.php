@@ -422,6 +422,39 @@ class RepositoryTest extends TestCase
         $this->assertEquals('bbb', $result[0]->getValue());
     }
 
+    public function testFilterInNone()
+    {
+        $result = $this->repository->filterIn([1000, 1002]);
+
+        $this->assertEquals(count($result), 0);
+    }
+
+    public function testFilterInOne()
+    {
+        $result = $this->repository->filterIn(2);
+
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals('Jane Doe', $result[0]->getName());
+        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
+    }
+
+    public function testFilterInTwo()
+    {
+        $result = $this->repository->filterIn([2, 3, 1000, 1001]);
+
+        $this->assertEquals(count($result), 2);
+
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals('Jane Doe', $result[0]->getName());
+        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
+
+        $this->assertEquals(3, $result[1]->getId());
+        $this->assertEquals('JG', $result[1]->getName());
+        $this->assertEquals('1974-01-26', $result[1]->getCreatedate());
+    }
+
     /**
      * @throws \Exception
      */
