@@ -51,7 +51,7 @@ Then you need to create the dataset object and the repository:
 
 ```php
 <?php
-$dataset = new ByJG\AnyDataset\Db\Factory('mysql://user:password@server/schema');
+$dataset = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
 
 $repository = new \ByJG\MicroOrm\Repository($dataset, $mapper);
 ```
