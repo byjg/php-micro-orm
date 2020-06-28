@@ -265,4 +265,89 @@ class QueryTest extends TestCase
             $result
         );
     }
+
+    public function testSubQuery()
+    {
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table('test')
+            ->join($subQuery, 'test.id = sq.id', 'sq')
+            ->where('test.date < :date', ['date' => '2020-06-28']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM test INNER JOIN (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq ON test.id = sq.id WHERE test.date < :date',
+                'params' => ['date' => '2020-06-28']
+            ],
+            $result
+        );
+
+    }
+
+    /**
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @expectedExceptionMessage SubQuery requires you define an alias
+     */
+    public function testSubQueryWithoutAlias()
+    {
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table('test')
+            ->join($subQuery, 'test.id = sq.id')
+            ->where('test.date < :date', ['date' => '2020-06-28']);
+
+        $result = $query->build();
+    }
+
+    /**
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @expectedExceptionMessage SubQuery does not support filters
+     */
+    public function testSubQueryWithoFilter()
+    {
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->where("date > ':test'", ['test' => "2020-06-01"])
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table('test')
+            ->join($subQuery, 'test.id = sq.id')
+            ->where('test.date < :date', ['date' => '2020-06-28']);
+
+        $result = $query->build();
+    }
 }

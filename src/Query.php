@@ -18,6 +18,7 @@ class Query
     protected $limitStart = null;
     protected $limitEnd = null;
     protected $top = null;
+    protected $dbDriver = null;
 
     protected $forUpdate = false;
 
@@ -220,13 +221,28 @@ class Query
 
         return ' ' . implode(', ', $this->fields) . ' ';
     }
-    
+
+    /**
+     * @return string
+     * @throws InvalidArgumentException
+     */
     protected function getJoin()
     {
         $joinStr = $this->table . (!empty($this->alias) ? " as " . $this->alias : "");
         foreach ($this->join as $item) {
+            $table = $item['table'];
+            if ($table instanceof Query) {
+                $subQuery = $table->build($this->dbDriver);
+                if (!empty($subQuery["params"])) {
+                    throw new InvalidArgumentException("SubQuery does not support filters");
+                }
+                if ($item["alias"] instanceof Query) {
+                    throw new InvalidArgumentException("SubQuery requires you define an alias");
+                }
+                $table = "(${subQuery["sql"]})";
+            }
             $alias = $item['table'] == $item['alias'] ? "" : " as ". $item['alias'];
-            $joinStr .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . "$alias ON " . $item['filter'];
+            $joinStr .= ' ' . $item['type'] . " JOIN $table$alias ON " . $item['filter'];
         }
         return $joinStr;
     }
@@ -255,6 +271,8 @@ class Query
      */
     public function build(DbDriverInterface $dbDriver = null)
     {
+        $this->dbDriver = $dbDriver;
+
         $sql = "SELECT " .
             $this->getFields() .
             "FROM " . $this->getJoin();
