@@ -10,6 +10,7 @@ class Query
 {
     protected $fields = [];
     protected $table = "";
+    protected $alias = "";
     protected $where = [];
     protected $groupBy = [];
     protected $orderBy = [];
@@ -76,11 +77,13 @@ class Query
      *    $query->table('product');
      *
      * @param string $table
+     * @param null $alias
      * @return $this
      */
-    public function table($table)
+    public function table($table, $alias = null)
     {
         $this->table = $table;
+        $this->alias = $alias;
 
         return $this;
     }
@@ -91,25 +94,42 @@ class Query
      *
      * @param string $table
      * @param string $filter
+     * @param null $alias
      * @return $this
      */
-    public function join($table, $filter)
+    public function join($table, $filter, $alias = null)
     {
-        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER'];
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
     /**
      * Example:
-     *    $query->join('sales', 'product.id = sales.id');
+     *    $query->leftJoin('sales', 'product.id = sales.id');
      *
      * @param string $table
      * @param string $filter
+     * @param null $alias
      * @return $this
      */
-    public function leftJoin($table, $filter)
+    public function leftJoin($table, $filter, $alias = null)
     {
-        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT'];
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
+    /**
+     * Example:
+     *    $query->rightJoin('sales', 'product.id = sales.id');
+     *
+     * @param string $table
+     * @param string $filter
+     * @param null $alias
+     * @return $this
+     */
+    public function rightJoin($table, $filter, $alias = null)
+    {
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'RIGHT', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
@@ -203,9 +223,10 @@ class Query
     
     protected function getJoin()
     {
-        $joinStr = $this->table;
+        $joinStr = $this->table . (!empty($this->alias) ? " as " . $this->alias : "");
         foreach ($this->join as $item) {
-            $joinStr .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . ' ON ' . $item['filter'];
+            $alias = $item['table'] == $item['alias'] ? "" : " as ". $item['alias'];
+            $joinStr .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . "$alias ON " . $item['filter'];
         }
         return $joinStr;
     }
