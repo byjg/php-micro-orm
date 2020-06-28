@@ -93,7 +93,7 @@ class Query
      * Example:
      *    $query->join('sales', 'product.id = sales.id');
      *
-     * @param string $table
+     * @param Query|string $table
      * @param string $filter
      * @param null $alias
      * @return $this
@@ -108,7 +108,7 @@ class Query
      * Example:
      *    $query->leftJoin('sales', 'product.id = sales.id');
      *
-     * @param string $table
+     * @param Query|string $table
      * @param string $filter
      * @param null $alias
      * @return $this
@@ -123,7 +123,7 @@ class Query
      * Example:
      *    $query->rightJoin('sales', 'product.id = sales.id');
      *
-     * @param string $table
+     * @param Query|string $table
      * @param string $filter
      * @param null $alias
      * @return $this
