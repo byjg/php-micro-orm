@@ -215,6 +215,21 @@ class Repository
     }
 
     /**
+     * Get by Query without map to an instance.
+     *
+     * @param Query $query
+     * @return array
+     * @throws Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
+    public function getByQueryRaw(Query $query)
+    {
+        $query = $query->build($this->getDbDriver());
+        $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);
+        return $iterator->toArray();
+    }
+
+    /**
      * @param mixed $instance
      * @return mixed
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
