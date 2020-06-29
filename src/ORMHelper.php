@@ -4,6 +4,11 @@ namespace ByJG\MicroOrm;
 
 class ORMHelper
 {
+    /**
+     * @param string $sql
+     * @param array $params
+     * @return string
+     */
     public static function processLiteral($sql, &$params)
     {
         if (!is_array($params)) {

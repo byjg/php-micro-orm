@@ -78,7 +78,7 @@ class Query
      *    $query->table('product');
      *
      * @param string $table
-     * @param null $alias
+     * @param string $alias
      * @return $this
      */
     public function table($table, $alias = null)
@@ -95,7 +95,7 @@ class Query
      *
      * @param Query|string $table
      * @param string $filter
-     * @param null $alias
+     * @param string $alias
      * @return $this
      */
     public function join($table, $filter, $alias = null)
@@ -110,7 +110,7 @@ class Query
      *
      * @param Query|string $table
      * @param string $filter
-     * @param null $alias
+     * @param string $alias
      * @return $this
      */
     public function leftJoin($table, $filter, $alias = null)
@@ -125,7 +125,7 @@ class Query
      *
      * @param Query|string $table
      * @param string $filter
-     * @param null $alias
+     * @param string $alias
      * @return $this
      */
     public function rightJoin($table, $filter, $alias = null)
