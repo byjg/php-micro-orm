@@ -10,6 +10,7 @@ class Query
 {
     protected $fields = [];
     protected $table = "";
+    protected $alias = "";
     protected $where = [];
     protected $groupBy = [];
     protected $orderBy = [];
@@ -17,6 +18,7 @@ class Query
     protected $limitStart = null;
     protected $limitEnd = null;
     protected $top = null;
+    protected $dbDriver = null;
 
     protected $forUpdate = false;
 
@@ -76,11 +78,13 @@ class Query
      *    $query->table('product');
      *
      * @param string $table
+     * @param string $alias
      * @return $this
      */
-    public function table($table)
+    public function table($table, $alias = null)
     {
         $this->table = $table;
+        $this->alias = $alias;
 
         return $this;
     }
@@ -89,27 +93,44 @@ class Query
      * Example:
      *    $query->join('sales', 'product.id = sales.id');
      *
-     * @param string $table
+     * @param Query|string $table
      * @param string $filter
+     * @param string $alias
      * @return $this
      */
-    public function join($table, $filter)
+    public function join($table, $filter, $alias = null)
     {
-        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER'];
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
     /**
      * Example:
-     *    $query->join('sales', 'product.id = sales.id');
+     *    $query->leftJoin('sales', 'product.id = sales.id');
      *
-     * @param string $table
+     * @param Query|string $table
      * @param string $filter
+     * @param string $alias
      * @return $this
      */
-    public function leftJoin($table, $filter)
+    public function leftJoin($table, $filter, $alias = null)
     {
-        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT'];
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
+    /**
+     * Example:
+     *    $query->rightJoin('sales', 'product.id = sales.id');
+     *
+     * @param Query|string $table
+     * @param string $filter
+     * @param string $alias
+     * @return $this
+     */
+    public function rightJoin($table, $filter, $alias = null)
+    {
+        $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'RIGHT', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
@@ -200,12 +221,28 @@ class Query
 
         return ' ' . implode(', ', $this->fields) . ' ';
     }
-    
+
+    /**
+     * @return string
+     * @throws InvalidArgumentException
+     */
     protected function getJoin()
     {
-        $joinStr = $this->table;
+        $joinStr = $this->table . (!empty($this->alias) ? " as " . $this->alias : "");
         foreach ($this->join as $item) {
-            $joinStr .= ' ' . $item['type'] . ' JOIN ' . $item['table'] . ' ON ' . $item['filter'];
+            $table = $item['table'];
+            if ($table instanceof Query) {
+                $subQuery = $table->build($this->dbDriver);
+                if (!empty($subQuery["params"])) {
+                    throw new InvalidArgumentException("SubQuery does not support filters");
+                }
+                if ($item["alias"] instanceof Query) {
+                    throw new InvalidArgumentException("SubQuery requires you define an alias");
+                }
+                $table = "(${subQuery["sql"]})";
+            }
+            $alias = $item['table'] == $item['alias'] ? "" : " as ". $item['alias'];
+            $joinStr .= ' ' . $item['type'] . " JOIN $table$alias ON " . $item['filter'];
         }
         return $joinStr;
     }
@@ -234,6 +271,8 @@ class Query
      */
     public function build(DbDriverInterface $dbDriver = null)
     {
+        $this->dbDriver = $dbDriver;
+
         $sql = "SELECT " .
             $this->getFields() .
             "FROM " . $this->getJoin();

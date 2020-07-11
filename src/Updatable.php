@@ -88,7 +88,7 @@ class Updatable
 
     /**
      * @param $params
-     * @param \ByJG\AnyDataset\Db\DbFunctionsInterface|null $dbHelper
+     * @param DbFunctionsInterface|null $dbHelper
      * @return null|string|string[]
      * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
@@ -118,10 +118,10 @@ class Updatable
     }
 
     /**
-     * @param $params
-     * @param \ByJG\AnyDataset\Db\DbFunctionsInterface|null $dbHelper
-     * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param array $params
+     * @param DbFunctionsInterface|null $dbHelper
+     * @return string
+     * @throws InvalidArgumentException
      */
     public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
     {
@@ -158,9 +158,9 @@ class Updatable
     }
 
     /**
-     * @param $params
-     * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param array $params
+     * @return string
+     * @throws InvalidArgumentException
      */
     public function buildDelete(&$params)
     {

@@ -17,7 +17,7 @@
     "require": {
         "php": ">=5.6.0",
         "ext-json": "*",
-        "byjg/anydataset-db": "4.0.*",
+        "byjg/anydataset-db": "4.1.*",
         "byjg/serializer": "1.0.*"
     },
     "require-dev": {

@@ -579,4 +579,32 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, count($result));
     }
+
+    public function testQueryRaw()
+    {
+        $query = Query::getInstance()
+            ->fields([
+                "name",
+                "julianday('2020-06-28') - julianday(createdate) as days"
+            ])
+            ->table($this->userMapper->getTable())
+            ->limit(1, 1);
+
+        $result = $this->repository->getByQuery($query);
+
+        $this->assertEquals(null, $result[0]->getId());
+        $this->assertEquals('Jane Doe', $result[0]->getName());
+        $this->assertEquals(null, $result[0]->getCreatedate());
+
+        $this->assertEquals(1, count($result));
+
+        $result = $this->repository->getByQueryRaw($query);
+        $this->assertEquals([
+            [
+                "name" => "Jane Doe",
+                "days" => 1271.0
+            ]
+        ], $result);
+    }
+
 }

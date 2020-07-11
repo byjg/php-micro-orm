@@ -105,7 +105,7 @@ class Mapper
     }
 
     /**
-     * @return string
+     * @return object
      */
     public function getEntity()
     {
@@ -163,6 +163,10 @@ class Mapper
         return $fieldMap[$key];
     }
 
+    /**
+     * @param null $fieldName
+     * @return array|mixed|null
+     */
     public function getFieldAlias($fieldName = null)
     {
         if (empty($fieldName)) {
