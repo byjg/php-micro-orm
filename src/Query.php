@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\Serializer\BinderObject;
+use ByJG\Serializer\SerializerObject;
 
 class Query
 {
@@ -56,7 +57,7 @@ class Query
     {
         $entityClass = $mapper->getEntity();
         $entity = new $entityClass();
-        $serialized = BinderObject::toArrayFrom($entity);
+        $serialized = SerializerObject::instance($entity)->serialize();
 
         foreach (array_keys($serialized) as $fieldName) {
             $mapField = $mapper->getFieldMap($fieldName, Mapper::FIELDMAP_FIELD);

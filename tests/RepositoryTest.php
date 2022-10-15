@@ -41,13 +41,13 @@ class RepositoryTest extends TestCase
      */
     protected $repository;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
 
         $this->dbDriver->execute('create table users (
-            id integer primary key  autoincrement, 
-            name varchar(45), 
+            id integer primary key  autoincrement,
+            name varchar(45),
             createdate datetime);'
         );
         $this->dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
@@ -70,7 +70,7 @@ class RepositoryTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $uri = new Uri(self::URI);
         unlink($uri->getPath());

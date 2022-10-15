@@ -3,6 +3,7 @@
 namespace Test;
 
 use ByJG\MicroOrm\ConnectionManager;
+use ByJG\MicroOrm\Exception\TransactionException;
 use PHPUnit\Framework\TestCase;
 
 class ConnectionManagerTest extends TestCase
@@ -12,12 +13,12 @@ class ConnectionManagerTest extends TestCase
      */
     protected $object;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->object = new ConnectionManager();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->object->destroy();
         $this->object = null;
@@ -60,12 +61,10 @@ class ConnectionManagerTest extends TestCase
         $this->assertEquals(2, $this->object->count());
     }
 
-    /**
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
-     * @expectedException \ByJG\MicroOrm\Exception\TransactionException
-     */
     public function testBeginTransactionError()
     {
+        $this->expectException(TransactionException::class);
+
         $this->object->addConnection("sqlite:///tmp/a.db");
         $this->object->addConnection("sqlite:///tmp/d.db");
 
@@ -75,23 +74,18 @@ class ConnectionManagerTest extends TestCase
         $this->object->beginTransaction();
     }
 
-    /**
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
-     * @expectedException \ByJG\MicroOrm\Exception\TransactionException
-     */
     public function testRollbackTransactionError()
     {
+        $this->expectException(TransactionException::class);
+
         $this->object->addConnection("sqlite:///tmp/c.db");
         $this->assertEquals(1, $this->object->count());
         $this->object->rollbackTransaction();
     }
 
-    /**
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
-     * @expectedException \ByJG\MicroOrm\Exception\TransactionException
-     */
     public function testCommitTransactionError()
     {
+        $this->expectException(TransactionException::class);
         $this->object->addConnection("sqlite:///tmp/d.db");
         $this->assertEquals(1, $this->object->count());
         $this->object->commitTransaction();

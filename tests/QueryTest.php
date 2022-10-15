@@ -2,6 +2,7 @@
 
 namespace Test;
 
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Insert;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
@@ -14,12 +15,12 @@ class QueryTest extends TestCase
      */
     protected $object;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->object = new Query();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         $this->object = null;
     }
@@ -299,11 +300,12 @@ class QueryTest extends TestCase
     /**
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
-     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
-     * @expectedExceptionMessage SubQuery requires you define an alias
      */
     public function testSubQueryWithoutAlias()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("SubQuery requires you define an alias");
+
         $subQuery = Query::getInstance()
             ->table("subtest")
             ->fields(
@@ -326,11 +328,12 @@ class QueryTest extends TestCase
     /**
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
-     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
-     * @expectedExceptionMessage SubQuery does not support filters
      */
     public function testSubQueryWithoFilter()
     {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("SubQuery does not support filters");
+
         $subQuery = Query::getInstance()
             ->table("subtest")
             ->fields(

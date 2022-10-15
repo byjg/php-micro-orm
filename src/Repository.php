@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\Serializer\BinderObject;
+use ByJG\Serializer\SerializerObject;
 
 class Repository
 {
@@ -193,7 +194,7 @@ class Repository
                         unset($fieldalias);
                     }
                 }
-                BinderObject::bindObject($data, $instance);
+                BinderObject::bind($data, $instance);
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
                     $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
@@ -204,7 +205,7 @@ class Repository
                     $data[$property] = $selectMask($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
-                    BinderObject::bindObject($data, $instance);
+                    BinderObject::bind($data, $instance);
                 }
                 $collection[] = $instance;
             }
@@ -240,7 +241,9 @@ class Repository
     public function save($instance)
     {
         // Get all fields
-        $array = BinderObject::toArrayFrom($instance, true);
+        $array = SerializerObject::instance($instance)
+            ->withStopAtFirstLevel()
+            ->serialize();
         $array = $this->getMapper()->prepareField($array);
 
         // Mapping the data
@@ -292,7 +295,7 @@ class Repository
             $this->update($updatable, $array);
         }
 
-        BinderObject::bindObject($array, $instance);
+        BinderObject::bind($array, $instance);
 
         return $instance;
     }
