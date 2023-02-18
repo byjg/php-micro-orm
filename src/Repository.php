@@ -58,7 +58,7 @@ class Repository
     /**
      * @return DbDriverInterface
      */
-    protected function getDbDriver()
+    public function getDbDriver()
     {
         return $this->dbDriver;
     }
