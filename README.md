@@ -17,6 +17,38 @@ This library intended to be very small and very simple to use;
 * A class Mapper is used for mapping the Entity and the repository
 * Small and simple to use
 
+## Architecture
+
+These are the key components:
+
+```text
+┌─────────────────────────────┐                                
+│  Repository                 │                                
+│                             │                                
+│                             │                                
+│                             │                                
+│                             │                                
+│             ┌───────────────┴───┐       ┌───────────────────┐
+│             │      Mapper       │───────│       Model       │
+│             └───────────────┬───┘       └───────────────────┘
+│                             │                                
+│             ┌───────────────┴───┐                            
+│             │       Query       │                            
+│             └───────────────┬───┘                            
+│                             │                                
+│             ┌───────────────┴───┐                            
+│             │ DbDriverInterface │                            
+│             └───────────────┬───┘                            
+│                             │                                
+└─────────────────────────────┘                                
+```
+
+- Model is a get/set class to retrieve or save the data into the database
+- Mapper will create the definitions to map the Model into the Database. 
+- Query will use the Mapper to prepare the query to the database based on DbDriverInterface
+- DbDriverIntarce is the implementation to the Database connection. 
+- Repository put all this together
+
 ## Examples
 
 For the examples below we will use the class 'Users';
@@ -280,7 +312,7 @@ composer require "byjg/micro-orm=4.0.*"
 # Running Tests
 
 ```php
-phpunit 
+vendor/bin/phpunit 
 ```
 
 ## Related Projects
