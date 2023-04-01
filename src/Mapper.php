@@ -40,28 +40,30 @@ class Mapper
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
+        $primaryKey = (array)$primaryKey;
+
         $this->entity = $entity;
         $this->table = $table;
         $this->preserveCasename = $preserveCasename;
-        $this->primaryKey = $this->prepareField($primaryKey);
+        $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
         $this->keygenFunction = $keygenFunction;
     }
 
-    public function prepareField($field)
+    protected function fixFieldName($field)
     {
         if (!$this->preserveCasename) {
-            if (!is_array($field)) {
-                return strtolower($field);
-            }
-
-            $result = [];
-            foreach ($field as $key => $value) {
-                $result[strtolower($key)] = $value;
-            }
-            return $result;
+            return strtolower($field);
         }
 
         return $field;
+    }
+
+    public function prepareField(array $fieldList)
+    {
+        foreach ($fieldList as $key => $value) {
+            $result[$this->fixFieldName($key)] = $value;
+        }
+        return $result;
     }
 
     /**
@@ -86,8 +88,8 @@ class Mapper
             throw new InvalidArgumentException('UpdateMask must be a \Closure or NULL');
         }
 
-        $this->fieldMap[$this->prepareField($property)] = [
-            self::FIELDMAP_FIELD => $this->prepareField($fieldName),
+        $this->fieldMap[$this->fixFieldName($property)] = [
+            self::FIELDMAP_FIELD => $this->fixFieldName($fieldName),
             self::FIELDMAP_UPDATEMASK => $updateMask,
             self::FIELDMAP_SELECTMASK => $selectMask
         ];
@@ -101,7 +103,7 @@ class Mapper
      */
     public function addFieldAlias($fieldName, $alias)
     {
-        $this->fieldAlias[$this->prepareField($fieldName)] = $this->prepareField($alias);
+        $this->fieldAlias[$this->fixFieldName($fieldName)] = $this->fixFieldName($alias);
     }
 
     /**
@@ -122,7 +124,7 @@ class Mapper
     }
 
     /**
-     * @return string
+     * @return array
      */
     public function getPrimaryKey()
     {
@@ -148,7 +150,7 @@ class Mapper
             return $this->fieldMap;
         }
 
-        $property = $this->prepareField($property);
+        $property = $this->fixFieldName($property);
 
         if (!isset($this->fieldMap[$property])) {
             return null;

@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\Serializer\BinderObject;
 use ByJG\Serializer\SerializerObject;
+use InvalidArgumentException;
 
 class Repository
 {
@@ -63,6 +64,27 @@ class Repository
         return $this->dbDriver;
     }
 
+    protected function getPkFilter($pkId)
+    {
+        $pkList = $this->mapper->getPrimaryKey();
+        if (!is_array($pkId)) {
+            $pkId = [$pkId];
+        }
+
+        if (count($pkList) !== count($pkId)) {
+            throw new InvalidArgumentException("The primary key must have " . count($pkList) . " values");
+        }
+
+        $filterList = [];
+        $filterKeys = [];
+        foreach ((array)$pkList as $pk) {
+            $filterList[] = $pk . " = :id$pk";
+            $filterKeys["id$pk"] = array_shift($pkId);
+        }
+
+        return [implode(' and ', $filterList), $filterKeys];
+    }
+
     /**
      * @param array|string $pkId
      * @return mixed|null
@@ -71,7 +93,8 @@ class Repository
      */
     public function get($pkId)
     {
-        $result = $this->getByFilter($this->mapper->getPrimaryKey() . ' = [[id]]', ['id' => $pkId]);
+        [$filterList, $filterKeys] = $this->getPkFilter($pkId);
+        $result = $this->getByFilter($filterList, $filterKeys);
 
         if (count($result) === 1) {
             return $result[0];
@@ -87,10 +110,10 @@ class Repository
      */
     public function delete($pkId)
     {
-        $params = ['id' => $pkId];
+        [$filterList, $filterKeys] = $this->getPkFilter($pkId);
         $updatable = Updatable::getInstance()
             ->table($this->mapper->getTable())
-            ->where($this->mapper->getPrimaryKey() . ' = [[id]]', $params);
+            ->where($filterList, $filterKeys);
 
         return $this->deleteByQuery($updatable);
     }
@@ -142,7 +165,7 @@ class Repository
         $arrValues = (array) $arrValues;
 
         if (empty($field)) {
-            $field = $this->getMapper()->getPrimaryKey();
+            $field = $this->getMapper()->getPrimaryKey()[0];
         }
 
         return $this->getByFilter(
@@ -264,10 +287,19 @@ class Repository
         }
 
         // Defines if is Insert or Update
-        $isInsert =
-            empty($array[$this->mapper->getPrimaryKey()])
-            || ($this->get($array[$this->mapper->getPrimaryKey()]) === null)
-        ;
+        $pkList = $this->getMapper()->getPrimaryKey();
+        if (count($pkList) == 1) {
+            $pk = $pkList[0];
+            $isInsert =
+                empty($array[$pk])
+                || ($this->get($array[$pk]) === null)
+            ;
+        } else {
+            $fields = array_map(function ($item) use ($array) {
+                return $array[$item];
+            }, $pkList);
+            $isInsert = ($this->get($fields) === null);
+        }
 
         // Prepare query to insert
         $updatable = Updatable::getInstance()
@@ -290,7 +322,10 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $array[$this->mapper->getPrimaryKey()] = $this->insert($updatable, $array);
+            $keyReturned = $this->insert($updatable, $array);
+            if (count($pkList) == 1) {
+                $array[$pkList[0]] = $keyReturned;
+            }
         } else {
             $this->update($updatable, $array);
         }
@@ -338,7 +373,7 @@ class Repository
      */
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
-        $params[$this->mapper->getPrimaryKey()] = $keyGen;
+        $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
         $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
         $this->getDbDriver()->execute($sql, $params);
         return $keyGen;
@@ -351,8 +386,12 @@ class Repository
      */
     protected function update(Updatable $updatable, array $params)
     {
-        $params = array_merge($params, ['_id' => $params[$this->mapper->getPrimaryKey()]]);
-        $updatable->where($this->mapper->getPrimaryKey() . ' = [[_id]] ', ['_id' => $params['_id']]);
+        $fields = array_map(function ($item) use ($params) {
+            return $params[$item];
+        }, $this->mapper->getPrimaryKey());
+
+        [$filterList, $filterKeys] = $this->getPkFilter($fields);
+        $updatable->where($filterList, $filterKeys);
 
         $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
 
