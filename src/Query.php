@@ -19,6 +19,7 @@ class Query
     protected $limitEnd = null;
     protected $top = null;
     protected $dbDriver = null;
+    protected $recursive = null;
 
     protected $forUpdate = false;
 
@@ -137,6 +138,15 @@ class Query
     public function crossJoin($table, $alias = null)
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>'', 'type' => 'CROSS', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
+    public function withRecursive(Recursive $recursive)
+    {
+        $this->recursive = $recursive;
+        if (empty($this->table)) {
+            $this->table($recursive->getTableName());
+        }
         return $this;
     }
 
@@ -286,7 +296,12 @@ class Query
     {
         $this->dbDriver = $dbDriver;
 
-        $sql = "SELECT " .
+        $sql = "";
+        if (!empty($this->recursive)) {
+            $sql = $this->recursive->build($dbDriver);
+        }
+
+        $sql .= "SELECT " .
             $this->getFields() .
             "FROM " . $this->getJoin();
         
