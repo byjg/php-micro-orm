@@ -267,7 +267,129 @@ class QueryTest extends TestCase
         );
     }
 
-    public function testSubQuery()
+    public function testCrossJoin()
+    {
+        $query = Query::getInstance()
+            ->table('foo')
+            ->crossJoin("bar")
+            ->where('foo.field = :field', ['field' => new Literal('ABC')])
+            ->where('bar.other = :other', ['other' => 'test']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM foo CROSS JOIN bar WHERE foo.field = ABC AND bar.other = :other',
+                'params' => ['other' => 'test']
+            ],
+            $result
+        );
+    }
+
+    public function testCrossJoinAlias()
+    {
+        $query = Query::getInstance()
+            ->table('foo')
+            ->crossJoin("bar", "b")
+            ->where('foo.field = :field', ['field' => new Literal('ABC')])
+            ->where('b.other = :other', ['other' => 'test']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM foo CROSS JOIN bar as b WHERE foo.field = ABC AND b.other = :other',
+                'params' => ['other' => 'test']
+            ],
+            $result
+        );
+    }
+
+    public function testSubQueryTable()
+    {
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table($subQuery, 'sq')
+            ->where('sq.date < :date', ['date' => '2020-06-01']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq WHERE sq.date < :date',
+                'params' => ['date' => '2020-06-01']
+            ],
+            $result
+        );
+
+    }
+
+    /**
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
+    public function testSubQueryTableWithoutAlias()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("SubQuery requires you define an alias");
+
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table($subQuery)
+            ->where('sq.date < :date', ['date' => '2020-06-01']);
+
+        $result = $query->build();
+    }
+
+    /**
+     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
+    public function testSubQueryTableWithoFilter()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("SubQuery does not support filters");
+
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "id",
+                    "max(date) as date"
+                ]
+            )
+            ->where("date > ':test'", ['test' => "2020-06-01"])
+            ->groupBy(["id"])
+        ;
+
+        $query = Query::getInstance()
+            ->table($subQuery)
+            ->where('test.date < :date', ['date' => '2020-06-28']);
+
+        $result = $query->build();
+    }
+
+    public function testSubQueryJoin()
     {
         $subQuery = Query::getInstance()
             ->table("subtest")
@@ -301,7 +423,7 @@ class QueryTest extends TestCase
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function testSubQueryWithoutAlias()
+    public function testSubQueryJoinWithoutAlias()
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("SubQuery requires you define an alias");
@@ -329,7 +451,7 @@ class QueryTest extends TestCase
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function testSubQueryWithoFilter()
+    public function testSubQueryJoinWithoFilter()
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("SubQuery does not support filters");

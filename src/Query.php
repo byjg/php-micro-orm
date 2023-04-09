@@ -4,7 +4,6 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Serializer\BinderObject;
 use ByJG\Serializer\SerializerObject;
 
 class Query
@@ -135,6 +134,12 @@ class Query
         return $this;
     }
 
+    public function crossJoin($table, $alias = null)
+    {
+        $this->join[] = [ 'table'=>$table, 'filter'=>'', 'type' => 'CROSS', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
@@ -229,24 +234,31 @@ class Query
      */
     protected function getJoin()
     {
-        $joinStr = $this->table . (!empty($this->alias) ? " as " . $this->alias : "");
+        $joinStr = $this->buildTable($this->table, $this->alias);
         foreach ($this->join as $item) {
-            $table = $item['table'];
-            if ($table instanceof Query) {
-                $subQuery = $table->build($this->dbDriver);
-                if (!empty($subQuery["params"])) {
-                    throw new InvalidArgumentException("SubQuery does not support filters");
-                }
-                if ($item["alias"] instanceof Query) {
-                    throw new InvalidArgumentException("SubQuery requires you define an alias");
-                }
-                $table = "(${subQuery["sql"]})";
+            $table = $this->buildTable($item['table'], $item['alias']);
+            $joinStr .= ' ' . $item['type'] . " JOIN $table";
+            if (!empty($item['filter'])) {
+                $joinStr .= " ON " . $item['filter'];
             }
-            $alias = $item['table'] == $item['alias'] ? "" : " as ". $item['alias'];
-            $joinStr .= ' ' . $item['type'] . " JOIN $table$alias ON " . $item['filter'];
         }
         return $joinStr;
     }
+
+    protected function buildTable($table, $alias)
+    {
+        if ($table instanceof Query) {
+            $subQuery = $table->build($this->dbDriver);
+            if (!empty($subQuery["params"])) {
+                throw new InvalidArgumentException("SubQuery does not support filters");
+            }
+            if (empty($alias) || $alias instanceof Query) {
+                throw new InvalidArgumentException("SubQuery requires you define an alias");
+            }
+            $table = "({$subQuery["sql"]})";
+        }
+        return $table . (!empty($alias) && $table != $alias ? " as " . $alias : "");
+    }   
     
     protected function getWhere()
     {
