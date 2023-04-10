@@ -365,11 +365,8 @@ class QueryTest extends TestCase
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function testSubQueryTableWithoFilter()
+    public function testSubQueryTableWithFilter()
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("SubQuery does not support filters");
-
         $subQuery = Query::getInstance()
             ->table("subtest")
             ->fields(
@@ -378,15 +375,26 @@ class QueryTest extends TestCase
                     "max(date) as date"
                 ]
             )
-            ->where("date > ':test'", ['test' => "2020-06-01"])
+            ->where("date > :test", ['test' => "2020-06-01"])
             ->groupBy(["id"])
         ;
 
         $query = Query::getInstance()
-            ->table($subQuery)
-            ->where('test.date < :date', ['date' => '2020-06-28']);
+            ->table($subQuery, 'sq')
+            ->where('sq.date < :date', ['date' => '2020-06-28']);
 
         $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  * FROM (SELECT  id, max(date) as date FROM subtest WHERE date > :test GROUP BY id) as sq WHERE sq.date < :date',
+                'params' => [
+                    'test' => '2020-06-01',
+                    'date' => '2020-06-28',
+                ]
+            ],
+            $result
+        );
     }
 
     public function testSubQueryJoin()
@@ -451,7 +459,7 @@ class QueryTest extends TestCase
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function testSubQueryJoinWithoFilter()
+    public function testSubQueryJoinWithFilter()
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("SubQuery does not support filters");

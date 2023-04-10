@@ -258,7 +258,7 @@ class Query
             } elseif ($field instanceof Query) {
                 $subQuery = $field->build($this->dbDriver);
                 $fieldList .= '(' . $subQuery['sql'] . ') as ' . $alias;
-                $params[] = $subQuery['params'];
+                $params = array_merge($params, $subQuery['params']);
             } else {
                 $fieldList .= $field . ' as ' . $alias;
             }
@@ -273,30 +273,33 @@ class Query
      */
     protected function getJoin()
     {
-        $joinStr = $this->buildTable($this->table, $this->alias);
+        [ $joinStr, $params ] = $this->buildTable($this->table, $this->alias);
         foreach ($this->join as $item) {
-            $table = $this->buildTable($item['table'], $item['alias']);
+            [ $table, $moreParams ] = $this->buildTable($item['table'], $item['alias'], false);
             $joinStr .= ' ' . $item['type'] . " JOIN $table";
             if (!empty($item['filter'])) {
                 $joinStr .= " ON " . $item['filter'];
             }
+            $params = array_merge($params, $moreParams);
         }
-        return $joinStr;
+        return [ $joinStr, $params ];
     }
 
-    protected function buildTable($table, $alias)
+    protected function buildTable($table, $alias, $supportParams = true)
     {
+        $params = [];
         if ($table instanceof Query) {
             $subQuery = $table->build($this->dbDriver);
-            if (!empty($subQuery["params"])) {
+            if (!empty($subQuery["params"]) && !$supportParams) {
                 throw new InvalidArgumentException("SubQuery does not support filters");
             }
             if (empty($alias) || $alias instanceof Query) {
                 throw new InvalidArgumentException("SubQuery requires you define an alias");
             }
             $table = "({$subQuery["sql"]})";
+            $params = $subQuery["params"];
         }
-        return $table . (!empty($alias) && $table != $alias ? " as " . $alias : "");
+        return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
     }   
     
     protected function getWhere()
@@ -331,15 +334,18 @@ class Query
         }
 
         [ $fieldList , $params ] = $this->getFields();
+        [ $tableList , $paramsTable ] = $this->getJoin();
+
+        $params = array_merge($params, $paramsTable);
 
         $sql .= "SELECT " .
             $fieldList .
-            "FROM " . $this->getJoin();
+            "FROM " . $tableList;
         
         $whereStr = $this->getWhere();
         if (!is_null($whereStr)) {
             $sql .= ' WHERE ' . $whereStr[0];
-            $params = $whereStr[1];
+            $params = array_merge($params, $whereStr[1]);
         }
 
         $sql .= $this->addGroupBy();
