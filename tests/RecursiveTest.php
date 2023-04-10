@@ -27,7 +27,7 @@ class RecursiveTest extends TestCase
         $this->assertEquals(
             [
                 'sql' => $expected,
-                'params' => null
+                'params' => []
             ],
             $query->build()
         );

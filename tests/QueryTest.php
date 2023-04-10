@@ -31,7 +31,7 @@ class QueryTest extends TestCase
         $this->assertEquals(
             [
                 'sql' => 'SELECT  * FROM test',
-                'params' => null
+                'params' => []
             ],
             $this->object->build()
         );
@@ -44,7 +44,7 @@ class QueryTest extends TestCase
         $this->assertEquals(
             [
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test',
-                'params' => null
+                'params' => []
             ],
             $this->object->build()
         );
@@ -55,7 +55,7 @@ class QueryTest extends TestCase
         $this->assertEquals(
             [
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1',
-                'params' => null
+                'params' => []
             ],
             $this->object->build()
         );
@@ -66,7 +66,7 @@ class QueryTest extends TestCase
         $this->assertEquals(
             [
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1',
-                'params' => null
+                'params' => []
             ],
             $this->object->build()
         );
@@ -474,5 +474,40 @@ class QueryTest extends TestCase
             ->where('test.date < :date', ['date' => '2020-06-28']);
 
         $result = $query->build();
+    }
+
+    public function testSubQueryField()
+    {
+        $subQuery = Query::getInstance()
+            ->table("subtest")
+            ->fields(
+                [
+                    "max(date) as date"
+                ]
+            )
+        ;
+
+        $query = Query::getInstance()
+            ->table('test')
+            ->fields(
+                [
+                    "test.id",
+                    "test.name",
+                    "test.date",
+                ]
+            )
+            ->field($subQuery, 'subdate')
+            ->where('test.date < :date', ['date' => '2020-06-28']);
+
+        $result = $query->build();
+
+        $this->assertEquals(
+            [
+                'sql' => 'SELECT  test.id, test.name, test.date, (SELECT  max(date) as date FROM subtest) as subdate FROM test WHERE test.date < :date',
+                'params' => ['date' => '2020-06-28']
+            ],
+            $result
+        );
+
     }
 }

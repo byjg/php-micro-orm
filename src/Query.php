@@ -39,10 +39,26 @@ class Query
     public function fields(array $fields)
     {
         foreach ($fields as $field) {
-            if ($field instanceof Mapper) {
-                $this->addFieldFromMapper($field);
-                continue;
-            }
+            $this->field($field);
+        }
+
+        return $this;
+    }
+
+    public function field($field, $alias = null)
+    {
+        if ($field instanceof Mapper) {
+            $this->addFieldFromMapper($field);
+            return $this;
+        }
+
+        if ($field instanceof Query && empty($alias)) {
+            throw new InvalidArgumentException("You must define an alias for the subquery");
+        }
+
+        if (!empty($alias)) {
+            $this->fields[$alias] = $field;
+        } else {
             $this->fields[] = $field;
         }
 
@@ -66,11 +82,7 @@ class Query
             }
 
             $alias = $mapper->getFieldAlias($mapField);
-            if (!empty($alias)) {
-                $alias = ' as ' . $alias;
-            }
-
-            $this->fields[] = $mapper->getTable() . '.' . $mapField . $alias;
+            $this->field($mapper->getTable() . '.' . $mapField, $alias);
         }
     }
 
@@ -232,10 +244,27 @@ class Query
     protected function getFields()
     {
         if (empty($this->fields)) {
-            return ' * ';
+            return [' * ', [] ];
         }
 
-        return ' ' . implode(', ', $this->fields) . ' ';
+        $fieldList = '';
+        $params = [];
+        foreach ($this->fields as $alias => $field) {
+            if (!empty($fieldList)) {
+                $fieldList .= ', ';
+            }
+            if (is_numeric($alias)) {
+                $fieldList .= $field;
+            } elseif ($field instanceof Query) {
+                $subQuery = $field->build($this->dbDriver);
+                $fieldList .= '(' . $subQuery['sql'] . ') as ' . $alias;
+                $params[] = $subQuery['params'];
+            } else {
+                $fieldList .= $field . ' as ' . $alias;
+            }
+        }
+
+        return [' ' . $fieldList . ' ', $params ];
     }
 
     /**
@@ -301,12 +330,13 @@ class Query
             $sql = $this->recursive->build($dbDriver);
         }
 
+        [ $fieldList , $params ] = $this->getFields();
+
         $sql .= "SELECT " .
-            $this->getFields() .
+            $fieldList .
             "FROM " . $this->getJoin();
         
         $whereStr = $this->getWhere();
-        $params = null;
         if (!is_null($whereStr)) {
             $sql .= ' WHERE ' . $whereStr[0];
             $params = $whereStr[1];
