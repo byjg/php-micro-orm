@@ -79,17 +79,17 @@ class RepositoryTest extends TestCase
     public function testGet()
     {
         $users = $this->repository->get(1);
-        $this->assertSame(1, $users->getId());
+        $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
 
         $users = $this->repository->get(2);
-        $this->assertSame(2, $users->getId());
+        $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
 
         $users = $this->repository->get(new Literal(1));
-        $this->assertSame(1, $users->getId());
+        $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
     }
@@ -119,16 +119,16 @@ class RepositoryTest extends TestCase
         );
 
         $users = $this->repository->get(1);
-        $this->assertSame(1, $users->getId());
+        $this->assertEquals(1, $users->getId());
         $this->assertEquals('[JOHN DOE] - 2017-01-02', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
-        $this->assertSame(2017, $users->getYear());
+        $this->assertEquals(2017, $users->getYear());
 
         $users = $this->repository->get(2);
-        $this->assertSame(2, $users->getId());
+        $this->assertEquals(2, $users->getId());
         $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
-        $this->assertSame(2017, $users->getYear());
+        $this->assertEquals(2017, $users->getYear());
     }
 
     public function testInsert()
@@ -139,11 +139,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertSame(4, $users->getId());
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertSame(4, $users2->getId());
+        $this->assertEquals(4, $users2->getId());
         $this->assertEquals('Bla99991919', $users2->getName());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
@@ -161,11 +161,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertSame(4, $users->getId());
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertSame(4, $users2->getId());
+        $this->assertEquals(4, $users2->getId());
         $this->assertEquals('Bla-add', $users2->getName());
         $this->assertEquals('2017-12-21', $users2->getCreatedate());
     }
@@ -178,11 +178,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertSame(4, $users->getId());
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertSame(4, $users2->getId());
+        $this->assertEquals(4, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
@@ -204,11 +204,11 @@ class RepositoryTest extends TestCase
         $users->setCreatedate('2015-08-09');
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertSame(50, $users->getId());
+        $this->assertEquals(50, $users->getId());
 
         $users2 = $this->repository->get(50);
 
-        $this->assertSame(50, $users2->getId());
+        $this->assertEquals(50, $users2->getId());
         $this->assertEquals('Bla99991919', $users2->getName());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
@@ -243,13 +243,13 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertSame(4, $users->getId());
+        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
-        $this->assertSame(4, $users2->getId());
+        $this->assertEquals(4, $users2->getId());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
-        $this->assertSame(2015, $users2->getYear());
+        $this->assertEquals(2015, $users2->getYear());
         $this->assertEquals('Sr. John Doe - 2015-08-09', $users2->getName());
     }
 
@@ -262,12 +262,12 @@ class RepositoryTest extends TestCase
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
-        $this->assertSame(1, $users2->getId());
+        $this->assertEquals(1, $users2->getId());
         $this->assertEquals('New Name', $users2->getName());
         $this->assertEquals('2016-01-09', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
-        $this->assertSame(2, $users2->getId());
+        $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
@@ -287,12 +287,12 @@ class RepositoryTest extends TestCase
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
-        $this->assertSame(1, $users2->getId());
+        $this->assertEquals(1, $users2->getId());
         $this->assertEquals('New Name-upd', $users2->getName());
         $this->assertEquals('2017-12-21', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
-        $this->assertSame(2, $users2->getId());
+        $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
@@ -305,7 +305,7 @@ class RepositoryTest extends TestCase
 
         $users2 = $this->repository->get(1);
 
-        $this->assertSame(1, $users2->getId());
+        $this->assertEquals(1, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
         $this->assertEquals('2017-01-02', $users2->getCreatedate());
     }
@@ -340,16 +340,16 @@ class RepositoryTest extends TestCase
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
-        $this->assertSame(1, $users2->getId());
+        $this->assertEquals(1, $users2->getId());
         $this->assertEquals('Sr. New Name', $users2->getName());
         $this->assertEquals('2016-01-09', $users2->getCreatedate());
-        $this->assertSame(2016, $users2->getYear());
+        $this->assertEquals(2016, $users2->getYear());
 
         $users2 = $this->repository->get(2);
-        $this->assertSame(2, $users2->getId());
+        $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
-        $this->assertSame(2017, $users2->getYear());
+        $this->assertEquals(2017, $users2->getYear());
     }
 
 
@@ -359,7 +359,7 @@ class RepositoryTest extends TestCase
         $this->assertEmpty($this->repository->get(1));
 
         $users = $this->repository->get(2);
-        $this->assertSame(2, $users->getId());
+        $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
     }
@@ -370,7 +370,7 @@ class RepositoryTest extends TestCase
         $this->assertEmpty($this->repository->get(1));
 
         $users = $this->repository->get(2);
-        $this->assertSame(2, $users->getId());
+        $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
     }
@@ -384,7 +384,7 @@ class RepositoryTest extends TestCase
         $this->repository->deleteByQuery($query);
 
         $users = $this->repository->get(1);
-        $this->assertSame(1, $users->getId());
+        $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
 
@@ -417,9 +417,9 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(count($result), 1);
 
-        $this->assertSame(3, $result[0]->getId());
-        $this->assertSame(3, $result[0]->getIduser());
-        $this->assertSame(3.5, $result[0]->getValue());
+        $this->assertEquals(3, $result[0]->getId());
+        $this->assertEquals(3, $result[0]->getIduser());
+        $this->assertEquals(3.5, $result[0]->getValue());
     }
 
     public function testFilterInNone()
@@ -435,7 +435,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(count($result), 1);
 
-        $this->assertSame(2, $result[0]->getId());
+        $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
         $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
     }
@@ -446,11 +446,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(count($result), 2);
 
-        $this->assertSame(2, $result[0]->getId());
+        $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
         $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
 
-        $this->assertSame(3, $result[1]->getId());
+        $this->assertEquals(3, $result[1]->getId());
         $this->assertEquals('JG', $result[1]->getName());
         $this->assertEquals('1974-01-26', $result[1]->getCreatedate());
     }
@@ -481,13 +481,13 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        $this->assertSame(1, $result[0]->getId());
-        $this->assertSame(1, $result[0]->getIduser());
-        $this->assertSame(30.4, $result[0]->getValue());
+        $this->assertEquals(1, $result[0]->getId());
+        $this->assertEquals(1, $result[0]->getIduser());
+        $this->assertEquals(30.4, $result[0]->getValue());
 
-        $this->assertSame(2, $result[1]->getId());
-        $this->assertSame(1, $result[1]->getIduser());
-        $this->assertSame(1250.96, $result[1]->getValue());
+        $this->assertEquals(2, $result[1]->getId());
+        $this->assertEquals(1, $result[1]->getIduser());
+        $this->assertEquals(1250.96, $result[1]->getValue());
     }
 
     public function testJoin()
@@ -506,21 +506,21 @@ class RepositoryTest extends TestCase
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
 
-        $this->assertSame(1, $result[0][0]->getId());
+        $this->assertEquals(1, $result[0][0]->getId());
         $this->assertEquals('John Doe', $result[0][0]->getName());
         $this->assertEquals('2017-01-02', $result[0][0]->getCreatedate());
 
-        $this->assertSame(1, $result[1][0]->getId());
+        $this->assertEquals(1, $result[1][0]->getId());
         $this->assertEquals('John Doe', $result[1][0]->getName());
         $this->assertEquals('2017-01-02', $result[1][0]->getCreatedate());
 
         // - ------------------
 
         $this->assertEmpty($result[0][1]->getIduser());
-        $this->assertSame(30.4, $result[0][1]->getValue());
+        $this->assertEquals(30.4, $result[0][1]->getValue());
 
         $this->assertEmpty($result[1][1]->getIduser());
-        $this->assertSame(1250.96, $result[1][1]->getValue());
+        $this->assertEquals(1250.96, $result[1][1]->getValue());
 
     }
 
@@ -540,7 +540,7 @@ class RepositoryTest extends TestCase
 
         $result = $this->repository->getByQuery($query, [$this->infoMapper]);
 
-        $this->assertSame(2, $result[0][0]->getId());
+        $this->assertEquals(2, $result[0][0]->getId());
         $this->assertEquals('Jane Doe', $result[0][0]->getName());
         $this->assertEquals('2017-01-04', $result[0][0]->getCreatedate());
 
@@ -558,7 +558,7 @@ class RepositoryTest extends TestCase
 
         $result = $this->repository->getByQuery($query);
 
-        $this->assertSame(1, $result[0]->getId());
+        $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
         $this->assertEquals('2017-01-02', $result[0]->getCreatedate());
 
@@ -573,7 +573,7 @@ class RepositoryTest extends TestCase
 
         $result = $this->repository->getByQuery($query);
 
-        $this->assertSame(2, $result[0]->getId());
+        $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
         $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
 
