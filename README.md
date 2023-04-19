@@ -6,11 +6,10 @@
 [![GitHub license](https://img.shields.io/github/license/byjg/micro-orm.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/micro-orm.svg)](https://github.com/byjg/micro-orm/releases/)
 
-
 A micro framework for create a very simple decoupled ORM.
 This library intended to be very small and very simple to use;
 
-**Key Features**
+Key Features:
 
 * Can be used with any DTO, Entity, Model or whatever class with public properties or with getter and setter
 * The repository support a variety of datasources: MySql, Sqlite, Postgres, MySQL, Oracle (see byjg/anydataset)
@@ -22,32 +21,40 @@ This library intended to be very small and very simple to use;
 These are the key components:
 
 ```text
-┌─────────────────────────────┐                                
-│  Repository                 │                                
-│                             │                                
-│                             │                                
-│             ┌───────────────┴───┐       ┌───────────────────┐
-│             │      Mapper       │───────│       Model       │
-│             └───────────────┬───┘       └───────────────────┘
-│                       │     │                                
-│                       │     │                                
-│                       │     │                                
-│             ┌───────────────┴───┐                            
-│             │       Query       │                            
-│             └───────────────┬───┘                            
-│                             │                                
-│             ┌───────────────┴───┐                            
-│             │ DbDriverInterface │                            
-│             └───────────────┬───┘                            
-│                             │                                
-└─────────────────────────────┘                                
+┌──────────────────────────┐
+│ Repository               │              ┌─────────────────────┐
+│                          │         ┌────│        Model        │
+│                          │         │    └─────────────────────┘
+│          ┌───────────────┴─────┐   │               │
+│          │       Mapper        │───┤               │
+│          └───────────────┬─────┘   │               │
+│                     │    │         │    ┌─────────────────────┐
+│                     │    │         └────│    FieldMapping     │
+│                     │    │              └─────────────────────┘
+│                     │    │
+│          ┌───────────────┴─────┐
+│          │        Query        │
+│          └───────────────┬─────┘
+│                          │
+│          ┌───────────────┴─────┐
+│          │  DbDriverInterface  │───────────────┐
+│          └───────────────┬─────┘               │
+│                          │                     │
+└──────────────────────────┘                .─────────.
+                                           │           │
+                                           │`─────────'│
+                                           │           │
+                                           │    DB     │
+                                           │           │
+                                           │           │
+                                            `─────────'
 ```
 
-- Model is a get/set class to retrieve or save the data into the database
-- Mapper will create the definitions to map the Model into the Database. 
-- Query will use the Mapper to prepare the query to the database based on DbDriverInterface
-- DbDriverIntarce is the implementation to the Database connection. 
-- Repository put all this together
+* Model is a get/set class to retrieve or save the data into the database
+* Mapper will create the definitions to map the Model into the Database.
+* Query will use the Mapper to prepare the query to the database based on DbDriverInterface
+* DbDriverIntarce is the implementation to the Database connection.
+* Repository put all this together
 
 ## Examples
 
@@ -77,7 +84,7 @@ $mapper = new \ByJG\MicroOrm\Mapper(
 // Optionally you can define table mappings between the propoerties
 // and the database fields;
 // The example below will map the property 'createdate' to the database field 'created';
-$mapper->addFieldMap('createdate', 'created');
+$mapper->addFieldMapping(FieldMap::create('createdate')->withFieldName('created'));
 ```
 
 Then you need to create the dataset object and the repository:
@@ -143,8 +150,8 @@ $collection = $orderRepository->getByQuery(
 
 ## Using FieldAlias
 
-Field alias is an alternate name for a field. This is usefull for disambiguation on join and leftjoin queries. 
-Imagine in the example above if both tables ITEM and ORDER have the same field called 'ID'. 
+Field alias is an alternate name for a field. This is usefull for disambiguation on join and leftjoin queries.
+Imagine in the example above if both tables ITEM and ORDER have the same field called 'ID'.
 
 In that scenario, the value of ID will be overriden. The solution is use the FieldAlias like below:
 
@@ -152,16 +159,14 @@ In that scenario, the value of ID will be overriden. The solution is use the Fie
 <?php
 // Create the Mapper and the proper fieldAlias
 $orderMapper  = new \ByJG\MicroOrm\Mapper(...);
-$orderMapper->addFieldAlias('id', 'orderid');
+$orderMapper->addFieldMapping(FieldMapping::create('id')->withFieldAlias('orderid'));
 $itemMapper  = new \ByJG\MicroOrm\Mapper(...);
-$itemMapper->addFieldAlias('id', 'itemid');
+$itemMapper->addFieldMappping(FieldMapping::create('id')->withFieldAlias('itemid'));
 
 $query = \ByJG\MicroOrm\Query::getInstance()
-    ->fields([
-        'order.id as orderid',
-        'item.id as itemid',
+    ->field('order.id', 'orderid')
+    ->field('item.id', 'itemid')
         /* Other fields here */
-    ])
     ->table('order')
     ->join('item', 'order.id = item.orderid')
     ->where('name like :part', ['part' => 'A%']);
@@ -191,7 +196,6 @@ $query = \ByJG\MicroOrm\Query::getInstance()
     ]);
 ```
 
-
 ## Tables without auto increments fields
 
 ```php
@@ -202,7 +206,7 @@ $mapper = new \ByJG\MicroOrm\Mapper(
     'users',        // The table that represents this entity
     'id',            // The primary key field
     function () {
-        // calculate and return the unique ID 
+        // calculate and return the unique ID
     }
 );
 ```
@@ -214,21 +218,22 @@ $mapper = new \ByJG\MicroOrm\Mapper(
 // Creating the mapping
 $mapper = new \ByJG\MicroOrm\Mapper(...);
 
-$mapper->addFieldMap(
-    $property,
-    $fielname,
-    // Update Closure 
-    // Returns the field value with a pre-processed function before UPDATE
-    // If sets to NULL this field will never be updated/inserted
-    function ($field, $instance) {
-        return $field; 
-    },
-    // Select Closure 
-    // Returns the field value with a post-processed value AFTER query from DB
-    function ($field, $instance) {
-        return $field; 
-    }
-);
+$fieldMap = FieldMap::create('propertyname') // The property name of the entity class
+    // The field name of the table. if not defined will use the property name.
+    ->withFieldName('fieldname')
+    // The field alias of the field in the table. if not defined will use the field name.
+    ->withFieldAlias('alias')
+    // Returns the pre-processed value before UPDATE/INSERT the $field name
+    // If the function returns NULL this field will not be included in the UPDATE/INSERT
+    ->withUpdateFunction(function ($field, $instance) {
+        return $field;
+    })
+    // Returns the field value with a post-processed value of $field AFTER query from DB
+    ->withSelectFunction(function ($field, $instance) {
+        return $field;
+    })
+
+$mapper->addFieldMapping($fieldMap);
 ```
 
 ## Using With Recursive
@@ -249,7 +254,7 @@ $query = \ByJG\MicroOrm\Query::getInstance()
 This will produce the following SQL:
 
 WITH RECURSIVE test(start, end) AS (
-    SELECT 1 as start, 120 as end 
+    SELECT 1 as start, 120 as end
     UNION ALL SELECT start + 10, end - 10 FROM test WHERE start < 100
 ) SELECT start, end FROM test
 */
@@ -257,19 +262,19 @@ WITH RECURSIVE test(start, end) AS (
 
 ## Pre-defined closures for field map
 
-*Mapper::defaultClosure($value, $instance)*
+### Mapper::defaultClosure($value, $instance)
 
 Defines the basic behavior for select and update fields;
 
-*Mapper::doNotUpdateClosure($value, $instance)*
+### Mapper::doNotUpdateClosure($value, $instance)
 
-If set in the update field map will make the field not updatable by the micro-orm. 
+If set in the update field map will make the field not updatable by the micro-orm.
 It is usefull for fields that are pre-defined like 'Primary Key'; timestamp fields based on the
 update and the creation; and others
 
 ## Before insert and update functions
 
-You can also set closure to be applied before insert or update a record. 
+You can also set closure to be applied before insert or update a record.
 In this case will set in the Repository:
 
 ```php
@@ -285,10 +290,10 @@ Repository::setBeforeUpdate(function ($instance) {
 
 ## Reuse Connection
 
-The Repository receives a DbDriverInterface instance (connection). 
-It is normal we create everytime a new connection. 
+The Repository receives a DbDriverInterface instance (connection).
+It is normal we create everytime a new connection.
 But if we need to reuse a previous connection we can use the
-ConnectionManager object to handle it easier. 
+ConnectionManager object to handle it easier.
 
 ```php
 <?php
@@ -298,7 +303,7 @@ $repo1 = new Repository($connectionManager->addConnection("uri://host"));
 
 ...
 
-// If you the same Uri string the ConnectionManager will reuse 
+// If you the same Uri string the ConnectionManager will reuse
 // the last DbDriver instance created
 $repo2 = new Repository($connectionManager->addConnection("uri://host"));
 
@@ -324,28 +329,27 @@ $repo2 = new Repository($connectionManager->addConnection("uri2://host2"));
 $connection->commitTransaction();
 ```
 
-
 ## Install
 
-Just type: 
+Just type:
 
-```
+```bash
 composer require "byjg/micro-orm=4.0.*"
 ```
 
-# Running Tests
+## Running Tests
 
-```php
-vendor/bin/phpunit 
+```bash
+vendor/bin/phpunit
 ```
 
 ## Related Projects
 
-- [Database Migration](https://github.com/byjg/migration)
-- [Anydataset](https://github.com/byjg/anydataset)
-- [PHP Rest Template](https://github.com/byjg/php-rest-template)
-- [USDocker](https://github.com/usdocker/usdocker)
-- [Serializer](https://github.com/byjg/serializer)
+* [Database Migration](https://github.com/byjg/migration)
+* [Anydataset](https://github.com/byjg/anydataset)
+* [PHP Rest Template](https://github.com/byjg/php-rest-template)
+* [USDocker](https://github.com/usdocker/usdocker)
+* [Serializer](https://github.com/byjg/serializer)
 
 ----
 [Open source ByJG](http://opensource.byjg.com)

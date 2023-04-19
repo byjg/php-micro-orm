@@ -211,21 +211,19 @@ class Repository
                 $instance = $item->getEntity();
                 $data = $row->toArray();
 
-                foreach ((array)$item->getFieldAlias() as $fieldname => $fieldalias) {
-                    if (isset($data[$fieldalias])) {
-                        $data[$fieldname] = $data[$fieldalias];
-                        unset($fieldalias);
+                foreach ((array)$item->getFieldMap() as $property => $fieldMap) {
+                    if (!empty($fieldMap->getFieldAlias() && isset($data[$fieldMap->getFieldAlias()]))) {
+                        $data[$fieldMap->getFieldName()] = $data[$fieldMap->getFieldAlias()];
                     }
                 }
                 BinderObject::bind($data, $instance);
 
-                foreach ((array)$item->getFieldMap() as $property => $fieldmap) {
-                    $selectMask = $fieldmap[Mapper::FIELDMAP_SELECTMASK];
+                foreach ((array)$item->getFieldMap() as $property => $fieldMap) {
                     $value = "";
-                    if (isset($data[$fieldmap[Mapper::FIELDMAP_FIELD]])) {
-                        $value = $data[$fieldmap[Mapper::FIELDMAP_FIELD]];
+                    if (isset($data[$fieldMap->getFieldName()])) {
+                        $value = $data[$fieldMap->getFieldName()];
                     }
-                    $data[$property] = $selectMask($value, $instance);
+                    $data[$property] = $fieldMap->getSelectFunctionValue($value, $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
                     BinderObject::bind($data, $instance);
@@ -270,16 +268,15 @@ class Repository
         $array = $this->getMapper()->prepareField($array);
 
         // Mapping the data
-        foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldmap) {
-            $fieldname = $fieldmap[Mapper::FIELDMAP_FIELD];
-            $updateMask = $fieldmap[Mapper::FIELDMAP_UPDATEMASK];
+        foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldMap) {
+            $fieldname = $fieldMap->getFieldName();
 
             // Get the value from the mapped field name
             $value = $array[$property];
             unset($array[$property]);
-            $updateValue = $updateMask($value, $instance);
+            $updateValue = $fieldMap->getUpdateFunctionValue($value, $instance);
 
-            // If no value for UpdateMask, remove from the list;
+            // If no value for UpdateFunction, remove from the list;
             if ($updateValue === false) {
                 continue;
             }

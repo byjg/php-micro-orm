@@ -53,7 +53,7 @@ class Query
         }
 
         if ($field instanceof Query && empty($alias)) {
-            throw new InvalidArgumentException("You must define an alias for the subquery");
+            throw new InvalidArgumentException("You must define an alias for the sub query");
         }
 
         if (!empty($alias)) {
@@ -76,12 +76,15 @@ class Query
         $serialized = SerializerObject::instance($entity)->serialize();
 
         foreach (array_keys($serialized) as $fieldName) {
-            $mapField = $mapper->getFieldMap($fieldName, Mapper::FIELDMAP_FIELD);
-            if (empty($mapField)) {
+            $fieldMapping = $mapper->getFieldMap($fieldName);
+            if (empty($fieldMapping)) {
                 $mapField = $fieldName;
+                $alias = null;
+            } else {
+                $mapField = $fieldMapping->getFieldName();
+                $alias = $fieldMapping->getFieldAlias();
             }
 
-            $alias = $mapper->getFieldAlias($mapField);
             $this->field($mapper->getTable() . '.' . $mapField, $alias);
         }
     }

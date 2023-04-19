@@ -2,7 +2,7 @@
 
 namespace Test;
 
-class items
+class Items
 {
     protected $storeId;
     protected $ItemId;

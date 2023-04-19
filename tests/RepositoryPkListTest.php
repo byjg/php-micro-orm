@@ -102,9 +102,9 @@ class RepositoryPkListTest extends TestCase
         $this->assertEquals(200, $items->getQty());
     }
 
-    // public function testGetSelectMask()
+    // public function testGetSelectFunction()
     // {
-    //     $this->itemsMapper = new Mapper(itemsMap::class, 'items', 'id');
+    //     $this->itemsMapper = new Mapper(Items::class, 'items', 'itemid');
     //     $this->repository = new Repository($this->dbDriver, $this->itemsMapper);
 
     //     $this->itemsMapper->addFieldMap(
@@ -127,13 +127,13 @@ class RepositoryPkListTest extends TestCase
     //     );
 
     //     $items = $this->repository->get(1);
-    //     $this->assertEquals(1, $items->getId());
+    //     $this->assertEquals(1, $items->getItemId());
     //     $this->assertEquals('[JOHN DOE] - 2017-01-02', $items->getName());
     //     $this->assertEquals('2017-01-02', $items->getCreatedate());
     //     $this->assertEquals('2017', $items->getYear());
 
     //     $items = $this->repository->get(2);
-    //     $this->assertEquals(2, $items->getId());
+    //     $this->assertEquals(2, $items->getItemId());
     //     $this->assertEquals('[JANE DOE] - 2017-01-04', $items->getName());
     //     $this->assertEquals('2017-01-04', $items->getCreatedate());
     //     $this->assertEquals('2017', $items->getYear());
@@ -221,7 +221,7 @@ class RepositoryPkListTest extends TestCase
     //     $this->assertEquals('2015-08-09', $items2->getCreatedate());
     // }
 
-    // public function testInsertUpdateMask()
+    // public function testInsertUpdateFunction()
     // {
     //     $this->itemsMapper = new Mapper(itemsMap::class, 'items', 'id');
     //     $this->repository = new Repository($this->dbDriver, $this->itemsMapper);
@@ -318,7 +318,7 @@ class RepositoryPkListTest extends TestCase
     //     $this->assertEquals('2017-01-02', $items2->getCreatedate());
     // }
 
-    // public function testUpdateMask()
+    // public function testUpdateFunction()
     // {
     //     $this->itemsMapper = new Mapper(itemsMap::class, 'items', 'id');
     //     $this->repository = new Repository($this->dbDriver, $this->itemsMapper);

@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
@@ -19,7 +20,7 @@ require_once __DIR__ . '/Model/Info.php';
 class RepositoryTest extends TestCase
 {
 
-    const URI='sqlite:///tmp/teste.db';
+    const URI='sqlite:///tmp/test.db';
 
     /**
      * @var Mapper
@@ -65,7 +66,7 @@ class RepositoryTest extends TestCase
         $this->dbDriver->execute("insert into info (iduser, property) values (1, 1250.96)");
         $this->dbDriver->execute("insert into info (iduser, property) values (3, '3.5')");
         $this->infoMapper = new Mapper(Info::class, 'info', 'id');
-        $this->infoMapper->addFieldMap('value', 'property');
+        $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
 
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
     }
@@ -94,28 +95,24 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-02', $users->getCreatedate());
     }
 
-    public function testGetSelectMask()
+    public function testGetSelectFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            null,
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withSelectFunction(function ($value, $instance) {
                 return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
             }
+            )
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            null,
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
                 return intval($date->format('Y'));
-            }
+            })
+            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
@@ -213,27 +210,24 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
-    public function testInsertUpdateMask()
+    public function testInsertUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withUpdateFunction(function ($value, $instance) {
                 return 'Sr. ' . $value . ' - ' . $instance->getCreatedate();
-            }
+            })
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            Mapper::doNotUpdateClosure(),
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
                 return intval($date->format('Y'));
-            }
+            })
+            ->withFieldName('createdate')
         );
 
         $users = new UsersMap();
@@ -310,27 +304,24 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-02', $users2->getCreatedate());
     }
 
-    public function testUpdateMask()
+    public function testUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withUpdateFunction(function ($value, $instance) {
                 return 'Sr. ' . $value;
-            }
+            })
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            Mapper::doNotUpdateClosure(),
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
                 return intval($date->format('Y'));
-            }
+            })
+            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
