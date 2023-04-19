@@ -189,11 +189,11 @@ class RepositoryTest extends TestCase
         $this->infoMapper = new Mapper(
             Users::class,
             'users',
-            'id',
-            function () {
-                return 50;
-            }
+            'id'
         );
+        $this->infoMapper->withPrimaryKeySeedFunction(function () {
+            return 50;
+        });
         $this->repository = new Repository($this->dbDriver, $this->infoMapper);
 
         $users = new Users();

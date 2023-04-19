@@ -146,7 +146,7 @@ class Repository
         $query = new Query();
         $query->table($this->mapper->getTable())
             ->where($filter, $params);
-        
+
         if ($forUpdate) {
             $query->forUpdate();
         }

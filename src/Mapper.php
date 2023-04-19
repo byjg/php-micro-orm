@@ -11,7 +11,7 @@ class Mapper
     private $entity;
     private $table;
     private $primaryKey;
-    private $keygenFunction = null;
+    private $primaryKeySeedFunction = null;
 
     /**
      * @var FieldMapping[]
@@ -25,16 +25,12 @@ class Mapper
      * @param string $entity
      * @param string $table
      * @param string $primaryKey
-     * @param \Closure $keygenFunction
-     * @param bool $preserveCaseName
      * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
      */
     public function __construct(
         $entity,
         $table,
-        $primaryKey,
-        \Closure $keygenFunction = null,
-        $preserveCaseName = false
+        $primaryKey
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
@@ -43,9 +39,19 @@ class Mapper
 
         $this->entity = $entity;
         $this->table = $table;
-        $this->preserveCaseName = $preserveCaseName;
         $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
-        $this->keygenFunction = $keygenFunction;
+    }
+
+    public function withPrimaryKeySeedFunction(\Closure $primaryKeySeedFunction)
+    {
+        $this->primaryKeySeedFunction = $primaryKeySeedFunction;
+        return $this;
+    }
+
+    public function withPreserveCaseName()
+    {
+        $this->preserveCaseName = true;
+        return $this;
     }
 
     protected function fixFieldName($field)
@@ -53,7 +59,7 @@ class Mapper
         if (is_null($field)) {
             return null;
         }
-        
+
         if (!$this->preserveCaseName) {
             return strtolower($field);
         }
@@ -179,11 +185,11 @@ class Mapper
      */
     public function generateKey()
     {
-        if (empty($this->keygenFunction)) {
+        if (empty($this->primaryKeySeedFunction)) {
             return null;
         }
 
-        $func = $this->keygenFunction;
+        $func = $this->primaryKeySeedFunction;
 
         return $func();
     }
