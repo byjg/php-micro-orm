@@ -288,45 +288,31 @@ Repository::setBeforeUpdate(function ($instance) {
 });
 ```
 
-## Reuse Connection
+## TransactionManager object
 
-The Repository receives a DbDriverInterface instance (connection).
-It is normal we create everytime a new connection.
-But if we need to reuse a previous connection we can use the
-ConnectionManager object to handle it easier.
-
-```php
-<?php
-$connectionManager = new ConnectionManager();
-
-$repo1 = new Repository($connectionManager->addConnection("uri://host"));
-
-...
-
-// If you the same Uri string the ConnectionManager will reuse
-// the last DbDriver instance created
-$repo2 = new Repository($connectionManager->addConnection("uri://host"));
-
-```
-
-## Transaction
-
-If all of DbDriver instance as created by the ConnectionManager you can create
-database transactions including across different databases:
+It allows you to create a single database transaction with multiple repositories.
+If any of the repositories fails the transaction will be rolled back for all repositories.
+When you commit the transaction all repositories will be commited.
 
 ```php
 <?php
-$connectionManager = new ConnectionManager();
+$repo1 = new Repository(...);
+$repo2 = new Repository(...);
 
-$connectionManager->beginTransaction();
-$repo1 = new Repository($connectionManager->addConnection("uri1://host1"));
-$repo2 = new Repository($connectionManager->addConnection("uri2://host2"));
+// Create the TransactionManager
+$transactionManager = new TransactionManager();
+$transactionManager->addRepository($repo1);
+$transactionManager->addRepository($repo2);
 
-// Do some Repository operations;
+// Start the transaction
+$transactionManager->beginTransaction();
+
+//
+// Do some Repository operations with the repo;
 // ...
 
 // commit (or rollback all transactions)
-$connection->commitTransaction();
+$transactionManager->commitTransaction();
 ```
 
 ## Install
