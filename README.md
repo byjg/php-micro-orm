@@ -320,7 +320,7 @@ $transactionManager->commitTransaction();
 Just type:
 
 ```bash
-composer require "byjg/micro-orm=4.0.*"
+composer require "byjg/micro-orm=5.0.*"
 ```
 
 ## Running Tests
