@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
@@ -19,7 +20,7 @@ require_once __DIR__ . '/Model/Info.php';
 class RepositoryTest extends TestCase
 {
 
-    const URI='sqlite:///tmp/teste.db';
+    const URI='sqlite:///tmp/test.db';
 
     /**
      * @var Mapper
@@ -41,13 +42,13 @@ class RepositoryTest extends TestCase
      */
     protected $repository;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
 
         $this->dbDriver->execute('create table users (
-            id integer primary key  autoincrement, 
-            name varchar(45), 
+            id integer primary key  autoincrement,
+            name varchar(45),
             createdate datetime);'
         );
         $this->dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
@@ -59,18 +60,18 @@ class RepositoryTest extends TestCase
         $this->dbDriver->execute('create table info (
             id integer primary key  autoincrement,
             iduser INTEGER,
-            property varchar(45));'
+            property number(10,2));'
         );
-        $this->dbDriver->execute("insert into info (iduser, property) values (1, 'xxx')");
-        $this->dbDriver->execute("insert into info (iduser, property) values (1, 'ggg')");
-        $this->dbDriver->execute("insert into info (iduser, property) values (3, 'bbb')");
+        $this->dbDriver->execute("insert into info (iduser, property) values (1, 30.4)");
+        $this->dbDriver->execute("insert into info (iduser, property) values (1, 1250.96)");
+        $this->dbDriver->execute("insert into info (iduser, property) values (3, '3.5')");
         $this->infoMapper = new Mapper(Info::class, 'info', 'id');
-        $this->infoMapper->addFieldMap('value', 'property');
+        $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
 
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $uri = new Uri(self::URI);
         unlink($uri->getPath());
@@ -94,41 +95,37 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-02', $users->getCreatedate());
     }
 
-    public function testGetSelectMask()
+    public function testGetSelectFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            null,
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withSelectFunction(function ($value, $instance) {
                 return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
             }
+            )
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            null,
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
-                return $date->format('Y');
-            }
+                return intval($date->format('Y'));
+            })
+            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('[JOHN DOE] - 2017-01-02', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
-        $this->assertEquals('2017', $users->getYear());
+        $this->assertEquals(2017, $users->getYear());
 
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
-        $this->assertEquals('2017', $users->getYear());
+        $this->assertEquals(2017, $users->getYear());
     }
 
     public function testInsert()
@@ -192,11 +189,11 @@ class RepositoryTest extends TestCase
         $this->infoMapper = new Mapper(
             Users::class,
             'users',
-            'id',
-            function () {
-                return 50;
-            }
+            'id'
         );
+        $this->infoMapper->withPrimaryKeySeedFunction(function () {
+            return 50;
+        });
         $this->repository = new Repository($this->dbDriver, $this->infoMapper);
 
         $users = new Users();
@@ -213,27 +210,24 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
-    public function testInsertUpdateMask()
+    public function testInsertUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withUpdateFunction(function ($value, $instance) {
                 return 'Sr. ' . $value . ' - ' . $instance->getCreatedate();
-            }
+            })
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            Mapper::doNotUpdateClosure(),
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
-                return $date->format('Y');
-            }
+                return intval($date->format('Y'));
+            })
+            ->withFieldName('createdate')
         );
 
         $users = new UsersMap();
@@ -249,7 +243,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
-        $this->assertEquals('2015', $users2->getYear());
+        $this->assertEquals(2015, $users2->getYear());
         $this->assertEquals('Sr. John Doe - 2015-08-09', $users2->getName());
     }
 
@@ -310,27 +304,24 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-02', $users2->getCreatedate());
     }
 
-    public function testUpdateMask()
+    public function testUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
-        $this->userMapper->addFieldMap(
-            'name',
-            'name',
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('name')
+            ->withUpdateFunction(function ($value, $instance) {
                 return 'Sr. ' . $value;
-            }
+            })
         );
 
-        $this->userMapper->addFieldMap(
-            'year',
-            'createdate',
-            Mapper::doNotUpdateClosure(),
-            function ($value, $instance) {
+        $this->userMapper->addFieldMapping(FieldMapping::create('year')
+            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($value);
-                return $date->format('Y');
-            }
+                return intval($date->format('Y'));
+            })
+            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
@@ -343,13 +334,13 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('Sr. New Name', $users2->getName());
         $this->assertEquals('2016-01-09', $users2->getCreatedate());
-        $this->assertEquals('2016', $users2->getYear());
+        $this->assertEquals(2016, $users2->getYear());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
-        $this->assertEquals('2017', $users2->getYear());
+        $this->assertEquals(2017, $users2->getYear());
     }
 
 
@@ -419,7 +410,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(3, $result[0]->getId());
         $this->assertEquals(3, $result[0]->getIduser());
-        $this->assertEquals('bbb', $result[0]->getValue());
+        $this->assertEquals(3.5, $result[0]->getValue());
     }
 
     public function testFilterInNone()
@@ -468,7 +459,7 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getScalar($query);
 
-        $this->assertEquals('bbb', $result);
+        $this->assertEquals(3.5, $result);
     }
 
     public function testGetByQueryMoreThanOne()
@@ -481,13 +472,13 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals(1, $result[0]->getIduser());
-        $this->assertEquals('ggg', $result[0]->getValue());
+        $this->assertEquals(30.4, $result[0]->getValue());
 
-        $this->assertEquals(1, $result[1]->getId());
+        $this->assertEquals(2, $result[1]->getId());
         $this->assertEquals(1, $result[1]->getIduser());
-        $this->assertEquals('xxx', $result[1]->getValue());
+        $this->assertEquals(1250.96, $result[1]->getValue());
     }
 
     public function testJoin()
@@ -517,10 +508,10 @@ class RepositoryTest extends TestCase
         // - ------------------
 
         $this->assertEmpty($result[0][1]->getIduser());
-        $this->assertEquals('xxx', $result[0][1]->getValue());
+        $this->assertEquals(30.4, $result[0][1]->getValue());
 
         $this->assertEmpty($result[1][1]->getIduser());
-        $this->assertEquals('ggg', $result[1][1]->getValue());
+        $this->assertEquals(1250.96, $result[1][1]->getValue());
 
     }
 

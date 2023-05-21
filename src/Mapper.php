@@ -8,17 +8,16 @@ use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 class Mapper
 {
 
-    const FIELDMAP_FIELD = 'fieldname';
-    const FIELDMAP_UPDATEMASK = 'updatemask';
-    const FIELDMAP_SELECTMASK = 'selectmask';
-
     private $entity;
     private $table;
     private $primaryKey;
-    private $keygenFunction = null;
+    private $primaryKeySeedFunction = null;
+
+    /**
+     * @var FieldMapping[]
+     */
     private $fieldMap = [];
-    private $fieldAlias = [];
-    private $preserveCasename = false;
+    private $preserveCaseName = false;
 
     /**
      * Mapper constructor.
@@ -26,82 +25,90 @@ class Mapper
      * @param string $entity
      * @param string $table
      * @param string $primaryKey
-     * @param \Closure $keygenFunction
-     * @param bool $preserveCasename
      * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
      */
     public function __construct(
         $entity,
         $table,
-        $primaryKey,
-        \Closure $keygenFunction = null,
-        $preserveCasename = false
+        $primaryKey
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
+        $primaryKey = (array)$primaryKey;
+
         $this->entity = $entity;
         $this->table = $table;
-        $this->preserveCasename = $preserveCasename;
-        $this->primaryKey = $this->prepareField($primaryKey);
-        $this->keygenFunction = $keygenFunction;
+        $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
     }
 
-    public function prepareField($field)
+    public function withPrimaryKeySeedFunction(\Closure $primaryKeySeedFunction)
     {
-        if (!$this->preserveCasename) {
-            if (!is_array($field)) {
-                return strtolower($field);
-            }
+        $this->primaryKeySeedFunction = $primaryKeySeedFunction;
+        return $this;
+    }
 
-            $result = [];
-            foreach ($field as $key => $value) {
-                $result[strtolower($key)] = $value;
-            }
-            return $result;
+    public function withPreserveCaseName()
+    {
+        $this->preserveCaseName = true;
+        return $this;
+    }
+
+    protected function fixFieldName($field)
+    {
+        if (is_null($field)) {
+            return null;
+        }
+
+        if (!$this->preserveCaseName) {
+            return strtolower($field);
         }
 
         return $field;
     }
 
-    /**
-     * @param string $property
-     * @param string $fieldName
-     * @param \Closure|null|bool $updateMask
-     * @param \Closure $selectMask
-     * @return $this
-     * @throws InvalidArgumentException
-     */
-    public function addFieldMap($property, $fieldName, \Closure $updateMask = null, \Closure $selectMask = null)
+    public function prepareField(array $fieldList)
     {
-        if (empty($selectMask)) {
-            $selectMask = Mapper::defaultClosure();
+        foreach ($fieldList as $key => $value) {
+            $result[$this->fixFieldName($key)] = $value;
         }
+        return $result;
+    }
 
-        if (empty($updateMask)) {
-            $updateMask = Mapper::defaultClosure();
-        }
-
-        if (!is_null($updateMask) && !($updateMask instanceof \Closure)) {
-            throw new InvalidArgumentException('UpdateMask must be a \Closure or NULL');
-        }
-
-        $this->fieldMap[$this->prepareField($property)] = [
-            self::FIELDMAP_FIELD => $this->prepareField($fieldName),
-            self::FIELDMAP_UPDATEMASK => $updateMask,
-            self::FIELDMAP_SELECTMASK => $selectMask
-        ];
-
+    public function addFieldMapping(FieldMapping $fieldMapping)
+    {
+        $propertyName = $this->fixFieldName($fieldMapping->getPropertyName());
+        $fieldName = $this->fixFieldName($fieldMapping->getFieldName());
+        $fieldAlias = $this->fixFieldName($fieldMapping->getFieldAlias());
+        $this->fieldMap[$propertyName] = $fieldMapping
+            ->withFieldName($fieldName)
+            ->withFieldAlias($fieldAlias)
+        ;
         return $this;
     }
 
     /**
-     * @param $fieldName
-     * @param $alias
+     * @param string $property
+     * @param string $fieldName
+     * @param \Closure|null|bool $updateFunction
+     * @param \Closure $selectFunction
+     * @return $this
+     * @throws InvalidArgumentException
+     * @deprecated Use addFieldMapping instead
      */
-    public function addFieldAlias($fieldName, $alias)
+    public function addFieldMap($property, $fieldName, \Closure $updateFunction = null, \Closure $selectFunction = null)
     {
-        $this->fieldAlias[$this->prepareField($fieldName)] = $this->prepareField($alias);
+        $fieldMapping = FieldMapping::create($property)
+            ->withFieldName($fieldName);
+
+        if (!is_null($updateFunction)) {
+            $fieldMapping->withUpdateFunction($updateFunction);
+        }
+        if (!is_null($selectFunction)) {
+            $fieldMapping->withSelectFunction($selectFunction);
+        }
+
+        return $this->addFieldMapping($fieldMapping);
     }
 
     /**
@@ -122,7 +129,7 @@ class Mapper
     }
 
     /**
-     * @return string
+     * @return array
      */
     public function getPrimaryKey()
     {
@@ -132,23 +139,23 @@ class Mapper
     /**
      * @return bool
      */
-    public function isPreserveCasename()
+    public function isPreserveCaseName()
     {
-        return $this->preserveCasename;
+        return $this->preserveCaseName;
     }
 
     /**
      * @param string|null $property
      * @param string|null $key
-     * @return array
+     * @return FieldMapping[]|FieldMapping|null
      */
-    public function getFieldMap($property = null, $key = null)
+    public function getFieldMap($property = null)
     {
         if (empty($property)) {
             return $this->fieldMap;
         }
 
-        $property = $this->prepareField($property);
+        $property = $this->fixFieldName($property);
 
         if (!isset($this->fieldMap[$property])) {
             return null;
@@ -156,11 +163,7 @@ class Mapper
 
         $fieldMap = $this->fieldMap[$property];
 
-        if (empty($key)) {
-            return $fieldMap;
-        }
-
-        return $fieldMap[$key];
+        return $fieldMap;
     }
 
     /**
@@ -169,15 +172,12 @@ class Mapper
      */
     public function getFieldAlias($fieldName = null)
     {
-        if (empty($fieldName)) {
-            return $this->fieldAlias;
-        }
-        
-        if (!isset($this->fieldAlias[$fieldName])) {
+        $fieldMapVar = $this->getFieldMap($fieldName);
+        if (empty($fieldMap)) {
             return null;
         }
 
-        return $this->fieldAlias[$fieldName];
+        return $fieldMapVar->getFieldAlias();
     }
 
     /**
@@ -185,11 +185,11 @@ class Mapper
      */
     public function generateKey()
     {
-        if (empty($this->keygenFunction)) {
+        if (empty($this->primaryKeySeedFunction)) {
             return null;
         }
 
-        $func = $this->keygenFunction;
+        $func = $this->primaryKeySeedFunction;
 
         return $func();
     }

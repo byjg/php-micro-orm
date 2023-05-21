@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Updatable;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class UpdatableTest extends TestCase
@@ -13,12 +14,12 @@ class UpdatableTest extends TestCase
      */
     protected $object;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->object = new Updatable();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         $this->object = null;
     }
@@ -93,11 +94,10 @@ class UpdatableTest extends TestCase
         );
     }
 
-    /**
-     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
-     */
     public function testUpdateError()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         $this->object->table('test');
 
         $this->object->fields(['fld1']);
@@ -127,11 +127,10 @@ class UpdatableTest extends TestCase
         );
     }
 
-    /**
-     * @expectedException \ByJG\MicroOrm\Exception\InvalidArgumentException
-     */
     public function testDeleteError()
     {
+        $this->expectException(InvalidArgumentException::class);
+
         $params = [];
 
         $this->object->table('test');

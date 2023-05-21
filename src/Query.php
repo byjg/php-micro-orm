@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Serializer\BinderObject;
+use ByJG\Serializer\SerializerObject;
 
 class Query
 {
@@ -19,6 +19,7 @@ class Query
     protected $limitEnd = null;
     protected $top = null;
     protected $dbDriver = null;
+    protected $recursive = null;
 
     protected $forUpdate = false;
 
@@ -38,10 +39,26 @@ class Query
     public function fields(array $fields)
     {
         foreach ($fields as $field) {
-            if ($field instanceof Mapper) {
-                $this->addFieldFromMapper($field);
-                continue;
-            }
+            $this->field($field);
+        }
+
+        return $this;
+    }
+
+    public function field($field, $alias = null)
+    {
+        if ($field instanceof Mapper) {
+            $this->addFieldFromMapper($field);
+            return $this;
+        }
+
+        if ($field instanceof Query && empty($alias)) {
+            throw new InvalidArgumentException("You must define an alias for the sub query");
+        }
+
+        if (!empty($alias)) {
+            $this->fields[$alias] = $field;
+        } else {
             $this->fields[] = $field;
         }
 
@@ -56,20 +73,19 @@ class Query
     {
         $entityClass = $mapper->getEntity();
         $entity = new $entityClass();
-        $serialized = BinderObject::toArrayFrom($entity);
+        $serialized = SerializerObject::instance($entity)->serialize();
 
         foreach (array_keys($serialized) as $fieldName) {
-            $mapField = $mapper->getFieldMap($fieldName, Mapper::FIELDMAP_FIELD);
-            if (empty($mapField)) {
+            $fieldMapping = $mapper->getFieldMap($fieldName);
+            if (empty($fieldMapping)) {
                 $mapField = $fieldName;
+                $alias = null;
+            } else {
+                $mapField = $fieldMapping->getFieldName();
+                $alias = $fieldMapping->getFieldAlias();
             }
 
-            $alias = $mapper->getFieldAlias($mapField);
-            if (!empty($alias)) {
-                $alias = ' as ' . $alias;
-            }
-
-            $this->fields[] = $mapper->getTable() . '.' . $mapField . $alias;
+            $this->field($mapper->getTable() . '.' . $mapField, $alias);
         }
     }
 
@@ -131,6 +147,21 @@ class Query
     public function rightJoin($table, $filter, $alias = null)
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'RIGHT', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
+    public function crossJoin($table, $alias = null)
+    {
+        $this->join[] = [ 'table'=>$table, 'filter'=>'', 'type' => 'CROSS', 'alias' => empty($alias) ? $table : $alias];
+        return $this;
+    }
+
+    public function withRecursive(Recursive $recursive)
+    {
+        $this->recursive = $recursive;
+        if (empty($this->table)) {
+            $this->table($recursive->getTableName());
+        }
         return $this;
     }
 
@@ -216,10 +247,27 @@ class Query
     protected function getFields()
     {
         if (empty($this->fields)) {
-            return ' * ';
+            return [' * ', [] ];
         }
 
-        return ' ' . implode(', ', $this->fields) . ' ';
+        $fieldList = '';
+        $params = [];
+        foreach ($this->fields as $alias => $field) {
+            if (!empty($fieldList)) {
+                $fieldList .= ', ';
+            }
+            if (is_numeric($alias)) {
+                $fieldList .= $field;
+            } elseif ($field instanceof Query) {
+                $subQuery = $field->build($this->dbDriver);
+                $fieldList .= '(' . $subQuery['sql'] . ') as ' . $alias;
+                $params = array_merge($params, $subQuery['params']);
+            } else {
+                $fieldList .= $field . ' as ' . $alias;
+            }
+        }
+
+        return [' ' . $fieldList . ' ', $params ];
     }
 
     /**
@@ -228,24 +276,34 @@ class Query
      */
     protected function getJoin()
     {
-        $joinStr = $this->table . (!empty($this->alias) ? " as " . $this->alias : "");
+        [ $joinStr, $params ] = $this->buildTable($this->table, $this->alias);
         foreach ($this->join as $item) {
-            $table = $item['table'];
-            if ($table instanceof Query) {
-                $subQuery = $table->build($this->dbDriver);
-                if (!empty($subQuery["params"])) {
-                    throw new InvalidArgumentException("SubQuery does not support filters");
-                }
-                if ($item["alias"] instanceof Query) {
-                    throw new InvalidArgumentException("SubQuery requires you define an alias");
-                }
-                $table = "(${subQuery["sql"]})";
+            [ $table, $moreParams ] = $this->buildTable($item['table'], $item['alias'], false);
+            $joinStr .= ' ' . $item['type'] . " JOIN $table";
+            if (!empty($item['filter'])) {
+                $joinStr .= " ON " . $item['filter'];
             }
-            $alias = $item['table'] == $item['alias'] ? "" : " as ". $item['alias'];
-            $joinStr .= ' ' . $item['type'] . " JOIN $table$alias ON " . $item['filter'];
+            $params = array_merge($params, $moreParams);
         }
-        return $joinStr;
+        return [ $joinStr, $params ];
     }
+
+    protected function buildTable($table, $alias, $supportParams = true)
+    {
+        $params = [];
+        if ($table instanceof Query) {
+            $subQuery = $table->build($this->dbDriver);
+            if (!empty($subQuery["params"]) && !$supportParams) {
+                throw new InvalidArgumentException("SubQuery does not support filters");
+            }
+            if (empty($alias) || $alias instanceof Query) {
+                throw new InvalidArgumentException("SubQuery requires you define an alias");
+            }
+            $table = "({$subQuery["sql"]})";
+            $params = $subQuery["params"];
+        }
+        return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
+    }   
     
     protected function getWhere()
     {
@@ -273,15 +331,24 @@ class Query
     {
         $this->dbDriver = $dbDriver;
 
-        $sql = "SELECT " .
-            $this->getFields() .
-            "FROM " . $this->getJoin();
+        $sql = "";
+        if (!empty($this->recursive)) {
+            $sql = $this->recursive->build($dbDriver);
+        }
+
+        [ $fieldList , $params ] = $this->getFields();
+        [ $tableList , $paramsTable ] = $this->getJoin();
+
+        $params = array_merge($params, $paramsTable);
+
+        $sql .= "SELECT " .
+            $fieldList .
+            "FROM " . $tableList;
         
         $whereStr = $this->getWhere();
-        $params = null;
         if (!is_null($whereStr)) {
             $sql .= ' WHERE ' . $whereStr[0];
-            $params = $whereStr[1];
+            $params = array_merge($params, $whereStr[1]);
         }
 
         $sql .= $this->addGroupBy();

@@ -6,7 +6,7 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
 
-class ConnectionManager
+class TransactionManager
 {
 
     /**
@@ -29,15 +29,29 @@ class ConnectionManager
      */
     public function addConnection($uriString)
     {
+        $dbDriver = Factory::getDbRelationalInstance($uriString);
+        $this->addDbDriver($dbDriver);
+        return self::$connectionList[$uriString];
+    }
+
+    public function addDbDriver(DbDriverInterface $dbDriver)
+    {
+        $uriString = $dbDriver->getUri()->__toString();
+
         if (!isset(self::$connectionList[$uriString])) {
-            self::$connectionList[$uriString] = Factory::getDbRelationalInstance($uriString);
+            self::$connectionList[$uriString] = $dbDriver;
 
             if (self::$transaction) {
                 self::$connectionList[$uriString]->beginTransaction();
             }
+        } elseif (self::$connectionList[$uriString] !== $dbDriver) {
+            throw new \InvalidArgumentException("The connection already exists with a different instance");
         }
+    }
 
-        return self::$connectionList[$uriString];
+    public function addRepository(Repository $repository)
+    {
+        $this->addDbDriver($repository->getDbDriver());
     }
 
     /**
