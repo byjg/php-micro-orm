@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
+use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\Serializer\BinderObject;
 use ByJG\Serializer\SerializerObject;
 use InvalidArgumentException;
@@ -20,6 +21,11 @@ class Repository
      * @var DbDriverInterface
      */
     protected $dbDriver = null;
+
+    /**
+     * @var DbDriverInterface
+     */
+    protected $dbDriverWrite = null;
 
     /**
      * @var \Closure
@@ -39,6 +45,7 @@ class Repository
     public function __construct(DbDriverInterface $dbDataset, Mapper $mapper)
     {
         $this->dbDriver = $dbDataset;
+        $this->dbDriverWrite = $dbDataset;
         $this->mapper = $mapper;
         $this->beforeInsert = function ($instance) {
             return $instance;
@@ -46,6 +53,16 @@ class Repository
         $this->beforeUpdate = function ($instance) {
             return $instance;
         };
+    }
+
+    public function addDbDriverForWrite(DbDriverInterface $dbDriver)
+    {
+        $this->dbDriverWrite = $dbDriver;
+    }
+
+    public function setRepositoryReadOnly()
+    {
+        $this->dbDriverWrite = null;
     }
 
     /**
@@ -62,6 +79,17 @@ class Repository
     public function getDbDriver()
     {
         return $this->dbDriver;
+    }
+
+    /**
+     * @return DbDriverInterface
+     */
+    public function getDbDriverWrite()
+    {
+        if (empty($this->dbDriverWrite)) {
+            throw new RepositoryReadOnlyException('Repository is ReadOnly');
+        }
+        return $this->dbDriverWrite;
     }
 
     protected function getPkFilter($pkId)
@@ -128,7 +156,7 @@ class Repository
         $params = [];
         $sql = $updatable->buildDelete($params);
 
-        $this->getDbDriver()->execute($sql, $params);
+        $this->getDbDriverWrite()->execute($sql, $params);
 
         return true;
     }
@@ -356,9 +384,9 @@ class Repository
      */
     protected function insertWithAutoinc(Updatable $updatable, array $params)
     {
-        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
-        $dbFunctions = $this->getDbDriver()->getDbHelper();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDriver(), $sql, $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
+        $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
+        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sql, $params);
     }
 
     /**
@@ -371,8 +399,8 @@ class Repository
     protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
-        $sql = $updatable->buildInsert($params, $this->getDbDriver()->getDbHelper());
-        $this->getDbDriver()->execute($sql, $params);
+        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
+        $this->getDbDriverWrite()->execute($sql, $params);
         return $keyGen;
     }
 
@@ -390,9 +418,9 @@ class Repository
         [$filterList, $filterKeys] = $this->getPkFilter($fields);
         $updatable->where($filterList, $filterKeys);
 
-        $sql = $updatable->buildUpdate($params, $this->getDbDriver()->getDbHelper());
+        $sql = $updatable->buildUpdate($params, $this->getDbDriverWrite()->getDbHelper());
 
-        $this->getDbDriver()->execute($sql, $params);
+        $this->getDbDriverWrite()->execute($sql, $params);
     }
 
     public function setBeforeUpdate(\Closure $closure)

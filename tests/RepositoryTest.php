@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
@@ -145,6 +146,19 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
     }
 
+    public function testInsertReadOnly()
+    {
+        $this->expectException(RepositoryReadOnlyException::class);
+
+        $users = new Users();
+        $users->setName('Bla99991919');
+        $users->setCreatedate('2015-08-09');
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->setRepositoryReadOnly();
+        $this->repository->save($users);
+    }
+
     public function testInsert_beforeInsert()
     {
         $users = new Users();
@@ -266,6 +280,18 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
 
+    public function testUpdateReadOnly()
+    {
+        $this->expectException(RepositoryReadOnlyException::class);
+
+        $users = $this->repository->get(1);
+
+        $users->setName('New Name');
+        $users->setCreatedate('2016-01-09');
+        $this->repository->setRepositoryReadOnly();
+        $this->repository->save($users);
+    }
+
     public function testUpdate_beforeUpdate()
     {
         $users = $this->repository->get(1);
@@ -353,6 +379,13 @@ class RepositoryTest extends TestCase
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
+    }
+
+    public function testDeleteReadOnly()
+    {
+        $this->expectException(RepositoryReadOnlyException::class);
+        $this->repository->setRepositoryReadOnly();
+        $this->repository->delete(1);
     }
 
     public function testDeleteLiteral()
