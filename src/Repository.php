@@ -243,15 +243,15 @@ class Repository
                     if (!empty($fieldMap->getFieldAlias() && isset($data[$fieldMap->getFieldAlias()]))) {
                         $data[$fieldMap->getFieldName()] = $data[$fieldMap->getFieldAlias()];
                     }
+                    if ($property != $fieldMap->getFieldName() && isset($data[$fieldMap->getFieldName()])) {
+                        $data[$property] = $data[$fieldMap->getFieldName()];
+                        unset($data[$fieldMap->getFieldName()]);
+                    }
                 }
                 BinderObject::bind($data, $instance);
 
                 foreach ((array)$item->getFieldMap() as $property => $fieldMap) {
-                    $value = "";
-                    if (isset($data[$fieldMap->getFieldName()])) {
-                        $value = $data[$fieldMap->getFieldName()];
-                    }
-                    $data[$property] = $fieldMap->getSelectFunctionValue($value, $instance);
+                    $data[$property] = $fieldMap->getSelectFunctionValue($data[$property] ?? "", $instance);
                 }
                 if (count($item->getFieldMap()) > 0) {
                     BinderObject::bind($data, $instance);
