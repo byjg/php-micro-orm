@@ -110,10 +110,9 @@ class RepositoryTest extends TestCase
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($value);
+                $date = new \DateTime($instance->getCreatedate());
                 return intval($date->format('Y'));
             })
-            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
@@ -238,10 +237,9 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(Mapper::doNotUpdateClosure())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($value);
+                $date = new \DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
             })
-            ->withFieldName('createdate')
         );
 
         $users = new UsersMap();
@@ -344,10 +342,9 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(Mapper::doNotUpdateClosure())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($value);
+                $date = new \DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
             })
-            ->withFieldName('createdate')
         );
 
         $users = $this->repository->get(1);
@@ -444,6 +441,20 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getId());
         $this->assertEquals(3, $result[0]->getIduser());
         $this->assertEquals(3.5, $result[0]->getValue());
+
+        // Set Zero
+        $result[0]->setValue(0);
+        $infoRepository->save($result[0]);
+
+        $result = $infoRepository->getByQuery($query);
+        $this->assertSame(0, $result[0]->getValue());
+
+        // Set Null
+        $result[0]->setValue(null);
+        $infoRepository->save($result[0]);
+
+        $result = $infoRepository->getByQuery($query);
+        $this->assertNull($result[0]->getValue());
     }
 
     public function testFilterInNone()

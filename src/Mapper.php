@@ -197,7 +197,7 @@ class Mapper
     public static function defaultClosure()
     {
         return function ($value) {
-            if (empty($value)) {
+            if (empty($value) && $value !== 0 && $value !== '0' && $value !== false) {
                 return null;
             }
             return $value;
