@@ -447,7 +447,7 @@ class RepositoryTest extends TestCase
         $infoRepository->save($result[0]);
 
         $result = $infoRepository->getByQuery($query);
-        $this->assertSame(0, $result[0]->getValue());
+        $this->assertSame('0', (string)$result[0]->getValue());
 
         // Set Null
         $result[0]->setValue(null);
