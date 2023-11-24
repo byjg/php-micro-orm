@@ -8,6 +8,8 @@ class Customer
     protected $customer_name;
     protected $age;
 
+    protected $notInTable;
+
     /**
      * @return mixed
      */
@@ -56,4 +58,19 @@ class Customer
         $this->age = $age;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getNotInTable()
+    {
+        return $this->notInTable;
+    }
+
+    /**
+     * @param mixed $notInTable
+     */
+    public function setNotInTable($notInTable)
+    {
+        $this->notInTable = $notInTable;
+    }
 }

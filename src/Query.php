@@ -81,6 +81,9 @@ class Query
                 $mapField = $fieldName;
                 $alias = null;
             } else {
+                if (!$fieldMapping->isSyncWithDb()) {
+                    continue;
+                }
                 $mapField = $fieldMapping->getFieldName();
                 $alias = $fieldMapping->getFieldAlias();
             }
@@ -271,7 +274,7 @@ class Query
     }
 
     /**
-     * @return string
+     * @return array
      * @throws InvalidArgumentException
      */
     protected function getJoin()

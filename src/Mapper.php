@@ -11,7 +11,7 @@ class Mapper
     private $entity;
     private $table;
     private $primaryKey;
-    private $primaryKeySeedFunction = null;
+    private $primaryKeySeedFunction;
 
     /**
      * @var FieldMapping[]
