@@ -158,6 +158,8 @@ class Repository
 
         $this->getDbDriverWrite()->execute($sql, $params);
 
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, $params);
+
         return true;
     }
 
@@ -357,7 +359,19 @@ class Repository
 
         BinderObject::bind($array, $instance);
 
+        ORMSubject::getInstance()->notify(
+            $this->mapper->getTable(),
+            $isInsert ? ORMSubject::EVENT_INSERT : ORMSubject::EVENT_UPDATE,
+            $instance
+        );
+
         return $instance;
+    }
+
+
+    public function addObserver(string $entitySource, \Closure $observer)
+    {
+        ORMSubject::getInstance()->addObserver($entitySource, $observer, $this);
     }
 
     /**

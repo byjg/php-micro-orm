@@ -642,4 +642,40 @@ class RepositoryTest extends TestCase
         ], $result);
     }
 
+    public function testObserver()
+    {
+        $test = null;
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository) use (&$test) {
+            $test = $data;
+        });
+
+        // This update doesn't have observer
+        $users = new Users();
+        $users->setName('Bla99991919');
+        $users->setCreatedate('2015-08-09');
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->save($users);
+        $this->assertNull($test);
+
+
+        // This update has an observer and you change the `test` variable
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Set Zero
+        $result[0]->setValue(0);
+        $infoRepository->save($result[0]);
+
+        $this->assertEquals($result[0], $test);
+
+
+
+    }
+
 }

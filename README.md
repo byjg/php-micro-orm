@@ -236,6 +236,24 @@ $fieldMap = FieldMap::create('propertyname') // The property name of the entity 
 $mapper->addFieldMapping($fieldMap);
 ```
 
+## Observers
+
+You can add observers to the repository. 
+The observer will be called after the insert, update or delete a record in the DB.
+
+```php
+<?php
+// This observer will be called after insert, update or delete a record on the table 'triggerTable' 
+$repository->addObserver("triggerTable", function ($table, $event, $data, $repository) {
+    // $table = 'triggerTable'
+    // $event = ORMSubject::EVENT_INSERT, ORMSubject::EVENT_UPDATE or ORMSubject::EVENT_DELETE
+    // $data = the data inserted, updated or deleted
+    // $repository = the repository object
+});
+```
+
+*Note*: The observer will not be called if the insert, update or delete is called using the DBDriver object.
+
 ## Using With Recursive
 
 ```php
