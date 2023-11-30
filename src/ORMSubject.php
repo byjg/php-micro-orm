@@ -27,6 +27,7 @@ class ORMSubject
     protected array $observers = [];
 
     public function addObserver(string $entitySource, \Closure $closure, Repository $observer_in) {
+        $observer_in->getDbDriver()->log("Observer: entity " . $observer_in->getMapper()->getTable() . ", listening for $entitySource");
         if (!isset($this->observers[$entitySource])) {
             $this->observers[$entitySource] = [];
         }
@@ -38,6 +39,7 @@ class ORMSubject
             return;
         }
         foreach ((array)$this->observers[$entitySource] as $observer) {
+            $observer["repository"]->getDbDriver()->log("Observer: notifying " . $observer["repository"]->getMapper()->getTable() . ", changes in $entitySource");
             $closure = $observer["closure"];
             $closure($entitySource, $event, $data, $observer["repository"]);
         }

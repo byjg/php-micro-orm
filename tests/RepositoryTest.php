@@ -645,7 +645,10 @@ class RepositoryTest extends TestCase
 
     public function testObserver()
     {
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository)  {
+        $test = null;
+
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository) use (&$test) {
+            $test = true;
             $this->assertEquals('info', $table);
             $this->assertEquals(ORMSubject::EVENT_UPDATE, $event);
             $this->assertEquals(0, $data->getValue());
@@ -660,6 +663,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
+        $this->assertNull($test);
 
 
         // This update has an observer and you change the `test` variable
@@ -674,7 +678,7 @@ class RepositoryTest extends TestCase
         // Set Zero
         $result[0]->setValue(0);
         $infoRepository->save($result[0]);
-
+        $this->assertTrue($test);
     }
 
 }
