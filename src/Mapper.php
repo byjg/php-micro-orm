@@ -183,7 +183,7 @@ class Mapper
     /**
      * @return mixed|null
      */
-    public function generateKey()
+    public function generateKey($instance)
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
@@ -191,7 +191,7 @@ class Mapper
 
         $func = $this->primaryKeySeedFunction;
 
-        return $func();
+        return $func($instance);
     }
 
     public static function defaultClosure()

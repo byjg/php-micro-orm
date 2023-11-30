@@ -349,7 +349,7 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $keyReturned = $this->insert($updatable, $array);
+            $keyReturned = $this->insert($instance, $updatable, $array);
             if (count($pkList) == 1) {
                 $array[$pkList[0]] = $keyReturned;
             }
@@ -380,9 +380,9 @@ class Repository
      * @return int
      * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      */
-    protected function insert(Updatable $updatable, array $params)
+    protected function insert($instance, Updatable $updatable, array $params)
     {
-        $keyGen = $this->getMapper()->generateKey();
+        $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
             return $this->insertWithAutoinc($updatable, $params);
         } else {

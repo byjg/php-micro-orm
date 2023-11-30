@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
+use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Updatable;
@@ -204,7 +205,7 @@ class RepositoryTest extends TestCase
             'users',
             'id'
         );
-        $this->infoMapper->withPrimaryKeySeedFunction(function () {
+        $this->infoMapper->withPrimaryKeySeedFunction(function ($instance) {
             return 50;
         });
         $this->repository = new Repository($this->dbDriver, $this->infoMapper);
@@ -644,9 +645,12 @@ class RepositoryTest extends TestCase
 
     public function testObserver()
     {
-        $test = null;
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository) use (&$test) {
-            $test = $data;
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository)  {
+            $this->assertEquals('info', $table);
+            $this->assertEquals(ORMSubject::EVENT_UPDATE, $event);
+            $this->assertEquals(0, $data->getValue());
+            $this->assertInstanceOf(Info::class, $data);
+            $this->assertEquals($this->repository, $repository);
         });
 
         // This update doesn't have observer
@@ -656,7 +660,6 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertNull($test);
 
 
         // This update has an observer and you change the `test` variable
@@ -671,10 +674,6 @@ class RepositoryTest extends TestCase
         // Set Zero
         $result[0]->setValue(0);
         $infoRepository->save($result[0]);
-
-        $this->assertEquals($result[0], $test);
-
-
 
     }
 
