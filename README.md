@@ -241,20 +241,30 @@ $mapper->addFieldMapping($fieldMap);
 You can add observers to the repository. 
 The observer will be called after the insert, update or delete a record in the DB.
 
+```mermaid
+flowchart TD
+    A[MyRepository] --> |1. addObserver| B[Subject]
+    C[ObserverdRepository] --> |2. Notify Update| B
+    B --> |3. Execute Callback| A
+```
+
 ```php
 <?php
 // This observer will be called after insert, update or delete a record on the table 'triggerTable' 
-$repository->addObserver("triggerTable", function ($table, $event, $data, $repository) {
-    // $table = 'triggerTable'
-    // $event = ORMSubject::EVENT_INSERT, ORMSubject::EVENT_UPDATE or ORMSubject::EVENT_DELETE
-    // $data = the data inserted, updated or deleted
-    // $repository = the repository object
+$myRepository->addObserver("triggerTable", function ($table, $event, $data, $repository) {
+    // Do something here
 });
 ```
 
+The callback will receive the following parameters:
+ - `$table`: The table name that was affected
+ - `$event`: The event that was triggered. Can be 'insert', 'update' or 'delete'
+ - `$data`: The data that was inserted, updated or deleted
+ - `$repository`: The repository is listening to the event (the same as $myRepository)
+
 *Note*: The observer will not be called if the insert, update or delete is called using the DBDriver object.
 
-## Using With Recursive
+## Using With Recursive SQL Command
 
 ```php
 <?php
