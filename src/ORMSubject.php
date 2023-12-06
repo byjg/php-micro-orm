@@ -34,14 +34,18 @@ class ORMSubject
         $this->observers[$entitySource][] = ["closure" => $closure, "repository" => $observer_in];
     }
 
-    public function notify($entitySource, $event, $data) {
+    public function notify($entitySource, $event, $data, $oldData = null) {
         if (!isset($this->observers[$entitySource])) {
             return;
         }
         foreach ((array)$this->observers[$entitySource] as $observer) {
             $observer["repository"]->getDbDriver()->log("Observer: notifying " . $observer["repository"]->getMapper()->getTable() . ", changes in $entitySource");
             $closure = $observer["closure"];
-            $closure($entitySource, $event, $data, $observer["repository"]);
+            $closure($entitySource, $event, $data, $oldData, $observer["repository"]);
         }
+    }
+
+    public function clearObservers() {
+        $this->observers = [];
     }
 }

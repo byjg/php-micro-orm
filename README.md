@@ -251,7 +251,7 @@ flowchart TD
 ```php
 <?php
 // This observer will be called after insert, update or delete a record on the table 'triggerTable' 
-$myRepository->addObserver("triggerTable", function ($table, $event, $data, $repository) {
+$myRepository->addObserver("triggerTable", function ($table, $event, $data, $oldData, $repository) {
     // Do something here
 });
 ```
@@ -259,7 +259,8 @@ $myRepository->addObserver("triggerTable", function ($table, $event, $data, $rep
 The callback will receive the following parameters:
  - `$table`: The table name that was affected
  - `$event`: The event that was triggered. Can be 'insert', 'update' or 'delete'
- - `$data`: The data that was inserted, updated or deleted
+ - `$data`: The data that was inserted or updated. It is null in case of delete.
+ - `$oldData`: The data before update. In case of insert comes null, and in case of delete comes with the param filters. 
  - `$repository`: The repository is listening to the event (the same as $myRepository)
 
 *Note*: The observer will not be called if the insert, update or delete is called using the DBDriver object.

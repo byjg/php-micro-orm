@@ -158,7 +158,7 @@ class Repository
 
         $this->getDbDriverWrite()->execute($sql, $params);
 
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, $params);
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $params);
 
         return true;
     }
@@ -315,18 +315,19 @@ class Repository
 
         // Defines if is Insert or Update
         $pkList = $this->getMapper()->getPrimaryKey();
+        $oldInstance = null;
         if (count($pkList) == 1) {
             $pk = $pkList[0];
-            $isInsert =
-                empty($array[$pk])
-                || ($this->get($array[$pk]) === null)
-            ;
+            if (!empty($array[$pk])) {
+                $oldInstance = $this->get($array[$pk]);
+            }
         } else {
             $fields = array_map(function ($item) use ($array) {
                 return $array[$item];
             }, $pkList);
-            $isInsert = ($this->get($fields) === null);
+            $oldInstance = $this->get($fields);
         }
+        $isInsert = empty($oldInstance);
 
         // Prepare query to insert
         $updatable = Updatable::getInstance()
@@ -362,7 +363,7 @@ class Repository
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),
             $isInsert ? ORMSubject::EVENT_INSERT : ORMSubject::EVENT_UPDATE,
-            $instance
+            $instance, $oldInstance
         );
 
         return $instance;

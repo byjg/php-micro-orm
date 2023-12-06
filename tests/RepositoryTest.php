@@ -643,16 +643,19 @@ class RepositoryTest extends TestCase
         ], $result);
     }
 
-    public function testObserver()
+    public function testObserverUpdate()
     {
         $test = null;
 
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $repository) use (&$test) {
+        ORMSubject::getInstance()->clearObservers();
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
             $test = true;
             $this->assertEquals('info', $table);
             $this->assertEquals(ORMSubject::EVENT_UPDATE, $event);
-            $this->assertEquals(0, $data->getValue());
             $this->assertInstanceOf(Info::class, $data);
+            $this->assertEquals(0, $data->getValue());
+            $this->assertInstanceOf(Info::class, $oldData);
+            $this->assertEquals(3.5, $oldData->getValue());
             $this->assertEquals($this->repository, $repository);
         });
 
@@ -681,4 +684,51 @@ class RepositoryTest extends TestCase
         $this->assertTrue($test);
     }
 
+    public function testObserverDelete()
+    {
+        $test = null;
+
+        ORMSubject::getInstance()->clearObservers();
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
+            $test = true;
+            $this->assertEquals('info', $table);
+            $this->assertEquals(ORMSubject::EVENT_DELETE, $event);
+            $this->assertNull($data);
+            $this->assertEquals(["idid"=>3], $oldData);
+            $this->assertEquals($this->repository, $repository);
+        });
+
+        $this->assertNull($test);
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->delete(3);
+        $this->assertTrue($test);
+    }
+
+    public function testObserverInsert()
+    {
+        $test = null;
+
+        ORMSubject::getInstance()->clearObservers();
+        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
+            $test = true;
+            $this->assertEquals('info', $table);
+            $this->assertEquals(ORMSubject::EVENT_INSERT, $event);
+            $this->assertInstanceOf(Info::class, $data);
+            $this->assertEquals(4, $data->getId());
+            $this->assertEquals(1, $data->getIdUser());
+            $this->assertEquals(3, $data->getValue());
+            $this->assertNull($oldData);
+            $this->assertEquals($this->repository, $repository);
+        });
+
+        $info = new Info();
+        $info->setValue("3");
+        $info->setIduser(1);
+
+
+        $this->assertNull($test);
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository->save($info);
+        $this->assertTrue($test);
+    }
 }
