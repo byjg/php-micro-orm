@@ -370,9 +370,9 @@ class Repository
     }
 
 
-    public function addObserver(string $entitySource, \Closure $observer)
+    public function addObserver(ObserverProcessorInterface $observerProcessor)
     {
-        ORMSubject::getInstance()->addObserver($entitySource, $observer, $this);
+        ORMSubject::getInstance()->addObserver($observerProcessor, $this);
     }
 
     /**

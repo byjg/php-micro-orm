@@ -8,6 +8,8 @@ use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
+use ByJG\MicroOrm\ObserverData;
+use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
@@ -643,20 +645,42 @@ class RepositoryTest extends TestCase
         ], $result);
     }
 
+    public $test = null;
+
     public function testObserverUpdate()
     {
-        $test = null;
+        $this->test = null;
 
         ORMSubject::getInstance()->clearObservers();
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
-            $test = true;
-            $this->assertEquals('info', $table);
-            $this->assertEquals(ORMSubject::EVENT_UPDATE, $event);
-            $this->assertInstanceOf(Info::class, $data);
-            $this->assertEquals(0, $data->getValue());
-            $this->assertInstanceOf(Info::class, $oldData);
-            $this->assertEquals(3.5, $oldData->getValue());
-            $this->assertEquals($this->repository, $repository);
+        $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+            private $table;
+            private $parent;
+
+            private $parentRepository;
+
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+                $this->parent = $parent;
+                $this->parentRepository = $parentRepository;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals('info', $observerData->getTable());
+                $this->parent->assertEquals(ORMSubject::EVENT_UPDATE, $observerData->getEvent());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+                $this->parent->assertEquals(0, $observerData->getData()->getValue());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertEquals(3.5, $observerData->getOldData()->getValue());
+                $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
         });
 
         // This update doesn't have observer
@@ -666,10 +690,10 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertNull($test);
+        $this->assertNull($this->test);
 
 
-        // This update has an observer and you change the `test` variable
+        // This update has an observer, and you change the `test` variable
         $query = new Query();
         $query->table($this->infoMapper->getTable())
             ->where('iduser = :id', ['id'=>3])
@@ -681,27 +705,47 @@ class RepositoryTest extends TestCase
         // Set Zero
         $result[0]->setValue(0);
         $infoRepository->save($result[0]);
-        $this->assertTrue($test);
+        $this->assertTrue($this->test);
     }
 
     public function testObserverDelete()
     {
-        $test = null;
+        $this->test = null;
 
         ORMSubject::getInstance()->clearObservers();
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
-            $test = true;
-            $this->assertEquals('info', $table);
-            $this->assertEquals(ORMSubject::EVENT_DELETE, $event);
-            $this->assertNull($data);
-            $this->assertEquals(["idid"=>3], $oldData);
-            $this->assertEquals($this->repository, $repository);
+        $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+            private $table;
+            private $parent;
+
+            private $parentRepository;
+
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+                $this->parent = $parent;
+                $this->parentRepository = $parentRepository;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals('info', $observerData->getTable());
+                $this->parent->assertEquals(ORMSubject::EVENT_DELETE, $observerData->getEvent());
+                $this->parent->assertNull($observerData->getData());
+                $this->parent->assertEquals(["idid" => 3], $observerData->getOldData());
+                $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
         });
 
-        $this->assertNull($test);
+        $this->assertNull($this->test);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->delete(3);
-        $this->assertTrue($test);
+        $this->assertTrue($this->test);
     }
 
     public function testObserverInsert()
@@ -709,26 +753,45 @@ class RepositoryTest extends TestCase
         $test = null;
 
         ORMSubject::getInstance()->clearObservers();
-        $this->repository->addObserver($this->infoMapper->getTable(), function ($table, $event, $data, $oldData, $repository) use (&$test) {
-            $test = true;
-            $this->assertEquals('info', $table);
-            $this->assertEquals(ORMSubject::EVENT_INSERT, $event);
-            $this->assertInstanceOf(Info::class, $data);
-            $this->assertEquals(4, $data->getId());
-            $this->assertEquals(1, $data->getIdUser());
-            $this->assertEquals(3, $data->getValue());
-            $this->assertNull($oldData);
-            $this->assertEquals($this->repository, $repository);
-        });
+        $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+            private $table;
+            private $parent;
 
+            private $parentRepository;
+
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+                $this->parent = $parent;
+                $this->parentRepository = $parentRepository;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals('info', $observerData->getTable());
+                $this->parent->assertEquals(ORMSubject::EVENT_INSERT, $observerData->getEvent());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+                $this->parent->assertEquals(4, $observerData->getData()->getId());
+                $this->parent->assertEquals(1, $observerData->getData()->getIdUser());
+                $this->parent->assertEquals(3, $observerData->getData()->getValue());
+                $this->parent->assertNull($observerData->getOldData());
+                $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
+        });
         $info = new Info();
         $info->setValue("3");
         $info->setIduser(1);
 
 
-        $this->assertNull($test);
+        $this->assertNull($this->test);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $infoRepository->save($info);
-        $this->assertTrue($test);
+        $this->assertTrue($this->test);
     }
 }

@@ -24,14 +24,17 @@ class ORMSubject
         return self::$instance;
     }
 
-    protected array $observers = [];
+    /**
+     * @var ObserverProcessorInternal[]
+     */
+    protected $observers = [];
 
-    public function addObserver(string $entitySource, \Closure $closure, Repository $observer_in) {
-        $observer_in->getDbDriver()->log("Observer: entity " . $observer_in->getMapper()->getTable() . ", listening for $entitySource");
-        if (!isset($this->observers[$entitySource])) {
-            $this->observers[$entitySource] = [];
+    public function addObserver(ObserverProcessorInterface $observerProcessor, Repository $observer_in) {
+        $observer_in->getDbDriver()->log("Observer: entity " . $observer_in->getMapper()->getTable() . ", listening for {$observerProcessor->getObserverdTable()}");
+        if (!isset($this->observers[$observerProcessor->getObserverdTable()])) {
+            $this->observers[$observerProcessor->getObserverdTable()] = [];
         }
-        $this->observers[$entitySource][] = ["closure" => $closure, "repository" => $observer_in];
+        $this->observers[$observerProcessor->getObserverdTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
     }
 
     public function notify($entitySource, $event, $data, $oldData = null) {
@@ -39,9 +42,8 @@ class ORMSubject
             return;
         }
         foreach ((array)$this->observers[$entitySource] as $observer) {
-            $observer["repository"]->getDbDriver()->log("Observer: notifying " . $observer["repository"]->getMapper()->getTable() . ", changes in $entitySource");
-            $closure = $observer["closure"];
-            $closure($entitySource, $event, $data, $oldData, $observer["repository"]);
+            $observer->log("Observer: notifying " . $observer->getMapper()->getTable() . ", changes in $entitySource");
+            $observer->getObserverdProcessor()->process(new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository()));
         }
     }
 
