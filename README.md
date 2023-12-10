@@ -110,6 +110,20 @@ $users->name = "New name";
 $repository->save($users);
 ```
 
+### Update Constraints
+
+You can define a constraint to update a record. 
+If the constraint is not satisfied the update will not be performed.
+
+```php
+<?php
+$updateConstraint = \ByJG\MicroOrm\UpdateConstraint()::instance()
+    ->withAllowOnlyNewValuesForFields('name');
+
+$users->name = "New name";
+$repository->save($users, $updateConstraint);
+```
+
 ## Advanced uses
 
 Get a collection using the query object:

@@ -238,26 +238,7 @@ class Repository
         foreach ($iterator as $row) {
             $collection = [];
             foreach ($mapper as $item) {
-                $instance = $item->getEntity();
-                $data = $row->toArray();
-
-                foreach ((array)$item->getFieldMap() as $property => $fieldMap) {
-                    if (!empty($fieldMap->getFieldAlias() && isset($data[$fieldMap->getFieldAlias()]))) {
-                        $data[$fieldMap->getFieldName()] = $data[$fieldMap->getFieldAlias()];
-                    }
-                    if ($property != $fieldMap->getFieldName() && isset($data[$fieldMap->getFieldName()])) {
-                        $data[$property] = $data[$fieldMap->getFieldName()];
-                        unset($data[$fieldMap->getFieldName()]);
-                    }
-                }
-                BinderObject::bind($data, $instance);
-
-                foreach ((array)$item->getFieldMap() as $property => $fieldMap) {
-                    $data[$property] = $fieldMap->getSelectFunctionValue($data[$property] ?? "", $instance);
-                }
-                if (count($item->getFieldMap()) > 0) {
-                    BinderObject::bind($data, $instance);
-                }
+                $instance = $item->getEntity($row->toArray());
                 $collection[] = $instance;
             }
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
@@ -289,7 +270,7 @@ class Repository
      * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function save($instance)
+    public function save($instance, UpdateConstraint $updateConstraint = null)
     {
         // Get all fields
         $array = SerializerObject::instance($instance)
@@ -355,6 +336,9 @@ class Repository
                 $array[$pkList[0]] = $keyReturned;
             }
         } else {
+            if (!empty($updateConstraint)) {
+                $updateConstraint->check($oldInstance, $this->getMapper()->getEntity($array));
+            }
             $this->update($updatable, $array);
         }
 

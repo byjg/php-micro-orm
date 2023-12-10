@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+use ByJG\Serializer\BinderObject;
 
 class Mapper
 {
@@ -114,10 +115,35 @@ class Mapper
     /**
      * @return object
      */
-    public function getEntity()
+    public function getEntity(array $fieldValues = [])
     {
         $class = $this->entity;
-        return new $class();
+        $instance = new $class();
+
+        if (empty($fieldValues)) {
+            return $instance;
+        }
+
+        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
+            if (!empty($fieldMap->getFieldAlias() && isset($fieldValues[$fieldMap->getFieldAlias()]))) {
+                $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
+            }
+            if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
+                $fieldValues[$property] = $fieldValues[$fieldMap->getFieldName()];
+                unset($fieldValues[$fieldMap->getFieldName()]);
+            }
+        }
+        BinderObject::bind($fieldValues, $instance);
+
+        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
+            $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
+        }
+        if (count($this->getFieldMap()) > 0) {
+            BinderObject::bind($fieldValues, $instance);
+        }
+
+        return $instance;
+
     }
 
     /**

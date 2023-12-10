@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
@@ -14,6 +15,7 @@ use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Updatable;
+use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 
@@ -73,6 +75,7 @@ class RepositoryTest extends TestCase
         $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
 
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
+        ORMSubject::getInstance()->clearObservers();
     }
 
     public function tearDown(): void
@@ -651,7 +654,6 @@ class RepositoryTest extends TestCase
     {
         $this->test = null;
 
-        ORMSubject::getInstance()->clearObservers();
         $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
             private $table;
             private $parent;
@@ -712,7 +714,6 @@ class RepositoryTest extends TestCase
     {
         $this->test = null;
 
-        ORMSubject::getInstance()->clearObservers();
         $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
             private $table;
             private $parent;
@@ -752,7 +753,6 @@ class RepositoryTest extends TestCase
     {
         $test = null;
 
-        ORMSubject::getInstance()->clearObservers();
         $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
             private $table;
             private $parent;
@@ -794,4 +794,50 @@ class RepositoryTest extends TestCase
         $infoRepository->save($info);
         $this->assertTrue($this->test);
     }
+
+
+    public function testConstraintDifferentValues()
+    {
+        // This update has an observer, and you change the `test` variable
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Define Constraint
+        $updateConstraint = UpdateConstraint::instance()
+            ->withAllowOnlyNewValuesForFields('value');
+
+        // Set Zero
+        $result[0]->setValue(2);
+        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+        $this->assertEquals(2, $newInstance->getValue());
+    }
+
+    public function testConstraintSameValues()
+    {
+        $this->expectException(AllowOnlyNewValuesConstraintException::class);
+        $this->expectExceptionMessage("You are not updating the property 'value'");
+
+        // This update has an observer, and you change the `test` variable
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Define Constraint
+        $updateConstraint = UpdateConstraint::instance()
+            ->withAllowOnlyNewValuesForFields('value');
+
+        // Set Zero
+        $result[0]->setValue(3.5);
+        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+    }
+
 }
