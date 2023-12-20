@@ -205,11 +205,11 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Query $query
+     * @param \ByJG\MicroOrm\QueryBuilderInterface $query
      * @return mixed
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
-    public function getScalar(Query $query)
+    public function getScalar(QueryBuilderInterface $query)
     {
         $query = $query->build($this->getDbDriver());
 
@@ -219,13 +219,13 @@ class Repository
     }
 
     /**
-     * @param Query $query
+     * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
      * @return array
      * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByQuery(Query $query, array $mapper = [])
+    public function getByQuery(QueryBuilderInterface $query, array $mapper = [])
     {
         $mapper = array_merge([$this->mapper], $mapper);
         $query = $query->build($this->getDbDriver());
@@ -255,7 +255,7 @@ class Repository
      * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByQueryRaw(Query $query)
+    public function getByQueryRaw(QueryBuilderInterface $query)
     {
         $query = $query->build($this->getDbDriver());
         $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);

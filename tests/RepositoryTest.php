@@ -13,7 +13,9 @@ use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
+use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
@@ -838,6 +840,52 @@ class RepositoryTest extends TestCase
         // Set Zero
         $result[0]->setValue(3.5);
         $newInstance = $infoRepository->save($result[0], $updateConstraint);
+    }
+
+    public function testQueryBasic()
+    {
+        $query = new QueryBasic();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3]);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(3, $result[0]->getId());
+        $this->assertEquals(3, $result[0]->getIduser());
+        $this->assertEquals(3.5, $result[0]->getValue());
+    }
+
+    public function testUnion()
+    {
+        $query = new QueryBasic();
+        $query->table($this->infoMapper->getTable())
+            ->where('id = :id1', ['id1'=>3]);
+
+        $query2 = new QueryBasic();
+        $query2->table($this->infoMapper->getTable())
+            ->where('id = :id2', ['id2'=>1]);
+
+
+        $union = Union::getInstance()
+            ->addQuery($query)
+            ->addQuery($query2)
+            ->orderBy(['iduser']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($union);
+
+        $this->assertEquals(count($result), 2);
+
+        $this->assertEquals(1, $result[0]->getId());
+        $this->assertEquals(1, $result[0]->getIduser());
+        $this->assertEquals(30.4, $result[0]->getValue());
+
+        $this->assertEquals(3, $result[1]->getId());
+        $this->assertEquals(3, $result[1]->getIduser());
+        $this->assertEquals(3.5, $result[1]->getValue());
     }
 
 }
