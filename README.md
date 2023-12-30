@@ -395,5 +395,12 @@ vendor/bin/phpunit
 * [USDocker](https://github.com/usdocker/usdocker)
 * [Serializer](https://github.com/byjg/serializer)
 
+## Dependencies
+
+```mermaid
+flowchart TD
+    MicroOrm --> AnyDatasetDB
+```
+
 ----
 [Open source ByJG](http://opensource.byjg.com)
