@@ -399,7 +399,8 @@ vendor/bin/phpunit
 
 ```mermaid
 flowchart TD
-    MicroOrm --> AnyDatasetDB
+    byjg/micro-orm --> byjg/anydataset-db
+    byjg/micro-orm --> ext-json
 ```
 
 ----
