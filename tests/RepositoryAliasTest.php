@@ -46,6 +46,8 @@ class RepositoryAliasTest extends TestCase
         $this->dbDriver->execute("insert into customers (customer_name, customer_age) values ('Jane Doe', 37)");
         $this->customerMapper = new Mapper(Customer::class, 'customers', 'id');
         $this->customerMapper->addFieldMapping(FieldMapping::create('customerName')->withFieldName('customer_Name'));
+        $this->customerMapper->addFieldMapping(FieldMapping::create('notInTable')->dontSyncWithDb());
+
 
         $fieldMap = FieldMapping::create('Age')
             ->withFieldName('customer_Age')

@@ -1,10 +1,10 @@
 # MicroOrm for PHP
 
-[![Build Status](https://github.com/byjg/micro-orm/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/micro-orm/actions/workflows/phpunit.yml)
+[![Build Status](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
-[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/micro-orm/)
-[![GitHub license](https://img.shields.io/github/license/byjg/micro-orm.svg)](https://opensource.byjg.com/opensource/licensing.html)
-[![GitHub release](https://img.shields.io/github/release/byjg/micro-orm.svg)](https://github.com/byjg/micro-orm/releases/)
+[![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-micro-orm/)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-micro-orm.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub release](https://img.shields.io/github/release/byjg/php-micro-orm.svg)](https://github.com/byjg/php-micro-orm/releases/)
 
 A micro framework for create a very simple decoupled ORM.
 This library intended to be very small and very simple to use;
@@ -108,6 +108,20 @@ $users = $repository->get(10);
 // Will INSERT if does not exists, and UPDATE if exists
 $users->name = "New name";
 $repository->save($users);
+```
+
+### Update Constraints
+
+You can define a constraint to update a record. 
+If the constraint is not satisfied the update will not be performed.
+
+```php
+<?php
+$updateConstraint = \ByJG\MicroOrm\UpdateConstraint()::instance()
+    ->withAllowOnlyNewValuesForFields('name');
+
+$users->name = "New name";
+$repository->save($users, $updateConstraint);
 ```
 
 ## Advanced uses
@@ -236,7 +250,51 @@ $fieldMap = FieldMap::create('propertyname') // The property name of the entity 
 $mapper->addFieldMapping($fieldMap);
 ```
 
-## Using With Recursive
+## Observers
+
+You can add observers to the repository. 
+The observer will be called after the insert, update or delete a record in the DB.
+
+```mermaid
+flowchart TD
+    A[MyRepository] --> |1. addObserver| B[Subject]
+    C[ObserverdRepository] --> |2. Notify Update| B
+    B --> |3. Execute Callback| A
+```
+
+```php
+<?php
+// This observer will be called after insert, update or delete a record on the table 'triggerTable' 
+$myRepository->addObserver(new class($this->infoMapper->getTable()) implements ObserverProcessorInterface {
+    private $table;
+
+    public function __construct($table)
+    {
+        $this->table = $table;
+    }
+
+    public function process(ObserverData $observerData)
+    {
+        // Do something here
+    }
+
+    public function getObserverdTable(): string
+    {
+        return $this->table;
+    }
+});
+```
+
+The `ObserverData` class contains the following properties:
+ - `getTable()`: The table name that was affected
+ - `getEvent()`: The event that was triggered. Can be 'insert', 'update' or 'delete'
+ - `getData()`: The data that was inserted or updated. It is null in case of delete.
+ - `getOldData()`: The data before update. In case of insert comes null, and in case of delete comes with the param filters. 
+ - `getRepository()`: The repository is listening to the event (the same as $myRepository)
+
+*Note*: The observer will not be called if the insert, update or delete is called using the DBDriver object.
+
+## Using With Recursive SQL Command
 
 ```php
 <?php
@@ -320,13 +378,13 @@ $transactionManager->commitTransaction();
 Just type:
 
 ```bash
-composer require "byjg/micro-orm=4.0.*"
+composer require "byjg/micro-orm"
 ```
 
 ## Running Tests
 
 ```bash
-vendor/bin/phpunit
+./vendor/bin/phpunit
 ```
 
 ## Related Projects
@@ -336,6 +394,14 @@ vendor/bin/phpunit
 * [PHP Rest Template](https://github.com/byjg/php-rest-template)
 * [USDocker](https://github.com/usdocker/usdocker)
 * [Serializer](https://github.com/byjg/serializer)
+
+## Dependencies
+
+```mermaid
+flowchart TD
+    byjg/micro-orm --> byjg/anydataset-db
+    byjg/micro-orm --> ext-json
+```
 
 ----
 [Open source ByJG](http://opensource.byjg.com)

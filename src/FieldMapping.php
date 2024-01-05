@@ -29,6 +29,8 @@ class FieldMapping
      */
     private $fieldAlias;
 
+    private $syncWithDb = true;
+
     public static function create($propertyName)
     {
         return new FieldMapping($propertyName);
@@ -73,7 +75,12 @@ class FieldMapping
         return $this;
     }
 
-
+    public function dontSyncWithDb()
+    {
+        $this->syncWithDb = false;
+        $this->withUpdateFunction(Mapper::doNotUpdateClosure());
+        return $this;
+    }
 
     /**
      * @return string
@@ -117,5 +124,10 @@ class FieldMapping
     public function getUpdateFunctionValue($value, $instance)
     {
         return call_user_func_array($this->updateFunction, [$value, $instance]);
+    }
+
+    public function isSyncWithDb()
+    {
+        return $this->syncWithDb;
     }
 }

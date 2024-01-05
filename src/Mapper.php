@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+use ByJG\Serializer\BinderObject;
 
 class Mapper
 {
@@ -11,7 +12,7 @@ class Mapper
     private $entity;
     private $table;
     private $primaryKey;
-    private $primaryKeySeedFunction = null;
+    private $primaryKeySeedFunction;
 
     /**
      * @var FieldMapping[]
@@ -114,10 +115,35 @@ class Mapper
     /**
      * @return object
      */
-    public function getEntity()
+    public function getEntity(array $fieldValues = [])
     {
         $class = $this->entity;
-        return new $class();
+        $instance = new $class();
+
+        if (empty($fieldValues)) {
+            return $instance;
+        }
+
+        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
+            if (!empty($fieldMap->getFieldAlias() && isset($fieldValues[$fieldMap->getFieldAlias()]))) {
+                $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
+            }
+            if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
+                $fieldValues[$property] = $fieldValues[$fieldMap->getFieldName()];
+                unset($fieldValues[$fieldMap->getFieldName()]);
+            }
+        }
+        BinderObject::bind($fieldValues, $instance);
+
+        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
+            $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
+        }
+        if (count($this->getFieldMap()) > 0) {
+            BinderObject::bind($fieldValues, $instance);
+        }
+
+        return $instance;
+
     }
 
     /**
@@ -183,7 +209,7 @@ class Mapper
     /**
      * @return mixed|null
      */
-    public function generateKey()
+    public function generateKey($instance)
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
@@ -191,13 +217,13 @@ class Mapper
 
         $func = $this->primaryKeySeedFunction;
 
-        return $func();
+        return $func($instance);
     }
 
     public static function defaultClosure()
     {
         return function ($value) {
-            if (empty($value)) {
+            if (empty($value) && $value !== 0 && $value !== '0' && $value !== false) {
                 return null;
             }
             return $value;
