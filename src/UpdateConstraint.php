@@ -15,7 +15,7 @@ class UpdateConstraint
         return new self();
     }
 
-    public function withAllowOnlyNewValuesForFields(array|string $properties): self
+    public function withAllowOnlyNewValuesForFields($properties): self
     {
         $this->withClosureValidation(function($oldInstance, $newInstance) use ($properties) {
             foreach ((array)$properties as $property) {
