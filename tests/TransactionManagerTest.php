@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\TransactionManager;
@@ -8,8 +8,7 @@ use ByJG\MicroOrm\Exception\TransactionException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/Model/Users.php';
+use Tests\Model\Users;
 
 class TransactionManagerTest extends TestCase
 {

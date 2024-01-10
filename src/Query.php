@@ -4,16 +4,15 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Serializer\SerializerObject;
 
 class Query extends QueryBasic
 {
-    protected $groupBy = [];
-    protected $orderBy = [];
-    protected $limitStart = null;
-    protected $limitEnd = null;
-    protected $top = null;
-    protected $forUpdate = false;
+    protected array $groupBy = [];
+    protected array $orderBy = [];
+    protected ?int $limitStart = null;
+    protected ?int $limitEnd = null;
+    protected ?string $top = null;
+    protected bool $forUpdate = false;
 
     public static function getInstance(): Query
     {
@@ -27,7 +26,7 @@ class Query extends QueryBasic
      * @param array $fields
      * @return $this
      */
-    public function groupBy(array $fields)
+    public function groupBy(array $fields): static
     {
         $this->groupBy = array_merge($this->groupBy, $fields);
     
@@ -41,14 +40,14 @@ class Query extends QueryBasic
      * @param array $fields
      * @return $this
      */
-    public function orderBy(array $fields)
+    public function orderBy(array $fields): static
     {
         $this->orderBy = array_merge($this->orderBy, $fields);
 
         return $this;
     }
 
-    public function forUpdate()
+    public function forUpdate(): static
     {
         $this->forUpdate = true;
         
@@ -56,12 +55,12 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param $start
-     * @param $end
+     * @param int $start
+     * @param int $end
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function limit($start, $end)
+    public function limit(int $start, int $end): static
     {
         if (!is_null($this->top)) {
             throw new InvalidArgumentException('You cannot mix TOP and LIMIT');
@@ -72,11 +71,11 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param $top
+     * @param int $top
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function top($top)
+    public function top(int $top): static
     {
         if (!is_null($this->limitStart)) {
             throw new InvalidArgumentException('You cannot mix TOP and LIMIT');
@@ -87,21 +86,21 @@ class Query extends QueryBasic
 
 
     /**
-     * @param \ByJG\AnyDataset\Db\DbDriverInterface|null $dbDriver
-     * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param DbDriverInterface|null $dbDriver
+     * @return SqlObject
+     * @throws InvalidArgumentException
      */
-    public function build(?DbDriverInterface $dbDriver = null)
+    public function build(?DbDriverInterface $dbDriver = null): SqlObject
     {
         $buildResult = parent::build($dbDriver);
-        $sql = $buildResult['sql'];
-        $params = $buildResult['params'];
+        $sql = $buildResult->getSql();
+        $params = $buildResult->getParameters();
 
         $sql .= $this->addGroupBy();
 
         $sql .= $this->addOrderBy();
 
-        $sql = $this->addforUpdate($dbDriver, $sql);
+        $sql = $this->addForUpdate($dbDriver, $sql);
 
         $sql = $this->addTop($dbDriver, $sql);
 
@@ -109,10 +108,10 @@ class Query extends QueryBasic
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return [ 'sql' => $sql, 'params' => $params ];
+        return new SqlObject($sql, $params);
     }
 
-    protected function addOrderBy()
+    protected function addOrderBy(): string
     {
         if (empty($this->orderBy)) {
             return "";
@@ -120,7 +119,7 @@ class Query extends QueryBasic
         return ' ORDER BY ' . implode(', ', $this->orderBy);
     }
 
-    protected function addGroupBy()
+    protected function addGroupBy(): string
     {
         if (empty($this->groupBy)) {
             return "";
@@ -129,12 +128,12 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param DbDriverInterface $dbDriver
+     * @param DbDriverInterface|null $dbDriver
      * @param string $sql
      * @return string
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    protected function addforUpdate($dbDriver, $sql)
+    protected function addForUpdate(?DbDriverInterface $dbDriver, string $sql): string
     {
         if (empty($this->forUpdate)) {
             return $sql;
@@ -148,12 +147,12 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param DbDriverInterface $dbDriver
+     * @param DbDriverInterface|null $dbDriver
      * @param string $sql
      * @return string
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    protected function addTop($dbDriver, $sql)
+    protected function addTop(?DbDriverInterface $dbDriver, string $sql): string
     {
         if (empty($this->top)) {
             return $sql;
@@ -167,12 +166,12 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param DbDriverInterface $dbDriver
+     * @param DbDriverInterface|null $dbDriver
      * @param string $sql
      * @return string
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    protected function addLimit($dbDriver, $sql)
+    protected function addLimit(?DbDriverInterface $dbDriver, string $sql): string
     {
         if (empty($this->limitStart) && ($this->limitStart !== 0)) {
             return $sql;

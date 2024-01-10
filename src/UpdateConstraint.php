@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
-use ByJG\Serializer\SerializerObject;
+use Closure;
 
 class UpdateConstraint
 {
@@ -15,7 +15,7 @@ class UpdateConstraint
         return new self();
     }
 
-    public function withAllowOnlyNewValuesForFields($properties): self
+    public function withAllowOnlyNewValuesForFields(array|string $properties): self
     {
         $this->withClosureValidation(function($oldInstance, $newInstance) use ($properties) {
             foreach ((array)$properties as $property) {
@@ -35,18 +35,21 @@ class UpdateConstraint
         return $this;
     }
 
-    public function withClosureValidation(\Closure $closure): self
+    public function withClosureValidation(Closure $closure): self
     {
         $this->closureValidation[] = $closure;
         return $this;
     }
 
-    public function check($oldInstance, $newInstance)
+    /**
+     * @throws UpdateConstraintException
+     */
+    public function check(mixed $oldInstance, mixed $newInstance): void
     {
         foreach ($this->closureValidation as $closure) {
             if ($closure($oldInstance, $newInstance) !== true) {
                 throw new UpdateConstraintException("The Update Constraint validation failed");
-            };
+            }
         }
     }
 }

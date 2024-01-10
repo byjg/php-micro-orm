@@ -2,131 +2,132 @@
 
 namespace ByJG\MicroOrm;
 
+use Closure;
+
 class FieldMapping
 {
     /**
      * @var string
      */
-    private $fieldName;
+    private string $fieldName;
+
+    /**
+     * @var Closure
+     */
+    private Closure $updateFunction;
+
+    /**
+     * @var Closure
+     */
+    private Closure $selectFunction;
 
     /**
      * @var string
      */
-    private $updateFunction;
+    private string $propertyName;
 
     /**
      * @var string
      */
-    private $selectFunction;
+    private string $fieldAlias;
 
-    /**
-     * @var string
-     */
-    private $propertyName;
+    private bool $syncWithDb = true;
 
-    /**
-     * @var string
-     */
-    private $fieldAlias;
-
-    private $syncWithDb = true;
-
-    public static function create($propertyName)
+    public static function create(string $propertyName): FieldMapping
     {
         return new FieldMapping($propertyName);
     }
 
     /**
      * FieldMapping constructor.
-     * @param string $fieldName
-     * @param string $updateFunction
-     * @param string $selectFunction
+     * @param string $propertyName
      */
-    public function __construct($propertyName)
+    public function __construct(string $propertyName)
     {
         $this->fieldName = $propertyName;
+        $this->fieldAlias = $propertyName;
         $this->propertyName = $propertyName;
 
-        $this->selectFunction = Mapper::defaultClosure();
-        $this->updateFunction = Mapper::defaultClosure();
+        $this->selectFunction = MapperClosure::standard();
+        $this->updateFunction = MapperClosure::standard();
     }
 
-    public function withUpdateFunction(\Closure $updateFunction)
+    public function withUpdateFunction(Closure $updateFunction): static
     {
         $this->updateFunction = $updateFunction;
         return $this;
     }
 
-    public function withSelectFunction(\Closure $selectFunction)
+    public function withSelectFunction(Closure $selectFunction): static
     {
         $this->selectFunction = $selectFunction;
         return $this;
     }
 
-    public function withFieldName($fieldName)
+    public function withFieldName(string $fieldName): static
     {
         $this->fieldName = $fieldName;
         return $this;
     }
 
-    public function withFieldAlias($fieldAlias)
+    public function withFieldAlias(string $fieldAlias): static
     {
         $this->fieldAlias = $fieldAlias;
         return $this;
     }
 
-    public function dontSyncWithDb()
+    public function dontSyncWithDb(): static
     {
         $this->syncWithDb = false;
-        $this->withUpdateFunction(Mapper::doNotUpdateClosure());
+        $this->withUpdateFunction(MapperClosure::readOnly());
         return $this;
     }
 
     /**
      * @return string
      */
-    public function getFieldName()
+    public function getFieldName(): string
     {
         return $this->fieldName;
     }
 
     /**
-     * @return string
+     * @return Closure
      */
-    public function getUpdateFunction()
+    public function getUpdateFunction(): Closure
     {
         return $this->updateFunction;
     }
 
     /**
-     * @return string
+     * @return Closure
      */
-    public function getSelectFunction()
+    public function getSelectFunction(): Closure
     {
         return $this->selectFunction;
     }
 
-    public function getPropertyName()
+    public function getPropertyName(): string
     {
         return $this->propertyName;
     }
 
-    public function getFieldAlias()
+    public function getFieldAlias(): ?string
     {
         return $this->fieldAlias;
     }
 
-    public function getSelectFunctionValue($value, $instance)
+    public function getSelectFunctionValue(mixed $value, mixed $instance): mixed
     {
         return call_user_func_array($this->selectFunction, [$value, $instance]);
     }
 
-    public function getUpdateFunctionValue($value, $instance)
+    public function getUpdateFunctionValue(mixed $value, mixed $instance): mixed
     {
         return call_user_func_array($this->updateFunction, [$value, $instance]);
     }
 
-    public function isSyncWithDb()
+    public function isSyncWithDb(): bool
     {
         return $this->syncWithDb;
     }

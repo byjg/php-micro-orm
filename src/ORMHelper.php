@@ -20,8 +20,8 @@ class ORMHelper
                 $literalValue = $param->getLiteralValue();
                 $sql = preg_replace(
                     [
-                        "/\\[\\[$field\\]\\]/",
-                        "/:$field([^\\d\\w]|$)/"
+                        "/\[\[$field]]/",
+                        "/:$field(\W|$)/"
                     ],
                     [
                         $literalValue,

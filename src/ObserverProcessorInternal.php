@@ -15,7 +15,7 @@ class ObserverProcessorInternal
         $this->repository = $repository;
     }
 
-    public function getObserverdProcessor(): ObserverProcessorInterface
+    public function getObservedProcessor(): ObserverProcessorInterface
     {
         return $this->observerProcessor;
     }

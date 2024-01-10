@@ -8,11 +8,11 @@ use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class Updatable
 {
-    protected $fields = [];
-    protected $table = "";
-    protected $where = [];
+    protected array $fields = [];
+    protected string $table = "";
+    protected array $where = [];
 
-    public static function getInstance()
+    public static function getInstance(): Updatable
     {
         return new Updatable();
     }
@@ -24,9 +24,9 @@ class Updatable
      * @param array $fields
      * @return $this
      */
-    public function fields(array $fields)
+    public function fields(array $fields): static
     {
-        $this->fields = array_merge($this->fields, (array)$fields);
+        $this->fields = array_merge($this->fields, $fields);
         
         return $this;
     }
@@ -38,7 +38,7 @@ class Updatable
      * @param string $table
      * @return $this
      */
-    public function table($table)
+    public function table(string $table): static
     {
         $this->table = $table;
 
@@ -53,13 +53,13 @@ class Updatable
      * @param array $params
      * @return $this
      */
-    public function where($filter, array $params = [])
+    public function where(string $filter, array $params = []): static
     {
         $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
         return $this;
     }
 
-    protected function getFields()
+    protected function getFields(): string
     {
         if (empty($this->fields)) {
             return ' * ';
@@ -68,7 +68,7 @@ class Updatable
         return ' ' . implode(', ', $this->fields) . ' ';
     }
     
-    protected function getWhere()
+    protected function getWhere(): ?array
     {
         $whereStr = [];
         $params = [];
@@ -87,15 +87,15 @@ class Updatable
 
 
     /**
-     * @param $params
+     * @param array $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @return string
+     * @throws OrmInvalidFieldsException
      */
-    public function buildInsert(&$params, DbFunctionsInterface $dbHelper = null)
+    public function buildInsert(array &$params, DbFunctionsInterface $dbHelper = null): string
     {
         if (empty($this->fields)) {
-            throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
+            throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
         $fieldsStr = $this->fields;
@@ -123,10 +123,10 @@ class Updatable
      * @return string
      * @throws InvalidArgumentException
      */
-    public function buildUpdate(&$params, DbFunctionsInterface $dbHelper = null)
+    public function buildUpdate(array &$params, DbFunctionsInterface $dbHelper = null): string
     {
         if (empty($this->fields)) {
-            throw new InvalidArgumentException('You must specifiy the fields for insert');
+            throw new InvalidArgumentException('You must specify the fields for insert');
         }
         
         $fieldsStr = [];
@@ -140,7 +140,7 @@ class Updatable
         
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {
-            throw new InvalidArgumentException('You must specifiy a where clause');
+            throw new InvalidArgumentException('You must specify a where clause');
         }
 
         $tableName = $this->table;
@@ -162,11 +162,11 @@ class Updatable
      * @return string
      * @throws InvalidArgumentException
      */
-    public function buildDelete(&$params)
+    public function buildDelete(array &$params): string
     {
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {
-            throw new InvalidArgumentException('You must specifiy a where clause');
+            throw new InvalidArgumentException('You must specify a where clause');
         }
 
         $sql = 'DELETE FROM ' . $this->table

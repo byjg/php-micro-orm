@@ -3,19 +3,17 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Util\Uri;
 
 class Union implements QueryBuilderInterface
 {
-    protected $queryList = [];
+    protected array $queryList = [];
 
-    protected $queryAgreggation = null;
+    protected QueryBasic|null $queryAggregation = null;
 
     public function __construct()
     {
-        $this->queryAgreggation = Query::getInstance()->table("__TMP__");
+        $this->queryAggregation = Query::getInstance()->table("__TMP__");
     }
 
     public static function getInstance(): Union
@@ -23,6 +21,9 @@ class Union implements QueryBuilderInterface
         return new Union();
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function addQuery(QueryBasic $query): Union
     {
         if (get_class($query) !== QueryBasic::class) {
@@ -42,7 +43,7 @@ class Union implements QueryBuilderInterface
      */
     public function orderBy(array $fields): Union
     {
-        $this->queryAgreggation->orderBy($fields);
+        $this->queryAggregation->orderBy($fields);
 
         return $this;
     }
@@ -51,42 +52,45 @@ class Union implements QueryBuilderInterface
      * @param $start
      * @param $end
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function limit($start, $end): Union
     {
-        $this->queryAgreggation->limit($start, $end);
+        $this->queryAggregation->limit($start, $end);
         return $this;
     }
 
     /**
      * @param $top
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function top($top): Union
     {
-        $this->queryAgreggation->top($top);
+        $this->queryAggregation->top($top);
         return $this;
     }
 
-    public function build(?DbDriverInterface $dbDriver  = null)
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function build(?DbDriverInterface $dbDriver  = null): SqlObject
     {
         $unionQuery = [];
         $params = [];
         foreach ($this->queryList as $query) {
             $build = $query->build($dbDriver);
-            $unionQuery[] = $build['sql'];
-            $params = array_merge($params, $build['params']);
+            $unionQuery[] = $build->getSql();
+            $params = array_merge($params, $build->getParameters());
         }
 
         $unionQuery = implode(" UNION ", $unionQuery);
 
-        $build = $this->queryAgreggation->build($dbDriver);
+        $build = $this->queryAggregation->build($dbDriver);
 
-        $unionQuery = trim($unionQuery . " " . substr($build['sql'], strpos($build['sql'], "__TMP__") + 8));
+        $unionQuery = trim($unionQuery . " " . substr($build->getSql(), strpos($build->getSql(), "__TMP__") + 8));
 
-        return ["sql" => $unionQuery, "params" => $params];
+        return new SqlObject($unionQuery, $params);
     }
 
 

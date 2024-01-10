@@ -6,5 +6,5 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 
 interface QueryBuilderInterface
 {
-    public function build(?DbDriverInterface $dbDriver = null);
+    public function build(?DbDriverInterface $dbDriver = null): SqlObject;
 }

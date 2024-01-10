@@ -1,11 +1,12 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Insert;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Query;
+use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class QueryTest extends TestCase
@@ -29,10 +30,7 @@ class QueryTest extends TestCase
     {
         $this->object->table('test');
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test',
-                'params' => []
-            ],
+            new SqlObject('SELECT  * FROM test'),
             $this->object->build()
         );
 
@@ -42,10 +40,7 @@ class QueryTest extends TestCase
             ->fields(['fld2', 'fld3']);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test',
-                'params' => []
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test'),
             $this->object->build()
         );
 
@@ -53,10 +48,7 @@ class QueryTest extends TestCase
             ->orderBy(['fld1']);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1',
-                'params' => []
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1'),
             $this->object->build()
         );
 
@@ -64,10 +56,7 @@ class QueryTest extends TestCase
             ->groupBy(['fld1', 'fld2', 'fld3']);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1',
-                'params' => []
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1'),
             $this->object->build()
         );
 
@@ -75,10 +64,7 @@ class QueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste GROUP BY fld1, fld2, fld3 ORDER BY fld1',
-                'params' => [ 'teste' => 10 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10 ]),
             $this->object->build()
         );
 
@@ -86,10 +72,7 @@ class QueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 GROUP BY fld1, fld2, fld3 ORDER BY fld1',
-                'params' => [ 'teste' => 10 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10 ]),
             $this->object->build()
         );
 
@@ -97,10 +80,7 @@ class QueryTest extends TestCase
             ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]] GROUP BY fld1, fld2, fld3 ORDER BY fld1',
-                'params' => [ 'teste' => 10, 'teste2' => 40 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]] GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40 ]),
             $this->object->build()
         );
     }
@@ -114,10 +94,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test WHERE field = ABC',
-                'params' => []
-            ],
+            new SqlObject('SELECT  * FROM test WHERE field = ABC', []),
             $result
         );
     }
@@ -132,10 +109,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test WHERE field = ABC AND other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM test WHERE field = ABC AND other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -145,10 +119,7 @@ class QueryTest extends TestCase
         $this->object->table('test', "t");
         $this->object->where("1 = 1");
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test as t WHERE 1 = 1',
-                'params' => []
-            ],
+            new SqlObject('SELECT  * FROM test as t WHERE 1 = 1', []),
             $this->object->build()
         );
     }
@@ -164,10 +135,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo INNER JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo INNER JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -183,10 +151,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo INNER JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo INNER JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -202,10 +167,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo LEFT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo LEFT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -221,10 +183,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo LEFT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo LEFT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -240,10 +199,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo RIGHT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo RIGHT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -259,10 +215,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo RIGHT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo RIGHT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -278,10 +231,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo CROSS JOIN bar WHERE foo.field = ABC AND bar.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo CROSS JOIN bar WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -297,10 +247,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM foo CROSS JOIN bar as b WHERE foo.field = ABC AND b.other = :other',
-                'params' => ['other' => 'test']
-            ],
+            new SqlObject('SELECT  * FROM foo CROSS JOIN bar as b WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -325,10 +272,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq WHERE sq.date < :date',
-                'params' => ['date' => '2020-06-01']
-            ],
+            new SqlObject('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq WHERE sq.date < :date', ['date' => '2020-06-01']),
             $result
         );
 
@@ -386,13 +330,10 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM (SELECT  id, max(date) as date FROM subtest WHERE date > :test GROUP BY id) as sq WHERE sq.date < :date',
-                'params' => [
+            new SqlObject('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest WHERE date > :test GROUP BY id) as sq WHERE sq.date < :date', [
                     'test' => '2020-06-01',
                     'date' => '2020-06-28',
-                ]
-            ],
+                ]),
             $result
         );
     }
@@ -418,10 +359,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test INNER JOIN (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq ON test.id = sq.id WHERE test.date < :date',
-                'params' => ['date' => '2020-06-28']
-            ],
+            new SqlObject('SELECT  * FROM test INNER JOIN (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq ON test.id = sq.id WHERE test.date < :date', ['date' => '2020-06-28']),
             $result
         );
 
@@ -510,10 +448,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  test.id, test.name, test.date, (SELECT  max(date) as date FROM subtest) as subdate FROM test WHERE test.date < :date',
-                'params' => ['date' => '2020-06-28']
-            ],
+            new SqlObject('SELECT  test.id, test.name, test.date, (SELECT  max(date) as date FROM subtest) as subdate FROM test WHERE test.date < :date', ['date' => '2020-06-28']),
             $result
         );
 

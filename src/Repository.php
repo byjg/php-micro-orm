@@ -4,9 +4,12 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
-use ByJG\Serializer\BinderObject;
-use ByJG\Serializer\SerializerObject;
+use ByJG\MicroOrm\Exception\UpdateConstraintException;
+use ByJG\Serializer\ObjectCopy;
+use ByJG\Serializer\Serialize;
+use Closure;
 use InvalidArgumentException;
 
 class Repository
@@ -15,27 +18,27 @@ class Repository
     /**
      * @var Mapper
      */
-    protected $mapper;
+    protected Mapper $mapper;
 
     /**
      * @var DbDriverInterface
      */
-    protected $dbDriver = null;
+    protected DbDriverInterface $dbDriver;
 
     /**
-     * @var DbDriverInterface
+     * @var DbDriverInterface|null
      */
-    protected $dbDriverWrite = null;
+    protected ?DbDriverInterface $dbDriverWrite = null;
 
     /**
-     * @var \Closure
+     * @var Closure|null
      */
-    protected $beforeUpdate = null;
+    protected ?Closure $beforeUpdate = null;
 
     /**
-     * @var \Closure
+     * @var Closure|null
      */
-    protected $beforeInsert = null;
+    protected ?Closure $beforeInsert = null;
 
     /**
      * Repository constructor.
@@ -55,12 +58,12 @@ class Repository
         };
     }
 
-    public function addDbDriverForWrite(DbDriverInterface $dbDriver)
+    public function addDbDriverForWrite(DbDriverInterface $dbDriver): void
     {
         $this->dbDriverWrite = $dbDriver;
     }
 
-    public function setRepositoryReadOnly()
+    public function setRepositoryReadOnly(): void
     {
         $this->dbDriverWrite = null;
     }
@@ -68,7 +71,7 @@ class Repository
     /**
      * @return Mapper
      */
-    public function getMapper()
+    public function getMapper(): Mapper
     {
         return $this->mapper;
     }
@@ -76,15 +79,16 @@ class Repository
     /**
      * @return DbDriverInterface
      */
-    public function getDbDriver()
+    public function getDbDriver(): DbDriverInterface
     {
         return $this->dbDriver;
     }
 
     /**
-     * @return DbDriverInterface
+     * @return DbDriverInterface|null
+     * @throws RepositoryReadOnlyException
      */
-    public function getDbDriverWrite()
+    public function getDbDriverWrite(): ?DbDriverInterface
     {
         if (empty($this->dbDriverWrite)) {
             throw new RepositoryReadOnlyException('Repository is ReadOnly');
@@ -92,7 +96,7 @@ class Repository
         return $this->dbDriverWrite;
     }
 
-    protected function getPkFilter($pkId)
+    protected function getPkFilter(array|string $pkId): array
     {
         $pkList = $this->mapper->getPrimaryKey();
         if (!is_array($pkId)) {
@@ -105,7 +109,7 @@ class Repository
 
         $filterList = [];
         $filterKeys = [];
-        foreach ((array)$pkList as $pk) {
+        foreach ($pkList as $pk) {
             $filterList[] = $pk . " = :id$pk";
             $filterKeys["id$pk"] = array_shift($pkId);
         }
@@ -114,12 +118,12 @@ class Repository
     }
 
     /**
-     * @param array|string $pkId
+     * @param array|string|int $pkId
      * @return mixed|null
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function get($pkId)
+    public function get(array|string|int $pkId): mixed
     {
         [$filterList, $filterKeys] = $this->getPkFilter($pkId);
         $result = $this->getByFilter($filterList, $filterKeys);
@@ -132,11 +136,12 @@ class Repository
     }
 
     /**
-     * @param array $pkId
-     * @return mixed|null
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param array|string|int $pkId
+     * @return bool
+     * @throws Exception\InvalidArgumentException
+     * @throws RepositoryReadOnlyException
      */
-    public function delete($pkId)
+    public function delete(array|string|int $pkId): bool
     {
         [$filterList, $filterKeys] = $this->getPkFilter($pkId);
         $updatable = Updatable::getInstance()
@@ -147,11 +152,12 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param Updatable $updatable
      * @return bool
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
+     * @throws RepositoryReadOnlyException
      */
-    public function deleteByQuery(Updatable $updatable)
+    public function deleteByQuery(Updatable $updatable): bool
     {
         $params = [];
         $sql = $updatable->buildDelete($params);
@@ -168,10 +174,10 @@ class Repository
      * @param array $params
      * @param bool $forUpdate
      * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByFilter($filter, array $params, $forUpdate = false)
+    public function getByFilter(string $filter, array $params, bool $forUpdate = false): array
     {
         $query = new Query();
         $query->table($this->mapper->getTable())
@@ -185,13 +191,14 @@ class Repository
     }
 
     /**
-     * @param array $arrValues
-     * @param $field
+     * @param array|string $arrValues
+     * @param string $field
      * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function filterIn($arrValues, $field = "") {
+    public function filterIn(array|string $arrValues, string $field = ""): array
+    {
         $arrValues = (array) $arrValues;
 
         if (empty($field)) {
@@ -205,16 +212,15 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\QueryBuilderInterface $query
+     * @param QueryBuilderInterface $query
      * @return mixed
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
      */
-    public function getScalar(QueryBuilderInterface $query)
+    public function getScalar(QueryBuilderInterface $query): mixed
     {
-        $query = $query->build($this->getDbDriver());
+        $sqlBuild = $query->build($this->getDbDriver());
 
-        $params = $query['params'];
-        $sql = $query['sql'];
+        $params = $sqlBuild->getParameters();
+        $sql = $sqlBuild->getSql();
         return $this->getDbDriver()->getScalar($sql, $params);
     }
 
@@ -222,16 +228,16 @@ class Repository
      * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
      * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByQuery(QueryBuilderInterface $query, array $mapper = [])
+    public function getByQuery(QueryBuilderInterface $query, array $mapper = []): array
     {
         $mapper = array_merge([$this->mapper], $mapper);
-        $query = $query->build($this->getDbDriver());
+        $sqlBuild = $query->build($this->getDbDriver());
 
-        $params = $query['params'];
-        $sql = $query['sql'];
+        $params = $sqlBuild->getParameters();
+        $sql = $sqlBuild->getSql();
         $result = [];
         $iterator = $this->getDbDriver()->getIterator($sql, $params);
 
@@ -255,32 +261,35 @@ class Repository
      * @throws Exception\InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByQueryRaw(QueryBuilderInterface $query)
+    public function getByQueryRaw(QueryBuilderInterface $query): array
     {
-        $query = $query->build($this->getDbDriver());
-        $iterator = $this->getDbDriver()->getIterator($query['sql'], $query['params']);
+        $sqlObject = $query->build($this->getDbDriver());
+        $iterator = $this->getDbDriver()->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
         return $iterator->toArray();
     }
 
     /**
      * @param mixed $instance
+     * @param UpdateConstraint|null $updateConstraint
      * @return mixed
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
-     * @throws \ByJG\MicroOrm\Exception\OrmBeforeInvalidException
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws Exception\InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws OrmInvalidFieldsException
+     * @throws RepositoryReadOnlyException
+     * @throws UpdateConstraintException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function save($instance, UpdateConstraint $updateConstraint = null)
+    public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
     {
         // Get all fields
-        $array = SerializerObject::instance($instance)
+        $array = Serialize::from($instance)
             ->withStopAtFirstLevel()
-            ->serialize();
+            ->toArray();
         $array = $this->getMapper()->prepareField($array);
 
         // Mapping the data
         foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldMap) {
-            $fieldname = $fieldMap->getFieldName();
+            $fieldName = $fieldMap->getFieldName();
 
             // Get the value from the mapped field name
             $value = $array[$property];
@@ -291,7 +300,7 @@ class Repository
             if ($updateValue === false) {
                 continue;
             }
-            $array[$fieldname] = $updateValue;
+            $array[$fieldName] = $updateValue;
         }
 
         // Defines if is Insert or Update
@@ -318,11 +327,10 @@ class Repository
         // Execute Before Statements
         if ($isInsert) {
             $closure = $this->beforeInsert;
-            $array = $closure($array);
         } else {
             $closure = $this->beforeUpdate;
-            $array = $closure($array);
         }
+        $array = $closure($array);
 
         // Check if is OK
         if (empty($array) || !is_array($array)) {
@@ -342,7 +350,7 @@ class Repository
             $this->update($updatable, $array);
         }
 
-        BinderObject::bind($array, $instance);
+        ObjectCopy::copy($array, $instance);
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),
@@ -354,34 +362,36 @@ class Repository
     }
 
 
-    public function addObserver(ObserverProcessorInterface $observerProcessor)
+    public function addObserver(ObserverProcessorInterface $observerProcessor): void
     {
         ORMSubject::getInstance()->addObserver($observerProcessor, $this);
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param $instance
+     * @param Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws OrmInvalidFieldsException
+     * @throws RepositoryReadOnlyException
      */
-    protected function insert($instance, Updatable $updatable, array $params)
+    protected function insert($instance, Updatable $updatable, array $params): mixed
     {
         $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
-            return $this->insertWithAutoinc($updatable, $params);
+            return $this->insertWithAutoInc($updatable, $params);
         } else {
             return $this->insertWithKeyGen($updatable, $params, $keyGen);
         }
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param Updatable $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws OrmInvalidFieldsException|RepositoryReadOnlyException
      */
-    protected function insertWithAutoinc(Updatable $updatable, array $params)
+    protected function insertWithAutoInc(Updatable $updatable, array $params): int
     {
         $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
@@ -389,13 +399,14 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param Updatable $updatable
      * @param array $params
-     * @param $keyGen
+     * @param mixed $keyGen
      * @return mixed
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws OrmInvalidFieldsException
+     * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
+    protected function insertWithKeyGen(Updatable $updatable, array $params, mixed $keyGen): mixed
     {
         $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
         $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
@@ -404,11 +415,12 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param Updatable $updatable
      * @param array $params
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws Exception\InvalidArgumentException
+     * @throws RepositoryReadOnlyException
      */
-    protected function update(Updatable $updatable, array $params)
+    protected function update(Updatable $updatable, array $params): void
     {
         $fields = array_map(function ($item) use ($params) {
             return $params[$item];
@@ -422,12 +434,12 @@ class Repository
         $this->getDbDriverWrite()->execute($sql, $params);
     }
 
-    public function setBeforeUpdate(\Closure $closure)
+    public function setBeforeUpdate(Closure $closure): void
     {
         $this->beforeUpdate = $closure;
     }
 
-    public function setBeforeInsert(\Closure $closure)
+    public function setBeforeInsert(Closure $closure): void
     {
         $this->beforeInsert = $closure;
     }

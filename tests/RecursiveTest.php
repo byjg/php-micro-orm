@@ -1,9 +1,10 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
+use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class RecursiveTest extends TestCase
@@ -17,7 +18,7 @@ class RecursiveTest extends TestCase
         ;
         
         $expected = "WITH RECURSIVE test(start, end) AS (SELECT 1 as start, 120 as end UNION ALL SELECT start + 10, end - 10 FROM test WHERE start < 100) ";
-        $this->assertEquals($expected, $recursive->build());
+        $this->assertEquals($expected, $recursive->build()->getSql());
 
         $query = Query::getInstance()
             ->withRecursive($recursive)
@@ -25,10 +26,7 @@ class RecursiveTest extends TestCase
 
         $expected = $expected . "SELECT  start, end FROM test";
         $this->assertEquals(
-            [
-                'sql' => $expected,
-                'params' => []
-            ],
+            new SqlObject($expected),
             $query->build()
         );
     

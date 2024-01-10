@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Updatable;
