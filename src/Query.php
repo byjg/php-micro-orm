@@ -183,4 +183,33 @@ class Query extends QueryBasic
 
         return $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
     }
+
+    public function getQueryBasic(): QueryBasic
+    {
+        $queryBasic = new QueryBasic();
+        $queryBasic->fields($this->fields);
+        $queryBasic->table($this->table, $this->alias);
+
+        foreach ($this->where as $where) {
+            $queryBasic->where($where['filter'], $where['params']);
+        }
+
+        foreach ($this->join as $join) {
+            if ($join['type'] == 'INNER') {
+                $queryBasic->join($join['table'], $join['filter'], $join['alias']);
+            } else if ($join['type'] == 'LEFT') {
+                $queryBasic->leftJoin($join['table'], $join['filter'], $join['alias']);
+            } else if ($join['type'] == 'RIGHT') {
+                $queryBasic->rightJoin($join['table'], $join['filter'], $join['alias']);
+            } else if ($join['type'] == 'CROSS') {
+                $queryBasic->crossJoin($join['table'], $join['alias']);
+            }
+        }
+
+        if (!is_null($this->recursive)) {
+            $queryBasic->withRecursive($this->recursive);
+        }
+
+        return $queryBasic;
+    }
 }
