@@ -2,11 +2,12 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
-class Updatable
+class Updatable implements UpdateBuilderInterface, QueryBuilderInterface
 {
     protected $fields = [];
     protected $table = "";
@@ -175,5 +176,18 @@ class Updatable
         $params = array_merge($params, $whereStr[1]);
 
         return ORMHelper::processLiteral($sql, $params);
+    }
+
+    public function build(?DbDriverInterface $dbDriver = null)
+    {
+        $query = Query::getInstance()
+            ->fields($this->fields)
+            ->table($this->table);
+
+        foreach ($this->where as $item) {
+            $query->where($item['filter'], $item['params']);
+        }
+
+        return $query->build($dbDriver);
     }
 }
