@@ -258,7 +258,7 @@ The observer will be called after the insert, update or delete a record in the D
 ```mermaid
 flowchart TD
     A[MyRepository] --> |1. addObserver| B[Subject]
-    C[ObserverdRepository] --> |2. Notify Update| B
+    C[ObservedRepository] --> |2. Notify Update| B
     B --> |3. Execute Callback| A
 ```
 
@@ -273,12 +273,12 @@ $myRepository->addObserver(new class($this->infoMapper->getTable()) implements O
         $this->table = $table;
     }
 
-    public function process(ObserverData $observerData)
+    public function process(ObserverData $observerData): void
     {
         // Do something here
     }
 
-    public function getObserverdTable(): string
+    public function getObservedTable(): string
     {
         return $this->table;
     }

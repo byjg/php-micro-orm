@@ -2,36 +2,36 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
-use ByJG\Serializer\BinderObject;
+use ByJG\Serializer\ObjectCopy;
+use Closure;
 
 class Mapper
 {
 
-    private $entity;
-    private $table;
-    private $primaryKey;
-    private $primaryKeySeedFunction;
+    private string $entity;
+    private string $table;
+    private array $primaryKey;
+    private Closure $primaryKeySeedFunction;
 
     /**
      * @var FieldMapping[]
      */
-    private $fieldMap = [];
-    private $preserveCaseName = false;
+    private array $fieldMap = [];
+    private bool $preserveCaseName = false;
 
     /**
      * Mapper constructor.
      *
      * @param string $entity
      * @param string $table
-     * @param string $primaryKey
-     * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
+     * @param string|array $primaryKey
+     * @throws OrmModelInvalidException
      */
     public function __construct(
-        $entity,
-        $table,
-        $primaryKey
+        string $entity,
+        string $table,
+        string|array $primaryKey
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
@@ -43,19 +43,19 @@ class Mapper
         $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
     }
 
-    public function withPrimaryKeySeedFunction(\Closure $primaryKeySeedFunction)
+    public function withPrimaryKeySeedFunction(Closure $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
     }
 
-    public function withPreserveCaseName()
+    public function withPreserveCaseName(): static
     {
         $this->preserveCaseName = true;
         return $this;
     }
 
-    protected function fixFieldName($field)
+    protected function fixFieldName(?string $field): ?string
     {
         if (is_null($field)) {
             return null;
@@ -68,15 +68,16 @@ class Mapper
         return $field;
     }
 
-    public function prepareField(array $fieldList)
+    public function prepareField(array $fieldList): array
     {
+        $result = [];
         foreach ($fieldList as $key => $value) {
             $result[$this->fixFieldName($key)] = $value;
         }
         return $result;
     }
 
-    public function addFieldMapping(FieldMapping $fieldMapping)
+    public function addFieldMapping(FieldMapping $fieldMapping): static
     {
         $propertyName = $this->fixFieldName($fieldMapping->getPropertyName());
         $fieldName = $this->fixFieldName($fieldMapping->getFieldName());
@@ -91,13 +92,12 @@ class Mapper
     /**
      * @param string $property
      * @param string $fieldName
-     * @param \Closure|null|bool $updateFunction
-     * @param \Closure $selectFunction
+     * @param Closure|null $updateFunction
+     * @param Closure|null $selectFunction
      * @return $this
-     * @throws InvalidArgumentException
      * @deprecated Use addFieldMapping instead
      */
-    public function addFieldMap($property, $fieldName, \Closure $updateFunction = null, \Closure $selectFunction = null)
+    public function addFieldMap(string $property, string $fieldName, Closure $updateFunction = null, Closure $selectFunction = null): static
     {
         $fieldMapping = FieldMapping::create($property)
             ->withFieldName($fieldName);
@@ -113,9 +113,10 @@ class Mapper
     }
 
     /**
+     * @param array $fieldValues
      * @return object
      */
-    public function getEntity(array $fieldValues = [])
+    public function getEntity(array $fieldValues = []): object
     {
         $class = $this->entity;
         $instance = new $class();
@@ -133,13 +134,13 @@ class Mapper
                 unset($fieldValues[$fieldMap->getFieldName()]);
             }
         }
-        BinderObject::bind($fieldValues, $instance);
+        ObjectCopy::copy($fieldValues, $instance);
 
         foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
             $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
         }
         if (count($this->getFieldMap()) > 0) {
-            BinderObject::bind($fieldValues, $instance);
+            ObjectCopy::copy($fieldValues, $instance);
         }
 
         return $instance;
@@ -149,7 +150,7 @@ class Mapper
     /**
      * @return string
      */
-    public function getTable()
+    public function getTable(): string
     {
         return $this->table;
     }
@@ -157,7 +158,7 @@ class Mapper
     /**
      * @return array
      */
-    public function getPrimaryKey()
+    public function getPrimaryKey(): array
     {
         return $this->primaryKey;
     }
@@ -165,17 +166,16 @@ class Mapper
     /**
      * @return bool
      */
-    public function isPreserveCaseName()
+    public function isPreserveCaseName(): bool
     {
         return $this->preserveCaseName;
     }
 
     /**
      * @param string|null $property
-     * @param string|null $key
      * @return FieldMapping[]|FieldMapping|null
      */
-    public function getFieldMap($property = null)
+    public function getFieldMap(string $property = null): array|FieldMapping|null
     {
         if (empty($property)) {
             return $this->fieldMap;
@@ -187,16 +187,14 @@ class Mapper
             return null;
         }
 
-        $fieldMap = $this->fieldMap[$property];
-
-        return $fieldMap;
+        return $this->fieldMap[$property];
     }
 
     /**
-     * @param null $fieldName
-     * @return array|mixed|null
+     * @param string|null $fieldName
+     * @return string|null
      */
-    public function getFieldAlias($fieldName = null)
+    public function getFieldAlias(?string $fieldName = null): ?string
     {
         $fieldMapVar = $this->getFieldMap($fieldName);
         if (empty($fieldMap)) {
@@ -209,7 +207,7 @@ class Mapper
     /**
      * @return mixed|null
      */
-    public function generateKey($instance)
+    public function generateKey(object $instance): mixed
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
@@ -218,22 +216,5 @@ class Mapper
         $func = $this->primaryKeySeedFunction;
 
         return $func($instance);
-    }
-
-    public static function defaultClosure()
-    {
-        return function ($value) {
-            if (empty($value) && $value !== 0 && $value !== '0' && $value !== false) {
-                return null;
-            }
-            return $value;
-        };
-    }
-
-    public static function doNotUpdateClosure()
-    {
-        return function () {
-            return false;
-        };
     }
 }

@@ -4,14 +4,14 @@ namespace ByJG\MicroOrm;
 
 class Literal
 {
-    protected $literalValue;
+    protected mixed $literalValue;
 
     /**
      * Literal constructor.
      *
-     * @param $literalValue
+     * @param mixed $literalValue
      */
-    public function __construct($literalValue)
+    public function __construct(mixed $literalValue)
     {
         $this->literalValue = $literalValue;
     }
@@ -19,7 +19,7 @@ class Literal
     /**
      * @return mixed
      */
-    public function getLiteralValue()
+    public function getLiteralValue(): mixed
     {
         return $this->literalValue;
     }
@@ -27,7 +27,7 @@ class Literal
     /**
      * @param mixed $literalValue
      */
-    public function setLiteralValue($literalValue)
+    public function setLiteralValue(mixed $literalValue): void
     {
         $this->literalValue = $literalValue;
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
@@ -9,6 +9,7 @@ use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
+use ByJG\MicroOrm\MapperClosure;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
@@ -20,10 +21,9 @@ use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/Model/Users.php';
-require_once __DIR__ . '/Model/UsersMap.php';
-require_once __DIR__ . '/Model/Info.php';
+use Tests\Model\Info;
+use Tests\Model\Users;
+use Tests\Model\UsersMap;
 
 class RepositoryTest extends TestCase
 {
@@ -243,7 +243,7 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
@@ -348,7 +348,7 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(Mapper::doNotUpdateClosure())
+            ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
                 $date = new \DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
@@ -669,7 +669,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
-            public function process(ObserverData $observerData)
+            public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
@@ -681,7 +681,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function getObserverdTable(): string
+            public function getObservedTable(): string
             {
                 return $this->table;
             }
@@ -729,7 +729,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
-            public function process(ObserverData $observerData)
+            public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
@@ -739,7 +739,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function getObserverdTable(): string
+            public function getObservedTable(): string
             {
                 return $this->table;
             }
@@ -768,7 +768,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
-            public function process(ObserverData $observerData)
+            public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
@@ -781,7 +781,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function getObserverdTable(): string
+            public function getObservedTable(): string
             {
                 return $this->table;
             }
