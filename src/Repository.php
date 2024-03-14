@@ -152,12 +152,11 @@ class Repository
     }
 
     /**
-     * @param Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @return bool
-     * @throws Exception\InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
-    public function deleteByQuery(Updatable $updatable): bool
+    public function deleteByQuery(UpdateBuilderInterface $updatable): bool
     {
         $params = [];
         $sql = $updatable->buildDelete($params);
@@ -369,13 +368,13 @@ class Repository
 
     /**
      * @param $instance
-     * @param Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @return int
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insert($instance, Updatable $updatable, array $params): mixed
+    protected function insert($instance, UpdateBuilderInterface $updatable, array $params): mixed
     {
         $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
@@ -386,12 +385,12 @@ class Repository
     }
 
     /**
-     * @param Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @return int
-     * @throws OrmInvalidFieldsException|RepositoryReadOnlyException
+     * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoInc(Updatable $updatable, array $params): int
+    protected function insertWithAutoInc(UpdateBuilderInterface $updatable, array $params): int
     {
         $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
@@ -399,14 +398,13 @@ class Repository
     }
 
     /**
-     * @param Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @param mixed $keyGen
      * @return mixed
-     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(Updatable $updatable, array $params, mixed $keyGen): mixed
+    protected function insertWithKeyGen(UpdateBuilderInterface $updatable, array $params, mixed $keyGen): mixed
     {
         $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
         $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
@@ -415,12 +413,11 @@ class Repository
     }
 
     /**
-     * @param Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
-     * @throws Exception\InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
-    protected function update(Updatable $updatable, array $params): void
+    protected function update(UpdateBuilderInterface $updatable, array $params): void
     {
         $fields = array_map(function ($item) use ($params) {
             return $params[$item];

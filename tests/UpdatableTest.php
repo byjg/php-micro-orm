@@ -3,6 +3,7 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
+use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -136,4 +137,47 @@ class UpdatableTest extends TestCase
         $this->object->table('test');
         $this->object->buildDelete($params);
     }
+
+    public function testQueryUpdatable()
+    {
+        $this->object->table('test');
+        $this->assertEquals(
+            new SqlObject('SELECT  * FROM test'),
+            $this->object->build()
+        );
+
+        $this->object
+            ->fields(['fld1'])
+            ->fields(['fld2', 'fld3']);
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test'),
+            $this->object->build()
+        );
+
+        $this->object
+            ->where('fld2 = :teste', [ 'teste' => 10 ]);
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', [ 'teste' => 10 ]),
+            $this->object->build()
+        );
+
+        $this->object
+            ->where('fld3 = 20');
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', [ 'teste' => 10 ]),
+            $this->object->build()
+        );
+
+        $this->object
+            ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]', [ 'teste' => 10, 'teste2' => 40 ]),
+            $this->object->build()
+        );
+    }
+
 }
