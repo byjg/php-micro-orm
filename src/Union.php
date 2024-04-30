@@ -50,7 +50,7 @@ class Union implements QueryBuilderInterface
 
     public function groupBy(array $fields): Union
     {
-        $this->queryAgreggation->groupBy($fields);
+        $this->queryAggregation->groupBy($fields);
 
         return $this;
     }
