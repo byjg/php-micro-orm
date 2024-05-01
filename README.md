@@ -56,322 +56,113 @@ These are the key components:
 * DbDriverIntarce is the implementation to the Database connection.
 * Repository put all this together
 
-## Examples
 
-For the examples below we will use the class 'Users';
+## Getting Started
 
+### Table Structure
+
+We have the following table structure in the database for this example:
+
+```sql
+CREATE TABLE `mytable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `company_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+We want to be able to interact with this table using the ORM.
+
+### Defining the Model
+
+A Model in our context is a class that symbolizes the data you wish to store or fetch from the database.
+This Model class can be as simple as a class with public properties. 
+Alternatively, it can be a class equipped with getter and setter methods for more controlled access and 
+manipulation of the data. 
+
+To map the database fields, you can add attributes to the Model class. Each property in the Model class represents a field in the database. 
+
+Let's look at an example:
 ```php
-<?php
-class Users
+#[TableAttribute(tableName: 'mytable')]
+class MyModel
 {
-    public $id;
-    public $name;
-    public $createdate;
+    #[FieldAttribute(primaryKey: true)]
+    public ?int $id;
+
+    #[FieldAttribute()]
+    public ?string $name;
+
+    #[FieldAttribute(fieldName: 'company_id')
+    public ?int $companyId;
 }
 ```
 
-First of all will create a Table Mapping class:
+In this example, we have a class `MyModel` with three properties: `id`, `name`, and `companyId`.
+
+The `id` property is marked as a primary key. The `name` property is a simple field.
+The `companyId` property is a field with a different name in the database `company_id`.
+
+The `TableAttribute` is used to define the table name in the database.
+
+### Connecting the repository
+
+After defining the Model, you can connect the Model with the repository.
 
 ```php
-<?php
-// Creating the mapping
-$mapper = new \ByJG\MicroOrm\Mapper(
-    Users::class,   // The full qualified name of the class
-    'users',        // The table that represents this entity
-    'id'            // The primary key field
-);
+$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
 
-// Optionally you can define table mappings between the propoerties
-// and the database fields;
-// The example below will map the property 'createdate' to the database field 'created';
-$mapper->addFieldMapping(FieldMap::create('createdate')->withFieldName('created'));
+$repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
 ```
 
-Then you need to create the dataset object and the repository:
+### Querying the database
+
+You can query the database using the repository.
 
 ```php
-<?php
-$dataset = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
-
-$repository = new \ByJG\MicroOrm\Repository($dataset, $mapper);
+$myModel = $repository->get(1);
 ```
 
-Some examples with the repository:
+or
 
 ```php
-<?php
+$query = Query::getInstance()
+    ->field('name')
+    ->where('company_id = :cid', ['cid' => 1]);
 
-// Get a single data from your ID
-$users = $repository->get(10);
-
-// Persist the entity into the database:
-// Will INSERT if does not exists, and UPDATE if exists
-$users->name = "New name";
-$repository->save($users);
+$result = $repository->getByQuery($query);
 ```
 
-### Update Constraints
-
-You can define a constraint to update a record. 
-If the constraint is not satisfied the update will not be performed.
+or, the same example above:
 
 ```php
-<?php
-$updateConstraint = \ByJG\MicroOrm\UpdateConstraint()::instance()
-    ->withAllowOnlyNewValuesForFields('name');
+$filterModel = $repository->entity([
+    'company_id' => 1
+]);
 
-$users->name = "New name";
-$repository->save($users, $updateConstraint);
+$query = $repository->queryInstance($filterModel);
+$query->field('name');
+
+$result = $repository->getByQuery($query);
 ```
 
-## Advanced uses
+## Basic Concepts
 
-Get a collection using the query object:
+* [The Model Attributes](docs/model.md)
+* The Repository class
+* The Query class
 
-```php
-<?php
-$query = \ByJG\MicroOrm\Query::getInstance()
-    ->table('users')
-    ->fields(['id', 'name'])
-    ->where('name like :part', ['part' => 'A%']);
+## Advanced Concepts
 
-// Will return a collection o 'Users'
-$collection = $repository->getByQuery($query);
-```
-
-Returning multiples entities with a query:
-
-```php
-<?php
-$query = \ByJG\MicroOrm\Query::getInstance()
-    ->table('order')
-    ->join('item', 'order.id = item.orderid')
-    ->where('name like :part', ['part' => 'A%']);
-
-// Will return a collection of Orders and Items:
-// $collection = [
-//     [ $order, $item ],
-//     [ $order, $item ],
-//     ...
-// ];
-$collection = $orderRepository->getByQuery(
-    $query,
-    [
-        $itemRepository->getMapper()
-    ]
-);
-```
-
-## Using FieldAlias
-
-Field alias is an alternate name for a field. This is usefull for disambiguation on join and leftjoin queries.
-Imagine in the example above if both tables ITEM and ORDER have the same field called 'ID'.
-
-In that scenario, the value of ID will be overriden. The solution is use the FieldAlias like below:
-
-```php
-<?php
-// Create the Mapper and the proper fieldAlias
-$orderMapper  = new \ByJG\MicroOrm\Mapper(...);
-$orderMapper->addFieldMapping(FieldMapping::create('id')->withFieldAlias('orderid'));
-$itemMapper  = new \ByJG\MicroOrm\Mapper(...);
-$itemMapper->addFieldMappping(FieldMapping::create('id')->withFieldAlias('itemid'));
-
-$query = \ByJG\MicroOrm\Query::getInstance()
-    ->field('order.id', 'orderid')
-    ->field('item.id', 'itemid')
-        /* Other fields here */
-    ->table('order')
-    ->join('item', 'order.id = item.orderid')
-    ->where('name like :part', ['part' => 'A%']);
-
-// Will return a collection of Orders and Items:
-// $collection = [
-//     [ $order, $item ],
-//     [ $order, $item ],
-//     ...
-// ];
-$collection = $orderRepository->getByQuery(
-    $query,
-    [
-        $itemRepository->getMapper()
-    ]
-);
-```
-
-You can also add a MAPPER as a Field. In that case the MAPPER will create the field and the correct aliases.
-
-```php
-<?php
-$query = \ByJG\MicroOrm\Query::getInstance()
-    ->fields([
-        $orderRepository->getMapper(),
-        $itemRepository->getMapper,
-    ]);
-```
-
-## Tables without auto increments fields
-
-```php
-<?php
-// Creating the mapping
-$mapper = new \ByJG\MicroOrm\Mapper(
-    Users::class,   // The full qualified name of the class
-    'users',        // The table that represents this entity
-    'id',            // The primary key field
-    function () {
-        // calculate and return the unique ID
-    }
-);
-```
-
-## Applying functions for Select and Update
-
-```php
-<?php
-// Creating the mapping
-$mapper = new \ByJG\MicroOrm\Mapper(...);
-
-$fieldMap = FieldMap::create('propertyname') // The property name of the entity class
-    // The field name of the table. if not defined will use the property name.
-    ->withFieldName('fieldname')
-    // The field alias of the field in the table. if not defined will use the field name.
-    ->withFieldAlias('alias')
-    // Returns the pre-processed value before UPDATE/INSERT the $field name
-    // If the function returns NULL this field will not be included in the UPDATE/INSERT
-    ->withUpdateFunction(function ($field, $instance) {
-        return $field;
-    })
-    // Returns the field value with a post-processed value of $field AFTER query from DB
-    ->withSelectFunction(function ($field, $instance) {
-        return $field;
-    })
-
-$mapper->addFieldMapping($fieldMap);
-```
-
-## Observers
-
-You can add observers to the repository. 
-The observer will be called after the insert, update or delete a record in the DB.
-
-```mermaid
-flowchart TD
-    A[MyRepository] --> |1. addObserver| B[Subject]
-    C[ObservedRepository] --> |2. Notify Update| B
-    B --> |3. Execute Callback| A
-```
-
-```php
-<?php
-// This observer will be called after insert, update or delete a record on the table 'triggerTable' 
-$myRepository->addObserver(new class($this->infoMapper->getTable()) implements ObserverProcessorInterface {
-    private $table;
-
-    public function __construct($table)
-    {
-        $this->table = $table;
-    }
-
-    public function process(ObserverData $observerData): void
-    {
-        // Do something here
-    }
-
-    public function getObservedTable(): string
-    {
-        return $this->table;
-    }
-});
-```
-
-The `ObserverData` class contains the following properties:
- - `getTable()`: The table name that was affected
- - `getEvent()`: The event that was triggered. Can be 'insert', 'update' or 'delete'
- - `getData()`: The data that was inserted or updated. It is null in case of delete.
- - `getOldData()`: The data before update. In case of insert comes null, and in case of delete comes with the param filters. 
- - `getRepository()`: The repository is listening to the event (the same as $myRepository)
-
-*Note*: The observer will not be called if the insert, update or delete is called using the DBDriver object.
-
-## Using With Recursive SQL Command
-
-```php
-<?php
-$recursive = \ByJG\MicroOrm\Recursive::getInstance('test')
-    ->field('start', 1, 'start + 10')
-    ->field('end', 120, "end - 10")
-    ->where('start < 100')
-;
-
-$query = \ByJG\MicroOrm\Query::getInstance()
-    ->withRecursive($recursive)
-    ->fields(['start', 'end']);
-
-/*
-This will produce the following SQL:
-
-WITH RECURSIVE test(start, end) AS (
-    SELECT 1 as start, 120 as end
-    UNION ALL SELECT start + 10, end - 10 FROM test WHERE start < 100
-) SELECT start, end FROM test
-*/
-```
-
-## Pre-defined closures for field map
-
-### Mapper::defaultClosure($value, $instance)
-
-Defines the basic behavior for select and update fields;
-
-### Mapper::doNotUpdateClosure($value, $instance)
-
-If set in the update field map will make the field not updatable by the micro-orm.
-It is usefull for fields that are pre-defined like 'Primary Key'; timestamp fields based on the
-update and the creation; and others
-
-## Before insert and update functions
-
-You can also set closure to be applied before insert or update a record.
-In this case will set in the Repository:
-
-```php
-<?php
-Repository::setBeforeInsert(function ($instance) {
-    return $instance;
-});
-
-Repository::setBeforeUpdate(function ($instance) {
-    return $instance;
-});
-```
-
-## TransactionManager object
-
-It allows you to create a single database transaction with multiple repositories.
-If any of the repositories fails the transaction will be rolled back for all repositories.
-When you commit the transaction all repositories will be commited.
-
-```php
-<?php
-$repo1 = new Repository(...);
-$repo2 = new Repository(...);
-
-// Create the TransactionManager
-$transactionManager = new TransactionManager();
-$transactionManager->addRepository($repo1);
-$transactionManager->addRepository($repo2);
-
-// Start the transaction
-$transactionManager->beginTransaction();
-
-//
-// Do some Repository operations with the repo;
-// ...
-
-// commit (or rollback all transactions)
-$transactionManager->commitTransaction();
-```
+* Using existing Models without rewrite them
+* Using the Query object to create complex queries
+* Using the Observer to listen to the insert, update and delete events
+* Using the TransactionManager to create a single transaction with multiple repositories
+* Using the Recursive object to create recursive SQL commands
+* Using the FieldAlias to disambiguate fields in join and leftjoin queries
+* Using the BeforeInsert and BeforeUpdate functions to apply a closure before insert or update a record
+* Using the UpdateConstraint to define constraints to update a record
 
 ## Install
 
