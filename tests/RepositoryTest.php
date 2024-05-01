@@ -5,9 +5,10 @@ namespace Tests;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
-use ByJG\MicroOrm\Literal;
+use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\MapperClosure;
 use ByJG\MicroOrm\ObserverData;
@@ -22,8 +23,10 @@ use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Info;
+use Tests\Model\ModelWithAttributes;
 use Tests\Model\Users;
 use Tests\Model\UsersMap;
+use Tests\Model\UsersWithAttribute;
 
 class RepositoryTest extends TestCase
 {
@@ -190,32 +193,36 @@ class RepositoryTest extends TestCase
 
     public function testInsertLiteral()
     {
-        $users = new Users();
-        $users->setName(new Literal("X'6565'"));
-        $users->setCreatedate('2015-08-09');
+        /** @var Users $users */
+        $users = $this->repository->entity([
+            "name" => new Literal("X'6565'"),
+            "createdate" => '2015-08-09'
+        ]);
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
-        $this->assertEquals(4, $users->getId());
 
         $users2 = $this->repository->get(4);
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
+
+        $this->assertEquals($users2->getId(), $users->getId());
+        $this->assertEquals($users2->getCreatedate(), $users->getCreatedate());
     }
 
     public function testInsertKeyGen()
     {
-        $this->infoMapper = new Mapper(
-            Users::class,
-            'users',
-            'id'
-        );
-        $this->infoMapper->withPrimaryKeySeedFunction(function ($instance) {
-            return 50;
-        });
-        $this->repository = new Repository($this->dbDriver, $this->infoMapper);
+//        $this->infoMapper = new Mapper(
+//            Users::class,
+//            'users',
+//            'id'
+//        );
+//        $this->infoMapper->withPrimaryKeySeedFunction(function ($instance) {
+//            return 50;
+//        });
+        $this->repository = new Repository($this->dbDriver, UsersWithAttribute::class);
 
         $users = new Users();
         $users->setName('Bla99991919');
@@ -595,8 +602,7 @@ class RepositoryTest extends TestCase
 
     public function testTop()
     {
-        $query = Query::getInstance()
-            ->table($this->userMapper->getTable())
+        $query = $this->repository->queryInstance()
             ->top(1);
 
         $result = $this->repository->getByQuery($query);
@@ -610,8 +616,7 @@ class RepositoryTest extends TestCase
 
     public function testLimit()
     {
-        $query = Query::getInstance()
-            ->table($this->userMapper->getTable())
+        $query = $this->repository->queryInstance()
             ->limit(1, 1);
 
         $result = $this->repository->getByQuery($query);
@@ -625,12 +630,11 @@ class RepositoryTest extends TestCase
 
     public function testQueryRaw()
     {
-        $query = Query::getInstance()
+        $query = $this->repository->queryInstance()
             ->fields([
                 "name",
                 "julianday('2020-06-28') - julianday(createdate) as days"
             ])
-            ->table($this->userMapper->getTable())
             ->limit(1, 1);
 
         $result = $this->repository->getByQuery($query);
@@ -698,12 +702,11 @@ class RepositoryTest extends TestCase
 
 
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $query = $infoRepository->queryInstance()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -886,6 +889,53 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[1]->getId());
         $this->assertEquals(3, $result[1]->getIduser());
         $this->assertEquals(3.5, $result[1]->getValue());
+    }
+
+    public function testMappingAttribute()
+    {
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $result = $infoRepository->getByQuery($query);
+
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(3, $result[0]->getPk());
+        $this->assertEquals(3, $result[0]->iduser);
+        $this->assertEquals(3.5, $result[0]->value);
+    }
+
+    public function testQueryInstanceWithModel()
+    {
+        $filterModel = $this->repository->entity([
+            'id' => 3
+        ]);
+
+        $query = $this->repository->queryInstance($filterModel);
+
+        $result = $this->repository->getByQuery($query);
+
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(3, $result[0]->getId());
+        $this->assertEquals('JG', $result[0]->getName());
+        $this->assertEquals('1974-01-26', $result[0]->getCreatedate());
+
+    }
+
+    public function testQueryInstanceWithWrongModel()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("The model must be an instance of Tests\Model\Users");
+
+        $infoModel = $this->infoMapper->getEntity([
+            'id' => 3
+        ]);
+
+        $query = $this->repository->queryInstance($infoModel);
     }
 
 }

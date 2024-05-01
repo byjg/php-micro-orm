@@ -3,7 +3,7 @@
 namespace Tests;
 
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Literal;
+use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
 use ByJG\MicroOrm\SqlObject;

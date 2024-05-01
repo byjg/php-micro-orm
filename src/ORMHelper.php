@@ -2,6 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Literal\Literal;
+
 class ORMHelper
 {
     /**
@@ -9,9 +11,9 @@ class ORMHelper
      * @param array $params
      * @return string
      */
-    public static function processLiteral($sql, &$params)
+    public static function processLiteral(string $sql, array &$params = null): string
     {
-        if (!is_array($params)) {
+        if (empty($params)) {
             return $sql;
         }
 

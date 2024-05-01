@@ -2,9 +2,14 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Attributes\FieldAttribute;
+use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\Serializer\ObjectCopy;
 use Closure;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionException;
 
 class Mapper
 {
@@ -24,23 +29,68 @@ class Mapper
      * Mapper constructor.
      *
      * @param string $entity
-     * @param string $table
-     * @param string|array $primaryKey
+     * @param string|null $table
+     * @param string|array|null $primaryKey
      * @throws OrmModelInvalidException
+     * @throws ReflectionException
      */
     public function __construct(
         string $entity,
-        string $table,
-        string|array $primaryKey
+        ?string $table = null,
+        string|array|null $primaryKey = null
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
-        $primaryKey = (array)$primaryKey;
 
         $this->entity = $entity;
-        $this->table = $table;
-        $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+        if (empty($table) || empty($primaryKey)) {
+            $this->processAttribute($entity);
+        } else {
+            $primaryKey = (array)$primaryKey;
+
+            $this->table = $table;
+            $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+        }
+    }
+
+    /**
+     * @throws ReflectionException
+     * @throws OrmModelInvalidException
+     */
+    protected function processAttribute(string $entity): void
+    {
+        $reflection = new ReflectionClass($entity);
+        $attributes = $reflection->getAttributes(TableAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
+        if (count($attributes) == 0) {
+            throw new OrmModelInvalidException("Entity '$entity' does not have the TableAttribute");
+        }
+
+        $tableAttribute = $attributes[0]->newInstance();
+        $this->table = $tableAttribute->getTableName();
+        if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
+            $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
+        }
+
+        $this->primaryKey = [];
+        foreach ($reflection->getProperties() as $property) {
+            $attributes = $property->getAttributes(FieldAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
+            if (count($attributes) == 0) {
+                continue;
+            }
+
+            $fieldAttribute = $attributes[0]->newInstance();
+            $fieldMapping = $fieldAttribute->getFieldMapping($property->getName());
+            if (empty($fieldMapping)) {
+                continue;
+            }
+
+            $this->addFieldMapping($fieldMapping);
+
+            if ($fieldAttribute->isPrimaryKey()) {
+                $this->primaryKey[] = $this->fixFieldName($fieldAttribute->getFieldName());
+            }
+        }
     }
 
     public function withPrimaryKeySeedFunction(Closure $primaryKeySeedFunction): static

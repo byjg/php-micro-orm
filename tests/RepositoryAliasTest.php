@@ -94,8 +94,7 @@ class RepositoryAliasTest extends TestCase
 
     public function testQueryWithAlias()
     {
-        $query = Query::getInstance()
-            ->table('customers')
+        $query = $this->repository->queryInstance()
             ->fields(
                 [
                     'id',

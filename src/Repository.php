@@ -5,12 +5,14 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
-use InvalidArgumentException;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ReflectionException;
 
 class Repository
 {
@@ -43,13 +45,18 @@ class Repository
     /**
      * Repository constructor.
      * @param DbDriverInterface $dbDataset
-     * @param Mapper $mapper
+     * @param string|Mapper $mapperOrEntity
+     * @throws OrmModelInvalidException
+     * @throws ReflectionException
      */
-    public function __construct(DbDriverInterface $dbDataset, Mapper $mapper)
+    public function __construct(DbDriverInterface $dbDataset, string|Mapper $mapperOrEntity)
     {
         $this->dbDriver = $dbDataset;
         $this->dbDriverWrite = $dbDataset;
-        $this->mapper = $mapper;
+        if (is_string($mapperOrEntity)) {
+            $mapperOrEntity = new Mapper($mapperOrEntity);
+        }
+        $this->mapper = $mapperOrEntity;
         $this->beforeInsert = function ($instance) {
             return $instance;
         };
@@ -82,6 +89,39 @@ class Repository
     public function getDbDriver(): DbDriverInterface
     {
         return $this->dbDriver;
+    }
+
+    public function entity(array $values): mixed
+    {
+        return $this->getMapper()->getEntity($values);
+    }
+
+    public function queryInstance(object $model = null): Query
+    {
+        $query = Query::getInstance()
+            ->table($this->mapper->getTable())
+        ;
+
+        if (!is_null($model)) {
+            $entity = $this->getMapper()->getEntity();
+            if (!($model instanceof $entity)) {
+                throw new InvalidArgumentException("The model must be an instance of " . $this->getMapper()->getEntity()::class);
+            }
+
+            $array = Serialize::from($model)
+                ->withDoNotParseNullValues()
+                ->toArray();
+
+            foreach ($array as $key => $value) {
+                $fieldMap = $this->mapper->getFieldMap($key);
+                if (!empty($fieldMap)) {
+                    $key = $fieldMap->getFieldName();
+                }
+                $query->where("$key = :$key", [$key => $value]);
+            }
+        }
+
+        return $query;
     }
 
     /**
@@ -138,7 +178,6 @@ class Repository
     /**
      * @param array|string|int $pkId
      * @return bool
-     * @throws Exception\InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
     public function delete(array|string|int $pkId): bool
@@ -371,7 +410,6 @@ class Repository
      * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @return int
-     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     protected function insert($instance, UpdateBuilderInterface $updatable, array $params): mixed

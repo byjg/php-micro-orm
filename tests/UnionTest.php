@@ -60,8 +60,8 @@ class UnionTest extends TestCase
 
         $build = $union->build(Factory::getDbRelationalInstance(new Uri('sqlite:///tmp/teste.db')));
 
-        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build["sql"]);
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build->getSql());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
     }
 
     public function testInvalidArgument()

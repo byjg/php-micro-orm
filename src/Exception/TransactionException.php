@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class TransactionException extends \Exception
+use Exception;
+
+class TransactionException extends Exception
 {
 
 }

@@ -9,6 +9,8 @@ use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class Updatable implements UpdateBuilderInterface, QueryBuilderInterface
 {
+    use WhereTrait;
+
     protected array $fields = [];
     protected string $table = "";
     protected array $where = [];
@@ -46,20 +48,6 @@ class Updatable implements UpdateBuilderInterface, QueryBuilderInterface
         return $this;
     }
 
-    /**
-     * Example:
-     *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     *
-     * @param string $filter
-     * @param array $params
-     * @return $this
-     */
-    public function where(string $filter, array $params = []): static
-    {
-        $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
-        return $this;
-    }
-
     protected function getFields(): string
     {
         if (empty($this->fields)) {
@@ -68,24 +56,6 @@ class Updatable implements UpdateBuilderInterface, QueryBuilderInterface
 
         return ' ' . implode(', ', $this->fields) . ' ';
     }
-    
-    protected function getWhere(): ?array
-    {
-        $whereStr = [];
-        $params = [];
-
-        foreach ($this->where as $item) {
-            $whereStr[] = $item['filter'];
-            $params = array_merge($params, $item['params']);
-        }
-        
-        if (empty($whereStr)) {
-            return null;
-        }
-        
-        return [ implode(' AND ', $whereStr), $params ];
-    }
-
 
     /**
      * @param array $params
@@ -178,6 +148,10 @@ class Updatable implements UpdateBuilderInterface, QueryBuilderInterface
         return ORMHelper::processLiteral($sql, $params);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
     public function build(?DbDriverInterface $dbDriver = null): SqlObject
     {
         $query = Query::getInstance()

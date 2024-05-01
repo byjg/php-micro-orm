@@ -184,6 +184,10 @@ class Query extends QueryBasic
         return $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
     public function getQueryBasic(): QueryBasic
     {
         $queryBasic = new QueryBasic();

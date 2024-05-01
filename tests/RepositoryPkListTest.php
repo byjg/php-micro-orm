@@ -4,11 +4,8 @@ namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
-use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Items;

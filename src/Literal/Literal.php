@@ -1,6 +1,6 @@
 <?php
 
-namespace ByJG\MicroOrm;
+namespace ByJG\MicroOrm\Literal;
 
 class Literal
 {
@@ -32,7 +32,7 @@ class Literal
         $this->literalValue = $literalValue;
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->getLiteralValue();
     }
