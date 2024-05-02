@@ -102,8 +102,6 @@ in the constructor call the parent with the function.
 * It is used to define a field that is read-only.
 * It sets the MapperClosure::readonly() method to the updateFunction.
 
-```php
-
 ## Closure Function Signature
 
 ### primaryKeySeedFunction:
