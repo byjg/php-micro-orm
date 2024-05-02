@@ -3,11 +3,12 @@
 namespace Test;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
-use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\InsertQuery;
+use ByJG\MicroOrm\Updatable;
 use PHPUnit\Framework\TestCase;
 
-class UpdatableTest extends TestCase
+class InsertQueryTest extends TestCase
 {
     /**
      * @var Updatable
@@ -16,7 +17,7 @@ class UpdatableTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->object = new Updatable();
+        $this->object = new InsertQuery();
     }
 
     protected function tearDown(): void
@@ -32,7 +33,7 @@ class UpdatableTest extends TestCase
         $this->object->fields(['fld2', 'fld3']);
 
         $params = [];
-        $sql = $this->object->buildInsert($params);
+        $sql = $this->object->build($params);
         $this->assertEquals(
             [
                 'INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
@@ -45,7 +46,7 @@ class UpdatableTest extends TestCase
         );
 
         $params = [];
-        $sql = $this->object->buildInsert($params, new DbSqliteFunctions());
+        $sql = $this->object->build($params, new DbSqliteFunctions());
         $this->assertEquals(
             [
                 'INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
@@ -58,85 +59,6 @@ class UpdatableTest extends TestCase
         );
     }
 
-    public function testUpdate()
-    {
-        $this->object->table('test');
-
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
-
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
-
-        $params = [];
-        $sql = $this->object->buildUpdate($params);
-        $this->assertEquals(
-            [
-                'UPDATE test SET fld1 = [[fld1]] , fld2 = [[fld2]] , fld3 = [[fld3]]  WHERE fld1 = [[id]]',
-                [ 'id' => 10 ]
-            ],
-            [
-                $sql,
-                $params
-            ]
-        );
-
-        $params = [];
-        $sql = $this->object->buildUpdate($params, new DbSqliteFunctions());
-        $this->assertEquals(
-            [
-                'UPDATE `test` SET `fld1` = [[fld1]] , `fld2` = [[fld2]] , `fld3` = [[fld3]]  WHERE fld1 = [[id]]',
-                [ 'id' => 10 ]
-            ],
-            [
-                $sql,
-                $params
-            ]
-        );
-    }
-
-    public function testUpdateError()
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->object->table('test');
-
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
-
-        $params = [];
-        $this->object->buildUpdate($params);
-    }
-
-    public function testDelete()
-    {
-        $this->object->table('test');
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
-
-        $params = [];
-        $sql = $this->object->buildDelete($params);
-        $this->assertEquals(
-            [
-                'DELETE FROM test WHERE fld1 = [[id]]',
-                [ 'id' => 10 ]
-            ],
-            [
-                $sql,
-                $params
-            ]
-
-        );
-    }
-
-    public function testDeleteError()
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        $params = [];
-
-        $this->object->table('test');
-        $this->object->buildDelete($params);
-    }
-
     public function testQueryUpdatable()
     {
         $this->object->table('test');
@@ -145,7 +67,7 @@ class UpdatableTest extends TestCase
                 'sql' => 'SELECT  * FROM test',
                 'params' => []
             ],
-            $this->object->build()
+            $this->object->convert()->build()
         );
 
 
@@ -158,7 +80,7 @@ class UpdatableTest extends TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test',
                 'params' => []
             ],
-            $this->object->build()
+            $this->object->convert()->build()
         );
 
         $this->object
@@ -169,7 +91,7 @@ class UpdatableTest extends TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste',
                 'params' => [ 'teste' => 10 ]
             ],
-            $this->object->build()
+            $this->object->convert()->build()
         );
 
         $this->object
@@ -180,7 +102,7 @@ class UpdatableTest extends TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20',
                 'params' => [ 'teste' => 10 ]
             ],
-            $this->object->build()
+            $this->object->convert()->build()
         );
 
         $this->object
@@ -191,7 +113,7 @@ class UpdatableTest extends TestCase
                 'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]',
                 'params' => [ 'teste' => 10, 'teste2' => 40 ]
             ],
-            $this->object->build()
+            $this->object->convert()->build()
         );
     }
 
