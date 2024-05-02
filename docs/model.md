@@ -97,6 +97,13 @@ To use a function as a parameter, you must inherit from the `FieldAttribute` and
 in the constructor call the parent with the function.
 ```
 
+## Special Field Attributes: FieldReadOnlyAttribute
+
+* It is used to define a field that is read-only.
+* It sets the MapperClosure::readonly() method to the updateFunction.
+
+```php
+
 ## Closure Function Signature
 
 ### primaryKeySeedFunction:

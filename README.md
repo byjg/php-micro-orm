@@ -150,7 +150,7 @@ $result = $repository->getByQuery($query);
 ## Basic Concepts
 
 * [The Model Attributes](docs/model.md)
-* The Repository class
+* [The Repository class](docs/repository.md)
 * The Query class
 
 ## Advanced Concepts
