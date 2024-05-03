@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class RepositoryReadOnlyException extends \Exception
+use Exception;
+
+class RepositoryReadOnlyException extends Exception
 {
 
 }

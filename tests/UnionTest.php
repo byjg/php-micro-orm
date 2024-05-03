@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\PdoMysql;
@@ -21,8 +21,8 @@ class UnionTest extends TestCase
 
         $build = $union->build();
 
-        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price", $build["sql"]);
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price", $build->getSql());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
     }
 
     public function testAddQueryWithTop()
@@ -34,8 +34,8 @@ class UnionTest extends TestCase
 
         $build = $union->build(Factory::getDbRelationalInstance(new Uri('sqlite:///tmp/teste.db')));
 
-        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price LIMIT 0, 10", $build["sql"]);
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price LIMIT 0, 10", $build->getSql());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
     }
 
     public function testAddQueryWithOrderBy()
@@ -47,8 +47,21 @@ class UnionTest extends TestCase
 
         $build = $union->build(Factory::getDbRelationalInstance(new Uri('sqlite:///tmp/teste.db')));
 
-        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price ORDER BY name", $build["sql"]);
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price ORDER BY name", $build->getSql());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
+    }
+
+    public function testAddQueryWithGroupBy()
+    {
+        $union = new Union();
+        $union->addQuery(QueryBasic::getInstance()->table("table1")->fields(['name', 'price'])->where('name like :name', ['name' => 'a%']));
+        $union->addQuery(QueryBasic::getInstance()->table("table2")->fields(['name', 'price'])->where('price > :price', ['price' => 10]));
+        $union->groupBy(['name']);
+
+        $build = $union->build(Factory::getDbRelationalInstance(new Uri('sqlite:///tmp/teste.db')));
+
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build->getSql());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
     }
 
     public function testInvalidArgument()

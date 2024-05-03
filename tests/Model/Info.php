@@ -5,7 +5,7 @@
  * Time: 21:42
  */
 
-namespace Test;
+namespace Tests\Model;
 
 
 class Info
