@@ -6,14 +6,34 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use Cassandra\Map;
 
 class UpdateQuery extends Updatable
 {
     protected $set = [];
 
-    public static function getInstance()
+    public static function getInstance(array $fields = [], Mapper $mapper = null): UpdateQuery
     {
-        return new UpdateQuery();
+        $updatable = new UpdateQuery();
+
+        if (!is_null($mapper)) {
+            $updatable->table($mapper->getTable());
+
+            $pkFields = array_map(function ($item) use (&$fields) {
+                $value = $fields[$item];
+                unset($fields[$item]);
+                return $value;
+            }, $mapper->getPrimaryKey());
+
+            [$filterList, $filterKeys] = $mapper->getPkFilter($pkFields);
+            $updatable->where($filterList, $filterKeys);
+        }
+
+        foreach ($fields as $field => $value) {
+            $updatable->set($field, $value);
+        }
+
+        return $updatable;
     }
 
     /**
@@ -46,7 +66,7 @@ class UpdateQuery extends Updatable
             if (!is_null($dbHelper)) {
                 $fieldName = $dbHelper->delimiterField($fieldName);
             }
-            $fieldsStr[] = "$fieldName = [[$field]] ";
+            $fieldsStr[] = "$fieldName = :$field ";
             $params[$field] = $value;
         }
         

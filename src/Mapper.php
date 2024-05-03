@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\Serializer\ObjectCopy;
 use Closure;
@@ -211,6 +212,27 @@ class Mapper
     public function getPrimaryKey(): array
     {
         return $this->primaryKey;
+    }
+
+    public function getPkFilter(array|string $pkId): array
+    {
+        $pkList = $this->getPrimaryKey();
+        if (!is_array($pkId)) {
+            $pkId = [$pkId];
+        }
+
+        if (count($pkList) !== count($pkId)) {
+            throw new InvalidArgumentException("The primary key must have " . count($pkList) . " values");
+        }
+
+        $filterList = [];
+        $filterKeys = [];
+        foreach ($pkList as $pk) {
+            $filterList[] = $pk . " = :pk$pk";
+            $filterKeys["pk$pk"] = array_shift($pkId);
+        }
+
+        return [implode(' and ', $filterList), $filterKeys];
     }
 
     /**

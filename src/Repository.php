@@ -136,27 +136,6 @@ class Repository
         return $this->dbDriverWrite;
     }
 
-    protected function getPkFilter(array|string $pkId): array
-    {
-        $pkList = $this->mapper->getPrimaryKey();
-        if (!is_array($pkId)) {
-            $pkId = [$pkId];
-        }
-
-        if (count($pkList) !== count($pkId)) {
-            throw new InvalidArgumentException("The primary key must have " . count($pkList) . " values");
-        }
-
-        $filterList = [];
-        $filterKeys = [];
-        foreach ($pkList as $pk) {
-            $filterList[] = $pk . " = :id$pk";
-            $filterKeys["id$pk"] = array_shift($pkId);
-        }
-
-        return [implode(' and ', $filterList), $filterKeys];
-    }
-
     /**
      * @param array|string|int $pkId
      * @return mixed|null
@@ -165,7 +144,7 @@ class Repository
      */
     public function get(array|string|int $pkId): mixed
     {
-        [$filterList, $filterKeys] = $this->getPkFilter($pkId);
+        [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
         $result = $this->getByFilter($filterList, $filterKeys);
 
         if (count($result) === 1) {
@@ -182,7 +161,7 @@ class Repository
      */
     public function delete(array|string|int $pkId): bool
     {
-        [$filterList, $filterKeys] = $this->getPkFilter($pkId);
+        [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
         $updatable = DeleteQuery::getInstance()
             ->table($this->mapper->getTable())
             ->where($filterList, $filterKeys);
@@ -360,25 +339,11 @@ class Repository
         if ($isInsert) {
             $closure = $this->beforeInsert;
             $array = $closure($array);
-            $updatable = InsertQuery::getInstance()
-                ->table($this->mapper->getTable());
-            foreach ($array as $field => $value) {
-                $updatable->field($field, $value);
-            }
+            $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
         } else {
             $closure = $this->beforeUpdate;
             $array = $closure($array);
-            $updatable = UpdateQuery::getInstance()
-                ->table($this->mapper->getTable());
-            foreach ($array as $field => $value) {
-                $updatable->set($field, $value);
-            }
-            $fields = array_map(function ($item) use ($array) {
-                return $array[$item];
-            }, $this->mapper->getPrimaryKey());
-
-            [$filterList, $filterKeys] = $this->getPkFilter($fields);
-            $updatable->where($filterList, $filterKeys);
+            $updatable = UpdateQuery::getInstance($array, $this->mapper);
         }
 
         // Check if is OK

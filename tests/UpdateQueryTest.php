@@ -35,12 +35,12 @@ class UpdateQueryTest extends TestCase
         $this->object->set('fld2', 'B');
         $this->object->set('fld3', 'C');
 
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
+        $this->object->where('fld1 = :id', ['id' => 10]);
 
         $sqlObject = $this->object->build();
         $this->assertEquals(
             new SqlObject(
-                'UPDATE test SET fld1 = [[fld1]] , fld2 = [[fld2]] , fld3 = [[fld3]]  WHERE fld1 = [[id]]',
+                'UPDATE test SET fld1 = :fld1 , fld2 = :fld2 , fld3 = :fld3  WHERE fld1 = :id',
                 [ 'id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C' ],
                 SqlObjectEnum::UPDATE
             ),
@@ -50,7 +50,7 @@ class UpdateQueryTest extends TestCase
         $sqlObject = $this->object->build(new DbSqliteFunctions());
         $this->assertEquals(
             new SqlObject(
-                'UPDATE `test` SET `fld1` = [[fld1]] , `fld2` = [[fld2]] , `fld3` = [[fld3]]  WHERE fld1 = [[id]]',
+                'UPDATE `test` SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
                 [ 'id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C' ],
                 SqlObjectEnum::UPDATE
             ),
@@ -106,10 +106,10 @@ class UpdateQueryTest extends TestCase
         );
 
         $this->object
-            ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
+            ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', [ 'teste' => 10, 'teste2' => 40 ]),
             $this->object->convert()->build()
         );
     }

@@ -11,9 +11,18 @@ class InsertQuery extends Updatable
 {
     protected $fields = [];
 
-    public static function getInstance()
+    public static function getInstance(string $table = null, array $fields = []): InsertQuery
     {
-        return new InsertQuery();
+        $query = new InsertQuery();
+        if (!is_null($table)) {
+            $query->table($table);
+        }
+
+        foreach ($fields as $field => $value) {
+            $query->field($field, $value);
+        }
+
+        return $query;
     }
 
     /**
@@ -61,7 +70,7 @@ class InsertQuery extends Updatable
             . $tableStr
             . '( ' . implode(', ', $fieldsStr) . ' ) '
             . ' values '
-            . '( [[' . implode(']], [[', array_keys($this->fields)) . ']] ) ';
+            . '( :' . implode(', :', array_keys($this->fields)) . ' ) ';
 
         $params = $this->fields;
         $sql = ORMHelper::processLiteral($sql, $params);

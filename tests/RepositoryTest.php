@@ -9,6 +9,7 @@ use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
+use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\MapperClosure;
@@ -18,9 +19,13 @@ use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\SqlObject;
+use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\UpdateConstraint;
+use ByJG\MicroOrm\UpdateQuery;
+use ByJG\Serializer\Serialize;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Info;
@@ -213,6 +218,32 @@ class RepositoryTest extends TestCase
         $this->assertEquals($users2->getCreatedate(), $users->getCreatedate());
     }
 
+    public function testInsertFromObject()
+    {
+        $insertQuery = InsertQuery::getInstance(
+            $this->userMapper->getTable(),
+            [
+                "name" => new Literal("X'6565'"),
+                "createdate" => '2015-08-09'
+            ]
+        );
+
+        $sqlObject = $insertQuery->build();
+
+        $this->assertEquals(
+            new SqlObject("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"], SqlObjectEnum::INSERT),
+            $sqlObject
+        );
+
+        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+
+        $users2 = $this->repository->get(4);
+
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('ee', $users2->getName());
+        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+    }
+
     public function testInsertKeyGen()
     {
 //        $this->infoMapper = new Mapper(
@@ -343,6 +374,33 @@ class RepositoryTest extends TestCase
         $this->assertEquals('ee', $users2->getName());
         $this->assertEquals('2017-01-02', $users2->getCreatedate());
     }
+
+    public function testUpdateObject()
+    {
+        $updateQuery = UpdateQuery::getInstance(
+            [
+                "id" => 1,
+                "name" => new Literal("X'6565'"),
+                "createdate" => '2020-01-02'
+            ],
+            $this->userMapper,
+        );
+
+        $sqlObject = $updateQuery->build();
+        $this->assertEquals(
+            new SqlObject("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1], SqlObjectEnum::UPDATE),
+            $sqlObject
+        );
+
+        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+
+        $users2 = $this->repository->get(1);
+
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('ee', $users2->getName());
+        $this->assertEquals('2020-01-02', $users2->getCreatedate());
+    }
+
 
     public function testUpdateFunction()
     {
@@ -739,7 +797,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals('info', $observerData->getTable());
                 $this->parent->assertEquals(ORMSubject::EVENT_DELETE, $observerData->getEvent());
                 $this->parent->assertNull($observerData->getData());
-                $this->parent->assertEquals(["idid" => 3], $observerData->getOldData());
+                $this->parent->assertEquals(["pkid" => 3], $observerData->getOldData());
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 

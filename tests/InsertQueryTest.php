@@ -37,13 +37,13 @@ class InsertQueryTest extends TestCase
 
         $sqlObject = $this->object->build();
         $this->assertEquals(
-            new SqlObject('INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
+            new SqlObject('INSERT INTO test( fld1, fld2, fld3 )  values ( :fld1, :fld2, :fld3 ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
             $sqlObject
         );
 
         $sqlObject = $this->object->build(new DbSqliteFunctions());
         $this->assertEquals(
-            new SqlObject('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
+            new SqlObject('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( :fld1, :fld2, :fld3 ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
             $sqlObject
         );
     }
