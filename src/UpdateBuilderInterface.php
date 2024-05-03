@@ -7,9 +7,7 @@ use ByJG\AnyDataset\Db\DbFunctionsInterface;
 
 interface UpdateBuilderInterface
 {
-    public function buildInsert(array &$params, DbFunctionsInterface $dbHelper = null);
+    public function build(?DbFunctionsInterface $dbHelper = null): SqlObject;
 
-    public function buildUpdate(array &$params, DbFunctionsInterface $dbHelper = null);
-
-    public function buildDelete(array &$params);
+    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface;
 }

@@ -183,7 +183,7 @@ class Repository
     public function delete(array|string|int $pkId): bool
     {
         [$filterList, $filterKeys] = $this->getPkFilter($pkId);
-        $updatable = Updatable::getInstance()
+        $updatable = DeleteQuery::getInstance()
             ->table($this->mapper->getTable())
             ->where($filterList, $filterKeys);
 
@@ -195,14 +195,13 @@ class Repository
      * @return bool
      * @throws RepositoryReadOnlyException
      */
-    public function deleteByQuery(UpdateBuilderInterface $updatable): bool
+    public function deleteByQuery(DeleteQuery $updatable)
     {
-        $params = [];
-        $sql = $updatable->buildDelete($params);
+        $sqlObject = $updatable->build();
 
-        $this->getDbDriverWrite()->execute($sql, $params);
+        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
 
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $params);
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $sqlObject->getParameters());
 
         return true;
     }
@@ -357,18 +356,30 @@ class Repository
         }
         $isInsert = empty($oldInstance);
 
-        // Prepare query to insert
-        $updatable = Updatable::getInstance()
-            ->table($this->mapper->getTable())
-            ->fields(array_keys($array));
-
         // Execute Before Statements
         if ($isInsert) {
             $closure = $this->beforeInsert;
+            $array = $closure($array);
+            $updatable = InsertQuery::getInstance()
+                ->table($this->mapper->getTable());
+            foreach ($array as $field => $value) {
+                $updatable->field($field, $value);
+            }
         } else {
             $closure = $this->beforeUpdate;
+            $array = $closure($array);
+            $updatable = UpdateQuery::getInstance()
+                ->table($this->mapper->getTable());
+            foreach ($array as $field => $value) {
+                $updatable->set($field, $value);
+            }
+            $fields = array_map(function ($item) use ($array) {
+                return $array[$item];
+            }, $this->mapper->getPrimaryKey());
+
+            [$filterList, $filterKeys] = $this->getPkFilter($fields);
+            $updatable->where($filterList, $filterKeys);
         }
-        $array = $closure($array);
 
         // Check if is OK
         if (empty($array) || !is_array($array)) {
@@ -377,7 +388,7 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $keyReturned = $this->insert($instance, $updatable, $array);
+            $keyReturned = $this->insert($instance, $updatable);
             if (count($pkList) == 1) {
                 $array[$pkList[0]] = $keyReturned;
             }
@@ -385,7 +396,7 @@ class Repository
             if (!empty($updateConstraint)) {
                 $updateConstraint->check($oldInstance, $this->getMapper()->getEntity($array));
             }
-            $this->update($updatable, $array);
+            $this->update($updatable);
         }
 
         ObjectCopy::copy($array, $instance);
@@ -412,13 +423,13 @@ class Repository
      * @return int
      * @throws RepositoryReadOnlyException
      */
-    protected function insert($instance, UpdateBuilderInterface $updatable, array $params): mixed
+    protected function insert($instance, InsertQuery $updatable): mixed
     {
         $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
-            return $this->insertWithAutoInc($updatable, $params);
+            return $this->insertWithAutoInc($updatable);
         } else {
-            return $this->insertWithKeyGen($updatable, $params, $keyGen);
+            return $this->insertWithKeyGen($updatable, $keyGen);
         }
     }
 
@@ -428,11 +439,11 @@ class Repository
      * @return int
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoInc(UpdateBuilderInterface $updatable, array $params): int
+    protected function insertWithAutoinc(InsertQuery $updatable): int
     {
-        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
+        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sql, $params);
+        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlObject->getSql(), $sqlObject->getParameters());
     }
 
     /**
@@ -442,11 +453,11 @@ class Repository
      * @return mixed
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(UpdateBuilderInterface $updatable, array $params, mixed $keyGen): mixed
+    protected function insertWithKeyGen(InsertQuery $updatable, mixed $keyGen): mixed
     {
-        $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
-        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
-        $this->getDbDriverWrite()->execute($sql, $params);
+        $updatable->field($this->mapper->getPrimaryKey()[0], $keyGen);
+        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
         return $keyGen;
     }
 
@@ -455,18 +466,11 @@ class Repository
      * @param array $params
      * @throws RepositoryReadOnlyException
      */
-    protected function update(UpdateBuilderInterface $updatable, array $params): void
+    protected function update(UpdateQuery $updatable): void
     {
-        $fields = array_map(function ($item) use ($params) {
-            return $params[$item];
-        }, $this->mapper->getPrimaryKey());
+        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
 
-        [$filterList, $filterKeys] = $this->getPkFilter($fields);
-        $updatable->where($filterList, $filterKeys);
-
-        $sql = $updatable->buildUpdate($params, $this->getDbDriverWrite()->getDbHelper());
-
-        $this->getDbDriverWrite()->execute($sql, $params);
+        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
     }
 
     public function setBeforeUpdate(Closure $closure): void
