@@ -56,11 +56,16 @@ These are the key components:
 * DbDriverIntarce is the implementation to the Database connection.
 * Repository put all this together
 
-## Getting Started
+## Basics
 
 * [Defining the Model](docs/getting-started-model.md)
-* [Using the Mapper Object](docs/using-mapper-object.md)
 * [Querying the Database](docs/querying-the-database.md)
+* [Updating the database](docs/updating-the-database.md)
+* [Using the Mapper Object](docs/using-mapper-object.md)
+
+## Advanced Topics
+
+* [The Literal Object](docs/the-literal-object.md)
 * [Observing the Database](docs/observers.md)
 * [Controlling the data queried/updated](docs/controlling-the-data.md)
 * [Using FieldAlias](docs/using-fieldalias.md)
