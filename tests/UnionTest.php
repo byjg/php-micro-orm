@@ -51,6 +51,19 @@ class UnionTest extends TestCase
         $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
     }
 
+    public function testAddQueryWithGroupBy()
+    {
+        $union = new Union();
+        $union->addQuery(QueryBasic::getInstance()->table("table1")->fields(['name', 'price'])->where('name like :name', ['name' => 'a%']));
+        $union->addQuery(QueryBasic::getInstance()->table("table2")->fields(['name', 'price'])->where('price > :price', ['price' => 10]));
+        $union->groupBy(['name']);
+
+        $build = $union->build(Factory::getDbRelationalInstance(new Uri('sqlite:///tmp/teste.db')));
+
+        $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build["sql"]);
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build["params"]);
+    }
+
     public function testInvalidArgument()
     {
         $this->expectException(InvalidArgumentException::class);

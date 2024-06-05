@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\Serializer\BinderObject;
 use ByJG\Serializer\SerializerObject;
@@ -139,7 +140,7 @@ class Repository
     public function delete($pkId)
     {
         [$filterList, $filterKeys] = $this->getPkFilter($pkId);
-        $updatable = Updatable::getInstance()
+        $updatable = DeleteQuery::getInstance()
             ->table($this->mapper->getTable())
             ->where($filterList, $filterKeys);
 
@@ -147,14 +148,14 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @return bool
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws RepositoryReadOnlyException
      */
-    public function deleteByQuery(Updatable $updatable)
+    public function deleteByQuery(DeleteQuery $updatable)
     {
         $params = [];
-        $sql = $updatable->buildDelete($params);
+        $sql = $updatable->build($params);
 
         $this->getDbDriverWrite()->execute($sql, $params);
 
@@ -310,18 +311,21 @@ class Repository
         }
         $isInsert = empty($oldInstance);
 
-        // Prepare query to insert
-        $updatable = Updatable::getInstance()
-            ->table($this->mapper->getTable())
-            ->fields(array_keys($array));
-
         // Execute Before Statements
         if ($isInsert) {
             $closure = $this->beforeInsert;
             $array = $closure($array);
+            $updatable = InsertQuery::getInstance()
+                ->table($this->mapper->getTable())
+                ->fields(array_keys($array));
         } else {
             $closure = $this->beforeUpdate;
             $array = $closure($array);
+            $updatable = UpdateQuery::getInstance()
+                ->table($this->mapper->getTable());
+            foreach ($array as $field => $value) {
+                $updatable->set($field, $value);
+            }
         }
 
         // Check if is OK
@@ -360,12 +364,13 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param $instance
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws OrmInvalidFieldsException
      */
-    protected function insert($instance, Updatable $updatable, array $params)
+    protected function insert($instance, InsertQuery $updatable, array $params)
     {
         $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
@@ -376,39 +381,39 @@ class Repository
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @return int
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoinc(Updatable $updatable, array $params)
+    protected function insertWithAutoinc(InsertQuery $updatable, array $params)
     {
-        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
+        $sql = $updatable->build($params, $this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
         return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sql, $params);
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
      * @param $keyGen
      * @return mixed
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(Updatable $updatable, array $params, $keyGen)
+    protected function insertWithKeyGen(InsertQuery $updatable, array $params, $keyGen)
     {
         $params[$this->mapper->getPrimaryKey()[0]] = $keyGen;
-        $sql = $updatable->buildInsert($params, $this->getDbDriverWrite()->getDbHelper());
+        $sql = $updatable->build($params, $this->getDbDriverWrite()->getDbHelper());
         $this->getDbDriverWrite()->execute($sql, $params);
         return $keyGen;
     }
 
     /**
-     * @param \ByJG\MicroOrm\Updatable $updatable
+     * @param UpdateBuilderInterface $updatable
      * @param array $params
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws RepositoryReadOnlyException
      */
-    protected function update(Updatable $updatable, array $params)
+    protected function update(UpdateQuery $updatable, array $params)
     {
         $fields = array_map(function ($item) use ($params) {
             return $params[$item];
@@ -417,7 +422,7 @@ class Repository
         [$filterList, $filterKeys] = $this->getPkFilter($fields);
         $updatable->where($filterList, $filterKeys);
 
-        $sql = $updatable->buildUpdate($params, $this->getDbDriverWrite()->getDbHelper());
+        $sql = $updatable->build($params, $this->getDbDriverWrite()->getDbHelper());
 
         $this->getDbDriverWrite()->execute($sql, $params);
     }

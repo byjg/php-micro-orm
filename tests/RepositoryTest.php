@@ -4,6 +4,7 @@ namespace Test;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
@@ -406,7 +407,7 @@ class RepositoryTest extends TestCase
 
     public function testDelete2()
     {
-        $query = Updatable::getInstance()
+        $query = DeleteQuery::getInstance()
             ->table($this->userMapper->getTable())
             ->where('name like :name', ['name'=>'Jane%']);
 
