@@ -2,6 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
+
 class ORMSubject
 {
     const EVENT_INSERT = 'insert';
@@ -33,6 +35,11 @@ class ORMSubject
         $observer_in->getDbDriver()->log("Observer: entity " . $observer_in->getMapper()->getTable() . ", listening for {$observerProcessor->getObserverdTable()}");
         if (!isset($this->observers[$observerProcessor->getObserverdTable()])) {
             $this->observers[$observerProcessor->getObserverdTable()] = [];
+        }
+        foreach ($this->observers[$observerProcessor->getObserverdTable()] as $observer) {
+            if (get_class($observer->getObserverdProcessor()) === get_class($observerProcessor) && get_class($observer->getRepository()) === get_class($observer_in)) {
+                throw new InvalidArgumentException("Observer already exists");
+            }
         }
         $this->observers[$observerProcessor->getObserverdTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
     }

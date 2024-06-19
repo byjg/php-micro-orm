@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
@@ -798,6 +799,33 @@ class RepositoryTest extends TestCase
         $this->assertTrue($this->test);
     }
 
+    public function testAddSameObserverTwice()
+    {
+        $this->test = null;
+
+        $class = new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+
+            protected $table;
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
+        }        ;
+        $this->repository->addObserver($class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Observer already exists");
+        $this->repository->addObserver($class);
+    }
 
     public function testConstraintDifferentValues()
     {
