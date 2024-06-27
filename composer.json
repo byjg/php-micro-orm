@@ -6,6 +6,11 @@
       "ByJG\\MicroOrm\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Test\\": "tests/"
+    }
+  },
   "prefer-stable": true,
   "minimum-stability": "dev",
   "require": {

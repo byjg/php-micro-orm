@@ -133,23 +133,24 @@ class Repository
     }
 
     /**
-     * @param array $pkId
-     * @return mixed|null
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param array|int $pkId
+     * @return bool
+     * @throws RepositoryReadOnlyException
+     * @throws Exception\InvalidArgumentException
      */
     public function delete($pkId)
     {
         [$filterList, $filterKeys] = $this->getPkFilter($pkId);
-        $updatable = DeleteQuery::getInstance()
-            ->table($this->mapper->getTable())
+        $updatable = $this->getMapper()->getDeleteQuery()
             ->where($filterList, $filterKeys);
 
         return $this->deleteByQuery($updatable);
     }
 
     /**
-     * @param UpdateBuilderInterface $updatable
+     * @param DeleteQuery $updatable
      * @return bool
+     * @throws Exception\InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
     public function deleteByQuery(DeleteQuery $updatable)
@@ -174,8 +175,7 @@ class Repository
      */
     public function getByFilter($filter, array $params, $forUpdate = false)
     {
-        $query = new Query();
-        $query->table($this->mapper->getTable())
+        $query = $this->getMapper()->getQuery()
             ->where($filter, $params);
 
         if ($forUpdate) {
@@ -315,14 +315,12 @@ class Repository
         if ($isInsert) {
             $closure = $this->beforeInsert;
             $array = $closure($array);
-            $updatable = InsertQuery::getInstance()
-                ->table($this->mapper->getTable())
+            $updatable = $this->getMapper()->getInsertQuery()
                 ->fields(array_keys($array));
         } else {
             $closure = $this->beforeUpdate;
             $array = $closure($array);
-            $updatable = UpdateQuery::getInstance()
-                ->table($this->mapper->getTable());
+            $updatable = $this->getMapper()->getUpdateQuery();
             foreach ($array as $field => $value) {
                 $updatable->set($field, $value);
             }
