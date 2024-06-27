@@ -408,8 +408,7 @@ class RepositoryTest extends TestCase
 
     public function testDelete2()
     {
-        $query = DeleteQuery::getInstance()
-            ->table($this->userMapper->getTable())
+        $query = $this->userMapper->getDeleteQuery()
             ->where('name like :name', ['name'=>'Jane%']);
 
         $this->repository->deleteByQuery($query);
@@ -425,8 +424,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryNone()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>1000])
             ->orderBy(['property']);
 
@@ -438,8 +436,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryOne()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -505,8 +502,7 @@ class RepositoryTest extends TestCase
      */
     public function testGetScalar()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->fields(['property'])
             ->where('iduser = :id', ['id'=>3]);
 
@@ -518,8 +514,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryMoreThanOne()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>1])
             ->orderBy(['property']);
 
@@ -537,8 +532,7 @@ class RepositoryTest extends TestCase
 
     public function testJoin()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->fields([
                 'users.id',
                 'users.name',
@@ -571,8 +565,7 @@ class RepositoryTest extends TestCase
 
     public function testLeftJoin()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->fields([
                 'users.id',
                 'users.name',
@@ -597,8 +590,7 @@ class RepositoryTest extends TestCase
 
     public function testTop()
     {
-        $query = Query::getInstance()
-            ->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->top(1);
 
         $result = $this->repository->getByQuery($query);
@@ -612,8 +604,7 @@ class RepositoryTest extends TestCase
 
     public function testLimit()
     {
-        $query = Query::getInstance()
-            ->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->limit(1, 1);
 
         $result = $this->repository->getByQuery($query);
@@ -627,12 +618,11 @@ class RepositoryTest extends TestCase
 
     public function testQueryRaw()
     {
-        $query = Query::getInstance()
+        $query = $this->userMapper->getQuery()
             ->fields([
                 "name",
                 "julianday('2020-06-28') - julianday(createdate) as days"
             ])
-            ->table($this->userMapper->getTable())
             ->limit(1, 1);
 
         $result = $this->repository->getByQuery($query);
@@ -700,8 +690,7 @@ class RepositoryTest extends TestCase
 
 
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -830,8 +819,7 @@ class RepositoryTest extends TestCase
     public function testConstraintDifferentValues()
     {
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -854,8 +842,7 @@ class RepositoryTest extends TestCase
         $this->expectExceptionMessage("You are not updating the property 'value'");
 
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -873,8 +860,7 @@ class RepositoryTest extends TestCase
 
     public function testQueryBasic()
     {
-        $query = new QueryBasic();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQueryBasic()
             ->where('iduser = :id', ['id'=>3]);
 
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
@@ -889,12 +875,10 @@ class RepositoryTest extends TestCase
 
     public function testUnion()
     {
-        $query = new QueryBasic();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQueryBasic()
             ->where('id = :id1', ['id1'=>3]);
 
-        $query2 = new QueryBasic();
-        $query2->table($this->infoMapper->getTable())
+        $query2 = $this->infoMapper->getQueryBasic()
             ->where('id = :id2', ['id2'=>1]);
 
 

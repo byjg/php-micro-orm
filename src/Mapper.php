@@ -143,8 +143,38 @@ class Mapper
         }
 
         return $instance;
-
     }
+
+    public function getQuery(): Query
+    {
+        return Query::getInstance()
+            ->table($this->table);
+    }
+
+    public function getQueryBasic(): QueryBasic
+    {
+        return QueryBasic::getInstance()
+            ->table($this->table);
+    }
+
+    public function getDeleteQuery(): DeleteQuery
+    {
+        return DeleteQuery::getInstance()
+            ->table($this->table);
+    }
+
+    public function getInsertQuery(): InsertQuery
+    {
+        return InsertQuery::getInstance()
+            ->table($this->table);
+    }
+
+    public function getUpdateQuery(): UpdateQuery
+    {
+        return UpdateQuery::getInstance()
+            ->table($this->table);
+    }
+
 
     /**
      * @return string
