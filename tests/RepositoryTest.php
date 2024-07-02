@@ -11,15 +11,16 @@ use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ObserverData;
+use ByJG\MicroOrm\ObserverOnErrorData;
 use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
-use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/Model/Users.php';
@@ -653,6 +654,75 @@ class RepositoryTest extends TestCase
 
     public $test = null;
 
+    public function testObserverWrongUpdate()
+    {
+        $this->test = null;
+
+        $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+            private $table;
+            private $parent;
+
+            private $parentRepository;
+
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+                $this->parent = $parent;
+                $this->parentRepository = $parentRepository;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals('info', $observerData->getTable());
+                $this->parent->assertEquals(ORMSubject::EVENT_UPDATE, $observerData->getEvent());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+                $this->parent->assertEquals(0, $observerData->getData()->getValue());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertEquals(3.5, $observerData->getOldData()->getValue());
+                $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function onError(ObserverOnErrorData $onErrorData) : void
+            {
+                $this->parent->test = true;
+                $this->parent->assertInstanceOf(ExpectationFailedException::class, $onErrorData->getException());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
+        });
+
+        // This update doesn't have observer
+        $users = new Users();
+        $users->setName('needfail');
+        $users->setCreatedate('2015-08-09');
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->save($users);
+        $this->assertNull($this->test);
+
+
+        // This update has an observer, and you change the `test` variable
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Set Zero
+        $result[0]->setValue(0);
+        $result[0]->setId(1);
+        $infoRepository->save($result[0]);
+        $this->assertTrue($this->test);
+    }
+
     public function testObserverUpdate()
     {
         $this->test = null;
@@ -680,6 +750,14 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertEquals(3.5, $observerData->getOldData()->getValue());
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function onError(ObserverOnErrorData $onErrorData) : void
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals(null, $onErrorData->getException());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
             }
 
             public function getObserverdTable(): string
@@ -740,6 +818,14 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            public function onError(ObserverOnErrorData $onErrorData) : void
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals(null, $onErrorData->getException());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+            }
+
             public function getObserverdTable(): string
             {
                 return $this->table;
@@ -780,6 +866,14 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals(3, $observerData->getData()->getValue());
                 $this->parent->assertNull($observerData->getOldData());
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function onError(ObserverOnErrorData $onErrorData) : void
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals(null, $onErrorData->getException());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
             }
 
             public function getObserverdTable(): string
