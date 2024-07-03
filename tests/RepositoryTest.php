@@ -11,7 +11,6 @@ use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ObserverData;
-use ByJG\MicroOrm\ObserverOnErrorData;
 use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
@@ -22,6 +21,7 @@ use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 require_once __DIR__ . '/Model/Users.php';
 require_once __DIR__ . '/Model/UsersMap.php';
@@ -683,12 +683,12 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function onError(ObserverOnErrorData $onErrorData) : void
+            public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->test = true;
-                $this->parent->assertInstanceOf(ExpectationFailedException::class, $onErrorData->getException());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+                $this->parent->assertInstanceOf(ExpectationFailedException::class, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
             public function getObserverdTable(): string
@@ -752,12 +752,12 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function onError(ObserverOnErrorData $onErrorData) : void
+            public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->test = true;
-                $this->parent->assertEquals(null, $onErrorData->getException());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
             public function getObserverdTable(): string
@@ -818,12 +818,12 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function onError(ObserverOnErrorData $onErrorData) : void
+            public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->test = true;
-                $this->parent->assertEquals(null, $onErrorData->getException());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
             public function getObserverdTable(): string
@@ -868,12 +868,12 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
-            public function onError(ObserverOnErrorData $onErrorData) : void
+            public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->test = true;
-                $this->parent->assertEquals(null, $onErrorData->getException());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getOldData());
-                $this->parent->assertInstanceOf(Info::class, $onErrorData->getData());
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
             public function getObserverdTable(): string

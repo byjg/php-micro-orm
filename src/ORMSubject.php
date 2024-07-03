@@ -45,10 +45,13 @@ class ORMSubject
         }
         foreach ((array)$this->observers[$entitySource] as $observer) {
             $observer->log("Observer: notifying " . $observer->getMapper()->getTable() . ", changes in $entitySource");
+
+            $observerData = new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository());
+
             try {
-                $observer->getObserverdProcessor()->process(new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository()));
+                $observer->getObserverdProcessor()->process($observerData);
             } catch (Throwable $e) {
-                $observer->getObserverdProcessor()->onError(new ObserverOnErrorData($e, $data, $oldData));
+                $observer->getObserverdProcessor()->onError($e, $observerData);
             }
         }
     }
