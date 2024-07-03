@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use Throwable;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 
 class ORMSubject
@@ -50,7 +51,14 @@ class ORMSubject
         }
         foreach ((array)$this->observers[$entitySource] as $observer) {
             $observer->log("Observer: notifying " . $observer->getMapper()->getTable() . ", changes in $entitySource");
-            $observer->getObserverdProcessor()->process(new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository()));
+
+            $observerData = new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository());
+
+            try {
+                $observer->getObserverdProcessor()->process($observerData);
+            } catch (Throwable $e) {
+                $observer->getObserverdProcessor()->onError($e, $observerData);
+            }
         }
     }
 
