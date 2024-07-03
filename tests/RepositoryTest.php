@@ -644,10 +644,12 @@ class RepositoryTest extends TestCase
     }
 
     public $test = null;
+    public $onError = null;
 
     public function testObserverWrongUpdate()
     {
         $this->test = null;
+        $this->onError = null;
 
         $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
             private $table;
@@ -676,7 +678,7 @@ class RepositoryTest extends TestCase
 
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
-                $this->parent->test = true;
+                $this->parent->onError = true;
                 $this->parent->assertInstanceOf(ExpectationFailedException::class, $exception);
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
@@ -745,7 +747,7 @@ class RepositoryTest extends TestCase
 
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
-                $this->parent->test = true;
+                $this->parent->onError = true;
                 $this->parent->assertEquals(null, $exception);
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
@@ -810,7 +812,7 @@ class RepositoryTest extends TestCase
 
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
-                $this->parent->test = true;
+                $this->parent->onError = true;
                 $this->parent->assertEquals(null, $exception);
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
@@ -860,7 +862,7 @@ class RepositoryTest extends TestCase
 
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
-                $this->parent->test = true;
+                $this->parent->onError = true;
                 $this->parent->assertEquals(null, $exception);
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
@@ -885,6 +887,7 @@ class RepositoryTest extends TestCase
     public function testAddSameObserverTwice()
     {
         $this->test = null;
+        $this->onError = null;
 
         $class = new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
 
@@ -895,6 +898,10 @@ class RepositoryTest extends TestCase
             }
 
             public function process(ObserverData $observerData)
+            {
+            }
+
+            public function onError(Throwable $exception, ObserverData $onbserverData): void
             {
             }
 
