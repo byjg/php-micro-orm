@@ -698,6 +698,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
 
 
         // This update has an observer, and you change the `test` variable
@@ -714,6 +715,7 @@ class RepositoryTest extends TestCase
         $result[0]->setId(1);
         $infoRepository->save($result[0]);
         $this->assertTrue($this->test);
+        $this->assertTrue($this->onError);
     }
 
     public function testObserverUpdate()
@@ -767,6 +769,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
 
 
         // This update has an observer, and you change the `test` variable
@@ -781,6 +784,7 @@ class RepositoryTest extends TestCase
         $result[0]->setValue(0);
         $infoRepository->save($result[0]);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
     public function testObserverDelete()
@@ -825,9 +829,11 @@ class RepositoryTest extends TestCase
         });
 
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->delete(3);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
     public function testObserverInsert()
@@ -879,9 +885,11 @@ class RepositoryTest extends TestCase
 
 
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $infoRepository->save($info);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
     public function testAddSameObserverTwice()
