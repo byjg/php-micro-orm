@@ -909,7 +909,7 @@ class RepositoryTest extends TestCase
             {
             }
 
-            public function onError(Throwable $exception, ObserverData $onbserverData): void
+            public function onError(Throwable $exception, ObserverData $observerData): void
             {
             }
 
@@ -917,7 +917,7 @@ class RepositoryTest extends TestCase
             {
                 return $this->table;
             }
-        }        ;
+        };
         $this->repository->addObserver($class);
 
         $this->expectException(InvalidArgumentException::class);

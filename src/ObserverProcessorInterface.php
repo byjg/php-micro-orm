@@ -10,5 +10,5 @@ interface ObserverProcessorInterface
 
     public function getObserverdTable(): string;
 
-    public function onError(Throwable $exception, ObserverData $onbserverData): void;
+    public function onError(Throwable $exception, ObserverData $observerData): void;
 }
