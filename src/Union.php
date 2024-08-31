@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -97,4 +98,9 @@ class Union implements QueryBuilderInterface
     }
 
 
+    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
+    {
+        $sqlObject = $this->build($dbDriver);
+        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+    }
 }

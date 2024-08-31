@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\Serializer\SerializerObject;
@@ -286,5 +287,11 @@ class QueryBasic implements QueryBuilderInterface
         $sql = ORMHelper::processLiteral($sql, $params);
 
         return [ 'sql' => $sql, 'params' => $params ];
+    }
+
+    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
+    {
+        $sqlObject = $this->build($dbDriver);
+        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
     }
 }
