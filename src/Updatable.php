@@ -60,8 +60,8 @@ abstract class Updatable implements UpdateBuilderInterface
 
     public function buildAndExecute(DbDriverInterface $dbDriver, &$params, ?DbFunctionsInterface $dbHelper = null)
     {
-        $sql = $this->build($params, $dbHelper);
-        return $dbDriver->execute($sql, $params);
+        $sqlObject = $this->build($params, $dbHelper);
+        return $dbDriver->execute($sqlObject['sql'], $sqlObject['params']);
     }
 
 }
