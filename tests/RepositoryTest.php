@@ -9,6 +9,7 @@ use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
+use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ObserverData;
@@ -19,6 +20,7 @@ use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\UpdateConstraint;
+use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
@@ -137,6 +139,16 @@ class RepositoryTest extends TestCase
         $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
         $this->assertEquals(2017, $users->getYear());
+    }
+
+    public function testBuildAndGetIterator()
+    {
+        $query = Query::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+
+        $iterator = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $this->assertEquals(1, count($iterator));
     }
 
     public function testInsert()
@@ -299,6 +311,54 @@ class RepositoryTest extends TestCase
         $users->setCreatedate('2016-01-09');
         $this->repository->setRepositoryReadOnly();
         $this->repository->save($users);
+    }
+
+    public function testUpdateBuildAndExecute()
+    {
+        $users = $this->repository->get(1);
+
+        $this->assertEquals('John Doe', $users->getName());
+
+        $updateQuery = UpdateQuery::getInstance()
+            ->table('users')
+            ->set('name', 'New Name')
+            ->where('id = :id', ['id' => 1]);
+        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+
+        $users = $this->repository->get(1);
+        $this->assertEquals('New Name', $users->getName());
+    }
+
+    public function testInsertBuildAndExecute()
+    {
+        $users = $this->repository->get(4);
+        $this->assertEmpty($users);
+
+        $insertQuery = InsertQuery::getInstance()
+            ->table('users')
+            ->fields([
+                'name',
+                'createdate'
+            ]);
+        $insertQuery->buildAndExecute($this->repository->getDbDriver(), ['name' => 'inserted name', 'createdate' => '2024-09-03']);
+
+        $users = $this->repository->get(4);
+        $this->assertEquals('inserted name', $users->getName());
+        $this->assertEquals('2024-09-03', $users->getCreatedate());
+    }
+
+    public function testDeleteBuildAndExecute()
+    {
+        $users = $this->repository->get(1);
+        $this->assertEquals('John Doe', $users->getName());
+
+        $updateQuery = DeleteQuery::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+
+        $users = $this->repository->get(1);
+        $this->assertEmpty($users);
     }
 
     public function testUpdate_beforeUpdate()
