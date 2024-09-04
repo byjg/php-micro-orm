@@ -11,7 +11,7 @@ class InsertQuery extends Updatable
 {
     protected $fields = [];
 
-    public static function getInstance(string $table = null, array $fields = []): InsertQuery
+    public static function getInstance(string $table = null, array $fields = []): self
     {
         $query = new InsertQuery();
         if (!is_null($table)) {
@@ -33,9 +33,24 @@ class InsertQuery extends Updatable
      * @param array $fields
      * @return $this
      */
-    public function field($field, $value)
+    public function field(string $field, string $value): self
     {
         $this->fields[$field] = $value;
+        return $this;
+    }
+
+    /**
+     * Fields to be used for the INSERT
+     * Example:
+     *   $query->fields(['name', 'price']);
+     *
+     * @param array $fields
+     * @return $this
+     */
+    public function fields(array $fields)
+    {
+        $this->fields = array_merge($this->fields, (array)$fields);
+
         return $this;
     }
 
@@ -81,6 +96,7 @@ class InsertQuery extends Updatable
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->fields))
+            ->fields($this->fields)
             ->table($this->table);
 
         foreach ($this->where as $item) {

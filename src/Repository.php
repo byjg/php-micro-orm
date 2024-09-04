@@ -195,8 +195,7 @@ class Repository
      */
     public function getByFilter(string $filter, array $params, bool $forUpdate = false): array
     {
-        $query = new Query();
-        $query->table($this->mapper->getTable())
+        $query = $this->getMapper()->getQuery()
             ->where($filter, $params);
 
         if ($forUpdate) {

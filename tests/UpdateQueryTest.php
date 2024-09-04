@@ -79,6 +79,7 @@ class UpdateQueryTest extends TestCase
             $this->object->convert()->build()
         );
 
+
         $this->object
             ->set('fld1', 'A')
             ->set('fld2', 'B')

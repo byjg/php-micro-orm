@@ -22,11 +22,11 @@ use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Union;
-use ByJG\MicroOrm\Updatable;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Serializer\Serialize;
 use ByJG\Util\Uri;
+use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Info;
 use Tests\Model\ModelWithAttributes;
@@ -143,6 +143,16 @@ class RepositoryTest extends TestCase
         $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
         $this->assertEquals(2017, $users->getYear());
+    }
+
+    public function testBuildAndGetIterator()
+    {
+        $query = Query::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+
+        $iterator = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $this->assertEquals(1, count($iterator));
     }
 
     public function testInsert()
@@ -337,6 +347,54 @@ class RepositoryTest extends TestCase
         $this->repository->save($users);
     }
 
+    public function testUpdateBuildAndExecute()
+    {
+        $users = $this->repository->get(1);
+
+        $this->assertEquals('John Doe', $users->getName());
+
+        $updateQuery = UpdateQuery::getInstance()
+            ->table('users')
+            ->set('name', 'New Name')
+            ->where('id = :id', ['id' => 1]);
+        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+
+        $users = $this->repository->get(1);
+        $this->assertEquals('New Name', $users->getName());
+    }
+
+    public function testInsertBuildAndExecute()
+    {
+        $users = $this->repository->get(4);
+        $this->assertEmpty($users);
+
+        $insertQuery = InsertQuery::getInstance()
+            ->table('users')
+            ->fields([
+                'name',
+                'createdate'
+            ]);
+        $insertQuery->buildAndExecute($this->repository->getDbDriver(), ['name' => 'inserted name', 'createdate' => '2024-09-03']);
+
+        $users = $this->repository->get(4);
+        $this->assertEquals('inserted name', $users->getName());
+        $this->assertEquals('2024-09-03', $users->getCreatedate());
+    }
+
+    public function testDeleteBuildAndExecute()
+    {
+        $users = $this->repository->get(1);
+        $this->assertEquals('John Doe', $users->getName());
+
+        $updateQuery = DeleteQuery::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+
+        $users = $this->repository->get(1);
+        $this->assertEmpty($users);
+    }
+
     public function testUpdate_beforeUpdate()
     {
         $users = $this->repository->get(1);
@@ -489,8 +547,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryNone()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>1000])
             ->orderBy(['property']);
 
@@ -502,8 +559,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryOne()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -569,8 +625,7 @@ class RepositoryTest extends TestCase
      */
     public function testGetScalar()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->fields(['property'])
             ->where('iduser = :id', ['id'=>3]);
 
@@ -582,8 +637,7 @@ class RepositoryTest extends TestCase
 
     public function testGetByQueryMoreThanOne()
     {
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>1])
             ->orderBy(['property']);
 
@@ -601,8 +655,7 @@ class RepositoryTest extends TestCase
 
     public function testJoin()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->fields([
                 'users.id',
                 'users.name',
@@ -635,8 +688,7 @@ class RepositoryTest extends TestCase
 
     public function testLeftJoin()
     {
-        $query = new Query();
-        $query->table($this->userMapper->getTable())
+        $query = $this->userMapper->getQuery()
             ->fields([
                 'users.id',
                 'users.name',
@@ -714,10 +766,12 @@ class RepositoryTest extends TestCase
     }
 
     public $test = null;
+    public $onError = null;
 
-    public function testObserverUpdate()
+    public function testObserverWrongUpdate()
     {
         $this->test = null;
+        $this->onError = null;
 
         $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
             private $table;
@@ -744,7 +798,86 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            public function onError(Throwable $exception, ObserverData $observerData) : void
+            {
+                $this->parent->onError = true;
+                $this->parent->assertInstanceOf(ExpectationFailedException::class, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+            }
+
             public function getObservedTable(): string
+            {
+                return $this->table;
+            }
+        });
+
+        // This update doesn't have observer
+        $users = new Users();
+        $users->setName('needfail');
+        $users->setCreatedate('2015-08-09');
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->save($users);
+        $this->assertNull($this->test);
+        $this->assertNull($this->onError);
+
+
+        // This update has an observer, and you change the `test` variable
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $query = $infoRepository->queryInstance()
+            ->where('iduser = :id', ['id'=>3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Set Zero
+        $result[0]->setValue(0);
+        $result[0]->setId(1);
+        $infoRepository->save($result[0]);
+        $this->assertTrue($this->test);
+        $this->assertTrue($this->onError);
+    }
+
+    public function testObserverUpdate()
+    {
+        $this->test = null;
+
+        $this->repository->addObserver(new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+            private $table;
+            private $parent;
+
+            private $parentRepository;
+
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+                $this->parent = $parent;
+                $this->parentRepository = $parentRepository;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+                $this->parent->test = true;
+                $this->parent->assertEquals('info', $observerData->getTable());
+                $this->parent->assertEquals(ORMSubject::EVENT_UPDATE, $observerData->getEvent());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+                $this->parent->assertEquals(0, $observerData->getData()->getValue());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertEquals(3.5, $observerData->getOldData()->getValue());
+                $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
+            }
+
+            public function onError(Throwable $exception, ObserverData $observerData) : void
+            {
+                $this->parent->onError = true;
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+            }
+
+            public function getObserverdTable(): string
             {
                 return $this->table;
             }
@@ -758,11 +891,11 @@ class RepositoryTest extends TestCase
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
 
 
         // This update has an observer, and you change the `test` variable
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
-        $query = $infoRepository->queryInstance()
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -772,6 +905,7 @@ class RepositoryTest extends TestCase
         $result[0]->setValue(0);
         $infoRepository->save($result[0]);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
     public function testObserverDelete()
@@ -801,6 +935,14 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            public function onError(Throwable $exception, ObserverData $observerData) : void
+            {
+                $this->parent->onError = true;
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+            }
+
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -808,9 +950,11 @@ class RepositoryTest extends TestCase
         });
 
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->delete(3);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
     public function testObserverInsert()
@@ -843,6 +987,14 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            public function onError(Throwable $exception, ObserverData $observerData) : void
+            {
+                $this->parent->onError = true;
+                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
+                $this->parent->assertInstanceOf(Info::class, $observerData->getData());
+            }
+
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -854,17 +1006,50 @@ class RepositoryTest extends TestCase
 
 
         $this->assertNull($this->test);
+        $this->assertNull($this->onError);
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $infoRepository->save($info);
         $this->assertTrue($this->test);
+        $this->assertNull($this->onError);
     }
 
+    public function testAddSameObserverTwice()
+    {
+        $this->test = null;
+        $this->onError = null;
+
+        $class = new class($this->infoMapper->getTable(), $this->repository, $this) implements ObserverProcessorInterface {
+
+            protected $table;
+            public function __construct($table, $parentRepository, $parent)
+            {
+                $this->table = $table;
+            }
+
+            public function process(ObserverData $observerData)
+            {
+            }
+
+            public function onError(Throwable $exception, ObserverData $observerData): void
+            {
+            }
+
+            public function getObserverdTable(): string
+            {
+                return $this->table;
+            }
+        };
+        $this->repository->addObserver($class);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Observer already exists");
+        $this->repository->addObserver($class);
+    }
 
     public function testConstraintDifferentValues()
     {
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -887,8 +1072,7 @@ class RepositoryTest extends TestCase
         $this->expectExceptionMessage("You are not updating the property 'value'");
 
         // This update has an observer, and you change the `test` variable
-        $query = new Query();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQuery()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -906,8 +1090,7 @@ class RepositoryTest extends TestCase
 
     public function testQueryBasic()
     {
-        $query = new QueryBasic();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQueryBasic()
             ->where('iduser = :id', ['id'=>3]);
 
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
@@ -922,12 +1105,10 @@ class RepositoryTest extends TestCase
 
     public function testUnion()
     {
-        $query = new QueryBasic();
-        $query->table($this->infoMapper->getTable())
+        $query = $this->infoMapper->getQueryBasic()
             ->where('id = :id1', ['id1'=>3]);
 
-        $query2 = new QueryBasic();
-        $query2->table($this->infoMapper->getTable())
+        $query2 = $this->infoMapper->getQueryBasic()
             ->where('id = :id2', ['id2'=>1]);
 
 

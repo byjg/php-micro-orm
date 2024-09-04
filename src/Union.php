@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 
@@ -55,6 +56,13 @@ class Union implements QueryBuilderInterface
         return $this;
     }
 
+    public function groupBy(array $fields): Union
+    {
+        $this->queryAgreggation->groupBy($fields);
+
+        return $this;
+    }
+
     /**
      * @param $start
      * @param $end
@@ -101,4 +109,9 @@ class Union implements QueryBuilderInterface
     }
 
 
+    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
+    {
+        $sqlObject = $this->build($dbDriver);
+        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+    }
 }

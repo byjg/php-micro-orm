@@ -147,22 +147,21 @@ $query->field('name');
 $result = $repository->getByQuery($query);
 ```
 
-## Basic Concepts
+## Basics
 
-* [The Model Attributes](docs/model.md)
-* [The Repository class](docs/repository.md)
-* The Query class
+* [Defining the Model](docs/getting-started-model.md)
+* [Querying the Database](docs/querying-the-database.md)
+* [Updating the database](docs/updating-the-database.md)
+* [Using the Mapper Object](docs/using-mapper-object.md)
 
-## Advanced Concepts
+## Advanced Topics
 
-* Using existing Models without rewrite them
-* Using the Query object to create complex queries
-* Using the Observer to listen to the insert, update and delete events
-* Using the TransactionManager to create a single transaction with multiple repositories
-* Using the Recursive object to create recursive SQL commands
-* Using the FieldAlias to disambiguate fields in join and leftjoin queries
-* Using the BeforeInsert and BeforeUpdate functions to apply a closure before insert or update a record
-* Using the UpdateConstraint to define constraints to update a record
+* [The Literal Object](docs/the-literal-object.md)
+* [Observing the Database](docs/observers.md)
+* [Controlling the data queried/updated](docs/controlling-the-data.md)
+* [Using FieldAlias](docs/using-fieldalias.md)
+* [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
+* [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
 
 ## Install
 
