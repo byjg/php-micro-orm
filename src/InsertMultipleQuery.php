@@ -4,7 +4,6 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
-use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class InsertMultipleQuery extends Updatable
 {
@@ -39,7 +38,7 @@ class InsertMultipleQuery extends Updatable
         $rowToAdd = [];
         foreach ($this->fields as $field) {
             if (!array_key_exists($field, $row)) {
-                throw new \InvalidArgumentException('The row must have the same fields');
+                throw new \InvalidArgumentException("The field '$field' must be in the row");
             }
             $rowToAdd[$field] = $row[$field];
         }
