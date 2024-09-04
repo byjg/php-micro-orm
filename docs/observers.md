@@ -5,7 +5,7 @@ An observer is a class will be called after an insert, update or delete record i
 ```mermaid
 flowchart TD
     A[MyRepository] --> |1. addObserver| B[Subject]
-    C[ObserverdRepository] --> |2. Notify Update| B
+    C[WatchedRepository] --> |2. Notify Update| B
     B --> |3. Execute Callback| A
 ```
 
@@ -27,7 +27,7 @@ $myRepository->addObserver(new class($this->infoMapper->getTable()) implements O
         // Do something here
     }
 
-    public function getObserverdTable(): string
+    public function getObservedTable(): string
     {
         return $this->table;
     }

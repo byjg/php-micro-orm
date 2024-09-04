@@ -274,6 +274,6 @@ class QueryBasic implements QueryBuilderInterface
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
     }
 }

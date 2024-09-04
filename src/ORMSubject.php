@@ -2,8 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
-use Throwable;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use Throwable;
 
 class ORMSubject
 {
@@ -37,12 +37,13 @@ class ORMSubject
         if (!isset($this->observers[$observerProcessor->getObservedTable()])) {
             $this->observers[$observerProcessor->getObservedTable()] = [];
         }
-        foreach ($this->observers[$observerProcessor->getObserverdTable()] as $observer) {
-            if (get_class($observer->getObserverdProcessor()) === get_class($observerProcessor) && get_class($observer->getRepository()) === get_class($observer_in)) {
+        /** @var ObserverProcessorInternal $observer */
+        foreach ($this->observers[$observerProcessor->getObservedTable()] as $observer) {
+            if (get_class($observer->getObservedProcessor()) === get_class($observerProcessor) && get_class($observer->getRepository()) === get_class($observer_in)) {
                 throw new InvalidArgumentException("Observer already exists");
             }
         }
-        $this->observers[$observerProcessor->getObserverdTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
+        $this->observers[$observerProcessor->getObservedTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
     }
 
     public function notify($entitySource, $event, $data, $oldData = null): void
@@ -56,9 +57,9 @@ class ORMSubject
             $observerData = new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository());
 
             try {
-                $observer->getObserverdProcessor()->process($observerData);
+                $observer->getObservedProcessor()->process($observerData);
             } catch (Throwable $e) {
-                $observer->getObserverdProcessor()->onError($e, $observerData);
+                $observer->getObservedProcessor()->onError($e, $observerData);
             }
         }
     }

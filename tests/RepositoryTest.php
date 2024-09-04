@@ -17,14 +17,12 @@ use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ObserverProcessorInterface;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
-use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
-use ByJG\Serializer\Serialize;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +31,7 @@ use Tests\Model\ModelWithAttributes;
 use Tests\Model\Users;
 use Tests\Model\UsersMap;
 use Tests\Model\UsersWithAttribute;
+use Throwable;
 
 class RepositoryTest extends TestCase
 {
@@ -375,6 +374,23 @@ class RepositoryTest extends TestCase
                 'createdate'
             ]);
         $insertQuery->buildAndExecute($this->repository->getDbDriver(), ['name' => 'inserted name', 'createdate' => '2024-09-03']);
+
+        $users = $this->repository->get(4);
+        $this->assertEquals('inserted name', $users->getName());
+        $this->assertEquals('2024-09-03', $users->getCreatedate());
+    }
+
+    public function testInsertBuildAndExecute2()
+    {
+        $users = $this->repository->get(4);
+        $this->assertEmpty($users);
+
+        $insertQuery = InsertQuery::getInstance()
+            ->table('users')
+            ->field('name', 'inserted name')
+            ->field('createdate', '2024-09-03')
+        ;
+        $insertQuery->buildAndExecute($this->repository->getDbDriver());
 
         $users = $this->repository->get(4);
         $this->assertEquals('inserted name', $users->getName());
@@ -857,7 +873,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
-            public function process(ObserverData $observerData)
+            public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
@@ -877,7 +893,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
-            public function getObserverdTable(): string
+            public function getObservedTable(): string
             {
                 return $this->table;
             }
@@ -895,7 +911,8 @@ class RepositoryTest extends TestCase
 
 
         // This update has an observer, and you change the `test` variable
-        $query = $this->infoMapper->getQuery()
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $query = $infoRepository->queryInstance()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
@@ -1026,7 +1043,7 @@ class RepositoryTest extends TestCase
                 $this->table = $table;
             }
 
-            public function process(ObserverData $observerData)
+            public function process(ObserverData $observerData): void
             {
             }
 
@@ -1034,7 +1051,7 @@ class RepositoryTest extends TestCase
             {
             }
 
-            public function getObserverdTable(): string
+            public function getObservedTable(): string
             {
                 return $this->table;
             }

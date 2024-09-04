@@ -2,11 +2,9 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
-use Cassandra\Map;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class UpdateQuery extends Updatable
 {
@@ -41,7 +39,7 @@ class UpdateQuery extends Updatable
      * @param $value
      * @return $this
      */
-    public function set($field, $value)
+    public function set(string $field, int|float|bool|string|LiteralInterface|null $value): UpdateQuery
     {
         $this->set[$field] = $value;
         return $this;

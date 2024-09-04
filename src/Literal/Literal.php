@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm\Literal;
 
-class Literal
+class Literal implements LiteralInterface
 {
     protected mixed $literalValue;
 

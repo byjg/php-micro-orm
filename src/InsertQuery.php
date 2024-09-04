@@ -2,10 +2,9 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class InsertQuery extends Updatable
 {
@@ -33,7 +32,7 @@ class InsertQuery extends Updatable
      * @param array $fields
      * @return $this
      */
-    public function field(string $field, string $value): self
+    public function field(string $field, int|float|bool|string|LiteralInterface|null $value): self
     {
         $this->fields[$field] = $value;
         return $this;
@@ -49,7 +48,13 @@ class InsertQuery extends Updatable
      */
     public function fields(array $fields)
     {
-        $this->fields = array_merge($this->fields, (array)$fields);
+        // swap the key and value of the $fields array and set null as value
+        $fields = array_flip($fields);
+        $fields = array_map(function ($item) {
+            return null;
+        }, $fields);
+
+        $this->fields = array_merge($this->fields, $fields);
 
         return $this;
     }
@@ -96,7 +101,6 @@ class InsertQuery extends Updatable
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->fields))
-            ->fields($this->fields)
             ->table($this->table);
 
         foreach ($this->where as $item) {

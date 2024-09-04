@@ -56,13 +56,6 @@ class Union implements QueryBuilderInterface
         return $this;
     }
 
-    public function groupBy(array $fields): Union
-    {
-        $this->queryAgreggation->groupBy($fields);
-
-        return $this;
-    }
-
     /**
      * @param $start
      * @param $end
