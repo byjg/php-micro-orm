@@ -47,12 +47,11 @@ class InsertMultipleQuery extends Updatable
     }
 
     /**
-     * @param $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @return SqlObject
+     * @throws OrmInvalidFieldsException
      */
-    public function build(&$params, DbFunctionsInterface $dbHelper = null)
+    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -87,7 +86,9 @@ class InsertMultipleQuery extends Updatable
             $rowNum++;
         }
 
-        return ORMHelper::processLiteral(trim($sql, ","), $params);
+        $sql = ORMHelper::processLiteral(trim($sql, ","), $params);
+
+        return new SqlObject($sql, $params);
     }
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
