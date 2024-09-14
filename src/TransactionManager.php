@@ -30,7 +30,7 @@ class TransactionManager
      */
     public function addConnection(string $uriString): DbDriverInterface
     {
-        $dbDriver = Factory::getDbRelationalInstance($uriString);
+        $dbDriver = Factory::getDbInstance($uriString);
         $this->addDbDriver($dbDriver);
         return self::$connectionList[$uriString];
     }

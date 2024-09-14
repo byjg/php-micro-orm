@@ -32,7 +32,7 @@ class RepositoryPkListTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
+        $this->dbDriver = Factory::getDbInstance(self::URI);
 
         $this->dbDriver->execute('CREATE TABLE items (
             storeid INTEGER,

@@ -60,7 +60,7 @@ class RepositoryTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
+        $this->dbDriver = Factory::getDbInstance(self::URI);
 
         $this->dbDriver->execute('create table users (
             id integer primary key  autoincrement,

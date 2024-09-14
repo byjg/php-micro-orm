@@ -1,8 +1,7 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
-use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\SqlObject;
