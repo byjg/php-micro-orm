@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\DeleteQuery;
@@ -101,7 +103,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
 
-        $users = $this->repository->get(2);
+        $users = $this->repository->get("2");
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
         $this->assertEquals('2017-01-04', $users->getCreatedate());
@@ -110,6 +112,23 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2017-01-02', $users->getCreatedate());
+    }
+
+    public function testGetByFilter()
+    {
+        $users = $this->repository->getByFilter('id = :id', ['id' => 1]);
+        $this->assertCount(1, $users);
+        $this->assertEquals(1, $users[0]->getId());
+        $this->assertEquals('John Doe', $users[0]->getName());
+        $this->assertEquals('2017-01-02', $users[0]->getCreatedate());
+
+        $filter = new IteratorFilter();
+        $filter->addRelation('id', Relation::EQUAL, 2);
+        $users = $this->repository->getByFilter($filter);
+        $this->assertCount(1, $users);
+        $this->assertEquals(2, $users[0]->getId());
+        $this->assertEquals('Jane Doe', $users[0]->getName());
+        $this->assertEquals('2017-01-04', $users[0]->getCreatedate());
     }
 
     public function testGetSelectFunction()

@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class Recursive
 {
@@ -30,7 +31,7 @@ class Recursive
      * Example:
      *   $recursive->field('id', 1, 'id + 10');
      */
-    public function field(string $name, string $base, string $recursion): static
+    public function field(string $name, string|int|LiteralInterface $base, string $recursion): static
     {
         $this->fields[$name] = ["$base as $name", $recursion];
         return $this;

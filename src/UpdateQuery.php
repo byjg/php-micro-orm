@@ -35,8 +35,8 @@ class UpdateQuery extends Updatable
     }
 
     /**
-     * @param $field
-     * @param $value
+     * @param string $field
+     * @param int|float|bool|string|LiteralInterface|null $value
      * @return $this
      */
     public function set(string $field, int|float|bool|string|LiteralInterface|null $value): UpdateQuery
@@ -46,9 +46,8 @@ class UpdateQuery extends Updatable
     }
 
     /**
-     * @param array $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return string
+     * @return SqlObject
      * @throws InvalidArgumentException
      */
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject

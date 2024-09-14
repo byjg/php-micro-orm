@@ -6,6 +6,7 @@ use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use Closure;
 use ReflectionAttribute;
@@ -18,7 +19,7 @@ class Mapper
     private string $entity;
     private string $table;
     private array $primaryKey;
-    private Closure $primaryKeySeedFunction;
+    private ?Closure $primaryKeySeedFunction = null;
 
     /**
      * @var FieldMapping[]
@@ -177,7 +178,7 @@ class Mapper
         }
 
         foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            if (!empty($fieldMap->getFieldAlias() && isset($fieldValues[$fieldMap->getFieldAlias()]))) {
+            if (!empty($fieldMap->getFieldAlias()) && isset($fieldValues[$fieldMap->getFieldAlias()])) {
                 $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
             }
             if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
@@ -244,7 +245,7 @@ class Mapper
         return $this->primaryKey;
     }
 
-    public function getPkFilter(array|string $pkId): array
+    public function getPkFilter(array|string|int|LiteralInterface $pkId): array
     {
         $pkList = $this->getPrimaryKey();
         if (!is_array($pkId)) {
@@ -299,7 +300,7 @@ class Mapper
     public function getFieldAlias(?string $fieldName = null): ?string
     {
         $fieldMapVar = $this->getFieldMap($fieldName);
-        if (empty($fieldMap)) {
+        if (empty($fieldMapVar)) {
             return null;
         }
 

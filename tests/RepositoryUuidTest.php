@@ -5,11 +5,9 @@ namespace Tests;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
-use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
-use Tests\Model\Users;
 use Tests\Model\UsersWithUuidKey;
 
 class RepositoryUuidTest extends TestCase
@@ -35,9 +33,7 @@ class RepositoryUuidTest extends TestCase
             id binary(16) primary key,
             name varchar(45));'
         );
-        $this->userMapper = new Mapper(Users::class, 'usersuuid', 'Id');
-
-        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+        $this->repository = new Repository($this->dbDriver, UsersWithUuidKey::class);
     }
 
     public function tearDown(): void
@@ -61,7 +57,6 @@ class RepositoryUuidTest extends TestCase
 //        $this->infoMapper->withPrimaryKeySeedFunction(function ($instance) {
 //            return 50;
 //        });
-        $this->repository = new Repository($this->dbDriver, UsersWithUuidKey::class);
 
         $query = $this->repository->getMapper()->getQuery();
         $query->top(1);

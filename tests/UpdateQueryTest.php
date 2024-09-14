@@ -3,17 +3,16 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
-use ByJG\MicroOrm\Updatable;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\UpdateQuery;
 use PHPUnit\Framework\TestCase;
 
 class UpdateQueryTest extends TestCase
 {
     /**
-     * @var Updatable
+     * @var UpdateQuery
      */
     protected $object;
 

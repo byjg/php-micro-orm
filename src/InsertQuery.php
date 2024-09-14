@@ -3,12 +3,13 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class InsertQuery extends Updatable
 {
-    protected $fields = [];
+    protected array $fields = [];
 
     public static function getInstance(string $table = null, array $fields = []): self
     {
@@ -29,7 +30,8 @@ class InsertQuery extends Updatable
      * Example:
      *   $query->fields(['name', 'price']);
      *
-     * @param array $fields
+     * @param string $field
+     * @param int|float|bool|string|LiteralInterface|null $value
      * @return $this
      */
     public function field(string $field, int|float|bool|string|LiteralInterface|null $value): self
@@ -46,7 +48,7 @@ class InsertQuery extends Updatable
      * @param array $fields
      * @return $this
      */
-    public function fields(array $fields)
+    public function fields(array $fields): static
     {
         // swap the key and value of the $fields array and set null as value
         $fields = array_flip($fields);
@@ -59,21 +61,20 @@ class InsertQuery extends Updatable
         return $this;
     }
 
-    protected function getFields()
+    protected function getFields(): string
     {
         return ' ' . implode(', ', $this->fields) . ' ';
     }
-    
+
     /**
-     * @param $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @return SqlObject
+     * @throws OrmInvalidFieldsException
      */
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
         if (empty($this->fields)) {
-            throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
+            throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
         $fieldsStr = array_keys($this->fields);
@@ -97,6 +98,10 @@ class InsertQuery extends Updatable
         return new SqlObject($sql, $params, SqlObjectEnum::INSERT);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()

@@ -11,7 +11,7 @@ class Query extends QueryBasic
     protected array $orderBy = [];
     protected ?int $limitStart = null;
     protected ?int $limitEnd = null;
-    protected ?string $top = null;
+    protected ?int $top = null;
     protected bool $forUpdate = false;
 
     public static function getInstance(): Query
@@ -135,7 +135,7 @@ class Query extends QueryBasic
      */
     protected function addForUpdate(?DbDriverInterface $dbDriver, string $sql): string
     {
-        if (empty($this->forUpdate)) {
+        if (!$this->forUpdate) {
             return $sql;
         }
 

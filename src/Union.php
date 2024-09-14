@@ -10,7 +10,7 @@ class Union implements QueryBuilderInterface
 {
     protected array $queryList = [];
 
-    protected QueryBasic|null $queryAggregation = null;
+    protected ?Query $queryAggregation = null;
 
     public function __construct()
     {
@@ -57,23 +57,23 @@ class Union implements QueryBuilderInterface
     }
 
     /**
-     * @param $start
-     * @param $end
+     * @param int $start
+     * @param int $end
      * @return $this
      * @throws InvalidArgumentException
      */
-    public function limit($start, $end): Union
+    public function limit(int $start, int $end): Union
     {
         $this->queryAggregation->limit($start, $end);
         return $this;
     }
 
     /**
-     * @param $top
+     * @param int $top
      * @return $this
      * @throws InvalidArgumentException
      */
-    public function top($top): Union
+    public function top(int $top): Union
     {
         $this->queryAggregation->top($top);
         return $this;
@@ -105,6 +105,6 @@ class Union implements QueryBuilderInterface
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
     }
 }

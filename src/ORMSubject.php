@@ -27,7 +27,7 @@ class ORMSubject
     }
 
     /**
-     * @var ObserverProcessorInternal[]
+     * @var array<string, ObserverProcessorInternal[]>
      */
     protected array $observers = [];
 

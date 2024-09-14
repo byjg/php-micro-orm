@@ -2,16 +2,20 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ReflectionException;
 
 class Repository
@@ -137,12 +141,11 @@ class Repository
     }
 
     /**
-     * @param array|string|int $pkId
+     * @param array|string|int|LiteralInterface $pkId
      * @return mixed|null
-     * @throws Exception\InvalidArgumentException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function get(array|string|int $pkId): mixed
+    public function get(array|string|int|LiteralInterface $pkId): mixed
     {
         [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
         $result = $this->getByFilter($filterList, $filterKeys);
@@ -155,11 +158,12 @@ class Repository
     }
 
     /**
-     * @param array|string|int $pkId
+     * @param array|string|int|LiteralInterface $pkId
      * @return bool
+     * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
-    public function delete(array|string|int $pkId): bool
+    public function delete(array|string|int|LiteralInterface $pkId): bool
     {
         [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
         $updatable = DeleteQuery::getInstance()
@@ -170,11 +174,12 @@ class Repository
     }
 
     /**
-     * @param UpdateBuilderInterface $updatable
+     * @param DeleteQuery $updatable
      * @return bool
+     * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
-    public function deleteByQuery(DeleteQuery $updatable)
+    public function deleteByQuery(DeleteQuery $updatable): bool
     {
         $sqlObject = $updatable->build();
 
@@ -186,15 +191,18 @@ class Repository
     }
 
     /**
-     * @param string $filter
+     * @param string|IteratorFilter $filter
      * @param array $params
      * @param bool $forUpdate
      * @return array
-     * @throws Exception\InvalidArgumentException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function getByFilter(string $filter, array $params, bool $forUpdate = false): array
+    public function getByFilter(string|IteratorFilter $filter, array $params = [], bool $forUpdate = false): array
     {
+        if ($filter instanceof IteratorFilter) {
+            $formatter = new IteratorFilterSqlFormatter();
+            $filter = $formatter->getFilter($filter->getRawFilters(), $params);
+        }
+
         $query = $this->getMapper()->getQuery()
             ->where($filter, $params);
 
@@ -206,13 +214,11 @@ class Repository
     }
 
     /**
-     * @param array|string $arrValues
+     * @param array|string|int|LiteralInterface $arrValues
      * @param string $field
      * @return array
-     * @throws Exception\InvalidArgumentException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function filterIn(array|string $arrValues, string $field = ""): array
+    public function filterIn(array|string|int|LiteralInterface $arrValues, string $field = ""): array
     {
         $arrValues = (array) $arrValues;
 
@@ -220,10 +226,10 @@ class Repository
             $field = $this->getMapper()->getPrimaryKey()[0];
         }
 
-        return $this->getByFilter(
-            $field . " in (:" . implode(',:', array_keys($arrValues)) . ')',
-            $arrValues
-        );
+        $iteratorFilter = new IteratorFilter();
+        $iteratorFilter->addRelation($field, Relation::IN, $arrValues);
+
+        return $this->getByFilter($iteratorFilter);
     }
 
     /**
@@ -243,8 +249,6 @@ class Repository
      * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
      * @return array
-     * @throws Exception\InvalidArgumentException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function getByQuery(QueryBuilderInterface $query, array $mapper = []): array
     {
@@ -273,8 +277,7 @@ class Repository
      *
      * @param Query $query
      * @return array
-     * @throws Exception\InvalidArgumentException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function getByQueryRaw(QueryBuilderInterface $query): array
     {
@@ -346,7 +349,7 @@ class Repository
         }
 
         // Check if is OK
-        if (empty($array) || !is_array($array)) {
+        if (empty($array)) {
             throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
         }
 
@@ -382,8 +385,7 @@ class Repository
 
     /**
      * @param $instance
-     * @param UpdateBuilderInterface $updatable
-     * @param array $params
+     * @param InsertQuery $updatable
      * @return int
      * @throws RepositoryReadOnlyException
      */
@@ -398,9 +400,9 @@ class Repository
     }
 
     /**
-     * @param UpdateBuilderInterface $updatable
-     * @param array $params
+     * @param InsertQuery $updatable
      * @return int
+     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     protected function insertWithAutoinc(InsertQuery $updatable): int
@@ -411,10 +413,10 @@ class Repository
     }
 
     /**
-     * @param UpdateBuilderInterface $updatable
-     * @param array $params
+     * @param InsertQuery $updatable
      * @param mixed $keyGen
      * @return mixed
+     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     protected function insertWithKeyGen(InsertQuery $updatable, mixed $keyGen): mixed
@@ -426,8 +428,8 @@ class Repository
     }
 
     /**
-     * @param UpdateBuilderInterface $updatable
-     * @param array $params
+     * @param UpdateQuery $updatable
+     * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
     protected function update(UpdateQuery $updatable): void

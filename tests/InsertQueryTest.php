@@ -6,15 +6,14 @@ use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
-use ByJG\MicroOrm\Updatable;
 use PHPUnit\Framework\TestCase;
 
 class InsertQueryTest extends TestCase
 {
     /**
-     * @var Updatable
+     * @var InsertQuery|null
      */
-    protected $object;
+    protected ?InsertQuery $object;
 
     protected function setUp(): void
     {
