@@ -2,18 +2,26 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\IteratorFilter;
+use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
+
 trait WhereTrait
 {
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
      *
-     * @param string $filter
+     * @param string|IteratorFilter $filter
      * @param array $params
      * @return $this
      */
-    public function where(string $filter, array $params = []): static
+    public function where(string|IteratorFilter $filter, array $params = []): static
     {
+        if ($filter instanceof IteratorFilter) {
+            $formatter = new IteratorFilterSqlFormatter();
+            $filter = $formatter->getFilter($filter->getRawFilters(), $params);
+        }
+
         $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
         return $this;
     }

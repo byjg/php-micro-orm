@@ -80,10 +80,10 @@ class InsertQueryTest extends TestCase
         );
 
         $this->object
-            ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
+            ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', [ 'teste' => 10, 'teste2' => 40 ]),
             $this->object->convert()->build()
         );
     }

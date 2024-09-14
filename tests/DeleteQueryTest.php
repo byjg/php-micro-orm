@@ -29,11 +29,11 @@ class DeleteQueryTest extends TestCase
     public function testDelete()
     {
         $this->object->table('test');
-        $this->object->where('fld1 = [[id]]', ['id' => 10]);
+        $this->object->where('fld1 = :id', ['id' => 10]);
 
         $sqlObject = $this->object->build();
         $this->assertEquals(
-            new SqlObject('DELETE FROM test WHERE fld1 = [[id]]', [ 'id' => 10 ], SqlObjectEnum::DELETE),
+            new SqlObject('DELETE FROM test WHERE fld1 = :id', [ 'id' => 10 ], SqlObjectEnum::DELETE),
             $sqlObject
         );
     }
@@ -78,10 +78,10 @@ class DeleteQueryTest extends TestCase
         );
 
         $this->object
-            ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
+            ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlObject('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', [ 'teste' => 10, 'teste2' => 40 ]),
             $this->object->convert()->build()
         );
     }

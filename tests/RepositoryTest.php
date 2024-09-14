@@ -123,7 +123,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-02', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
-        $filter->addRelation('id', Relation::EQUAL, 2);
+        $filter->and('id', Relation::EQUAL, 2);
         $users = $this->repository->getByFilter($filter);
         $this->assertCount(1, $users);
         $this->assertEquals(2, $users[0]->getId());
