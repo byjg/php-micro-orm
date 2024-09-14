@@ -83,10 +83,6 @@ class Mapper
 
             $fieldAttribute = $attributes[0]->newInstance();
             $fieldMapping = $fieldAttribute->getFieldMapping($property->getName());
-            if (empty($fieldMapping)) {
-                continue;
-            }
-
             $this->addFieldMapping($fieldMapping);
 
             if ($fieldAttribute->isPrimaryKey()) {

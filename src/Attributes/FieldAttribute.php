@@ -5,7 +5,6 @@ namespace ByJG\MicroOrm\Attributes;
 use Attribute;
 use ByJG\MicroOrm\FieldMapping;
 use Closure;
-use function PHPUnit\Framework\isNull;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class FieldAttribute
@@ -36,33 +35,23 @@ class FieldAttribute
         $this->syncWithDb = $syncWithDb;
     }
 
-    public function getFieldMapping(string $propertyName): ?FieldMapping
+    public function getFieldMapping(string $propertyName): FieldMapping
     {
         $this->propertyName = $propertyName;
-        $empty = true;
         $fieldMapping = FieldMapping::create($propertyName);
-        if (!is_null($this->fieldName)) {
-            $fieldMapping->withFieldName($this->fieldName);
-            $empty = false;
-        }
+        $fieldMapping->withFieldName($this->fieldName ?? $propertyName);
+
         if (!is_null($this->updateFunction)) {
             $fieldMapping->withUpdateFunction($this->updateFunction);
-            $empty = false;
         }
         if (!is_null($this->selectFunction)) {
             $fieldMapping->withSelectFunction($this->selectFunction);
-            $empty = false;
         }
         if (!is_null($this->fieldAlias)) {
             $fieldMapping->withFieldAlias($this->fieldAlias);
-            $empty = false;
         }
         if ($this->syncWithDb === false) {
             $fieldMapping->dontSyncWithDb();
-            $empty = false;
-        }
-        if ($empty) {
-            return null;
         }
         return $fieldMapping;
     }

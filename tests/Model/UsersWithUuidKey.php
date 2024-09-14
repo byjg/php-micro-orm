@@ -8,7 +8,7 @@ use ByJG\MicroOrm\Attributes\TableSqliteUuidPKAttribute;
 #[TableSqliteUuidPKAttribute(tableName: 'usersuuid')]
 class UsersWithUuidKey
 {
-    #[FieldAttribute(primaryKey: true, fieldName: 'id')]
+    #[FieldAttribute(primaryKey: true)]
     protected ?string $Id = null;
 
     #[FieldAttribute(fieldName: 'name')]
