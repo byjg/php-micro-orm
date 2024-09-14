@@ -34,31 +34,14 @@ abstract class Updatable implements UpdateBuilderInterface
      * @param array $params
      * @return $this
      */
-    public function where($filter, array $params = [])
+    public function where(string $filter, array $params = []): static
     {
         $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
         return $this;
     }
 
 
-    protected function getWhere()
-    {
-        $whereStr = [];
-        $params = [];
-
-        foreach ($this->where as $item) {
-            $whereStr[] = $item['filter'];
-            $params = array_merge($params, $item['params']);
-        }
-
-        if (empty($whereStr)) {
-            return null;
-        }
-
-        return [ implode(' AND ', $whereStr), $params ];
-    }
-
-    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null)
+    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null): bool
     {
         $sqlObject = $this->build($dbHelper);
         return $dbDriver->execute($sqlObject->getSql(), array_merge($sqlObject->getParameters(), $params));

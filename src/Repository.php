@@ -378,6 +378,9 @@ class Repository
     }
 
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function addObserver(ObserverProcessorInterface $observerProcessor): void
     {
         ORMSubject::getInstance()->addObserver($observerProcessor, $this);
@@ -387,6 +390,7 @@ class Repository
      * @param $instance
      * @param InsertQuery $updatable
      * @return int
+     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     protected function insert($instance, InsertQuery $updatable): mixed

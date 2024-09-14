@@ -2,14 +2,12 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class DeleteQuery extends Updatable
 {
-    public static function getInstance()
+    public static function getInstance(): DeleteQuery
     {
         return new DeleteQuery();
     }

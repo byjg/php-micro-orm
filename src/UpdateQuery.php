@@ -8,8 +8,11 @@ use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class UpdateQuery extends Updatable
 {
-    protected $set = [];
+    protected array $set = [];
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public static function getInstance(array $fields = [], Mapper $mapper = null): UpdateQuery
     {
         $updatable = new UpdateQuery();
@@ -53,7 +56,7 @@ class UpdateQuery extends Updatable
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
         if (empty($this->set)) {
-            throw new InvalidArgumentException('You must specifiy the fields for update');
+            throw new InvalidArgumentException('You must specify the fields for update');
         }
         
         $fieldsStr = [];
@@ -69,7 +72,7 @@ class UpdateQuery extends Updatable
         
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {
-            throw new InvalidArgumentException('You must specifiy a where clause');
+            throw new InvalidArgumentException('You must specify a where clause');
         }
 
         $tableName = $this->table;

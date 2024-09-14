@@ -8,7 +8,7 @@ class ORMHelper
 {
     /**
      * @param string $sql
-     * @param array $params
+     * @param array|null $params
      * @return string
      */
     public static function processLiteral(string $sql, array &$params = null): string
