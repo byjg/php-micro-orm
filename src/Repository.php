@@ -303,23 +303,26 @@ class Repository
         $array = Serialize::from($instance)
             ->withStopAtFirstLevel()
             ->toArray();
-        $array = $this->getMapper()->prepareField($array);
+        $fieldToProperty = [];
+        $mapper = $this->getMapper();
 
-        // Mapping the data
-        foreach ((array)$this->getMapper()->getFieldMap() as $property => $fieldMap) {
-            $fieldName = $fieldMap->getFieldName();
-
-            // Get the value from the mapped field name
-            $value = $array[$property];
-            unset($array[$property]);
-            $updateValue = $fieldMap->getUpdateFunctionValue($value, $instance);
-
-            // If no value for UpdateFunction, remove from the list;
-            if ($updateValue === false) {
-                continue;
+        // Copy the values to the instance
+        $valuesToUpdate = new \stdClass();
+        ObjectCopy::copy(
+            $array,
+            $valuesToUpdate,
+            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
+                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
+                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
+                $fieldToProperty[$fieldName] = $sourcePropertyName;
+                return $fieldName;
+            },
+            function ($propName, $targetName, $value) use ($mapper, $instance) {
+                $fieldMap = $mapper->getFieldMap($propName);
+                return $fieldMap?->getUpdateFunctionValue($value, $instance) ?? $value;
             }
-            $array[$fieldName] = $updateValue;
-        }
+        );
+        $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
 
         // Defines if is Insert or Update
         $pkList = $this->getMapper()->getPrimaryKey();
@@ -366,7 +369,9 @@ class Repository
             $this->update($updatable);
         }
 
-        ObjectCopy::copy($array, $instance);
+        ObjectCopy::copy($array, $instance, function ($sourcePropertyName) use ($fieldToProperty) {
+            return $fieldToProperty[$sourcePropertyName] ?? $sourcePropertyName;
+        });
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),

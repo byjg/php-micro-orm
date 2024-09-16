@@ -103,7 +103,7 @@ class Mapper
         return $this;
     }
 
-    protected function fixFieldName(?string $field): ?string
+    public function fixFieldName(?string $field): ?string
     {
         if (is_null($field)) {
             return null;
