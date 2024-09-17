@@ -12,6 +12,6 @@ class SqlServerUuidLiteral extends HexUuidLiteral
 
         $this->prefix = '0x';
         $this->suffix = '';
-        parent::__construct($this->binaryString($value));
+        parent::__construct($value);
     }
 }

@@ -28,6 +28,6 @@ class SqlServerUuidLiteralTest extends \Tests\HexUuidLiteralTest
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
 }

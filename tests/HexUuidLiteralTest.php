@@ -41,7 +41,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
 
     public function testFormatUuidFromLiteral()
@@ -51,7 +51,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
 
     public function testFormatUuidFromMysql()
@@ -61,7 +61,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
     public function testFormatUuidFromPostgres()
     {
@@ -70,7 +70,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
     public function testFormatUuidFromSqlServer()
     {
@@ -79,7 +79,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
     public function testFormatUuidFromSqlite()
     {
@@ -88,7 +88,7 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
 
 
@@ -100,20 +100,21 @@ class HexUuidLiteralTest extends TestCase
 
         $hexUuidLiteral = $this->instance($value);
 
-        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid($value));
+        $this->assertEquals($expectedFormattedUuid, $hexUuidLiteral->formatUuid());
     }
 
-    public function testGetUuidFromLiteral()
+    public function testCreateWithHexUuidLiteralInstance()
     {
-        $literal = new HexUuidLiteral('F47AC10B-58CC-4372-A567-0E02B2C3D479');
-        $expectedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
-
-        $this->assertEquals($expectedUuid, HexUuidLiteral::getUuidFromLiteral($literal));
+        $uuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
+        $hexUuidLiteral = new HexUuidLiteral($uuid);
+        $newHexUuidLiteral = new HexUuidLiteral($hexUuidLiteral);
+        $this->assertInstanceOf(HexUuidLiteral::class, $newHexUuidLiteral);
+        $this->assertEquals($uuid, $newHexUuidLiteral->formatUuid());
     }
 
     public function testGetFormattedUuid()
     {
-        $literal = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
+        $literal = 'F47AC10B58CC4372A5670E02B2C3D479';
         $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $this->assertEquals($expectedFormattedUuid, HexUuidLiteral::getFormattedUuid($literal));
@@ -143,5 +144,13 @@ class HexUuidLiteralTest extends TestCase
         $value = HexUuidLiteral::getFormattedUuid($literal, false);
 
         $this->assertNull($value);
+    }
+
+    public function testCreateWithValidUuidBinary()
+    {
+        $uuid = '123E4567-E89B-12D3-A456-426614174000';
+        $hexUuidLiteral = new HexUuidLiteral(hex2bin('123E4567E89B12D3A456426614174000'));
+        $this->assertInstanceOf(HexUuidLiteral::class, $hexUuidLiteral);
+        $this->assertEquals($uuid, $hexUuidLiteral->formatUuid());
     }
 }
