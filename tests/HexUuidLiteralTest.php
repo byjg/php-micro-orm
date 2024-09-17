@@ -160,5 +160,7 @@ class HexUuidLiteralTest extends TestCase
         $this->assertNull(HexUuidLiteral::getFormattedUuid(null, throwErrorIfInvalid: false));
         $this->assertNull(HexUuidLiteral::getFormattedUuid(""));
         $this->assertNull(HexUuidLiteral::getFormattedUuid("", throwErrorIfInvalid: false));
+
+        $this->assertNull(HexUuidLiteral::create(null));
     }
 }

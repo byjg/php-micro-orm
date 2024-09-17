@@ -18,7 +18,7 @@ class HexUuidLiteral extends Literal
 
     public static function create(mixed $value): mixed
     {
-        if ($value instanceof HexUuidLiteral) {
+        if ($value instanceof HexUuidLiteral || is_null($value)) {
             return $value;
         }
 
