@@ -146,6 +146,15 @@ class HexUuidLiteralTest extends TestCase
         $this->assertNull($value);
     }
 
+    public function testGetFormattedUuidWithInvalidInputNoExceptionDefault()
+    {
+        $literal = 'invalid-uuid';
+
+        $value = HexUuidLiteral::getFormattedUuid($literal, false, 'xyz');
+
+        $this->assertEquals('xyz', $value);
+    }
+
     public function testCreateWithValidUuidBinary()
     {
         $uuid = '123E4567-E89B-12D3-A456-426614174000';

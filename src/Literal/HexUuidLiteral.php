@@ -66,7 +66,7 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public static function getFormattedUuid(HexUuidLiteral|string|null $item, bool $throwErrorIfInvalid = true): ?string
+    public static function getFormattedUuid(HexUuidLiteral|string|null $item, bool $throwErrorIfInvalid = true, $default = null): ?string
     {
         if ($item instanceof Literal) {
             $item = $item->__toString();
@@ -87,7 +87,7 @@ class HexUuidLiteral extends Literal
         } elseif ($throwErrorIfInvalid) {
             throw new InvalidArgumentException("Invalid UUID format");
         } else {
-            return null;
+            return $default;
         }
 
         return strtoupper($item);
