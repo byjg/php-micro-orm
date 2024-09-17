@@ -26,8 +26,8 @@ class HexUuidLiteralTest extends TestCase
 
     public function testBinaryString()
     {
-        $value = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-        $expectedBinaryString = "X'f47ac10b58cc4372a5670e02b2c3d479'";
+        $value = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
+        $expectedBinaryString = "X'F47AC10B58CC4372A5670E02B2C3D479'";
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -36,8 +36,8 @@ class HexUuidLiteralTest extends TestCase
 
     public function testFormatUuidFromBinRepresent()
     {
-        $value = "X'f47ac10b58cc4372a5670e02b2c3d479'";
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = "X'F47AC10B58CC4372A5670E02B2C3D479'";
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -46,8 +46,8 @@ class HexUuidLiteralTest extends TestCase
 
     public function testFormatUuidFromLiteral()
     {
-        $value = new HexUuidLiteral('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = new HexUuidLiteral('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -56,8 +56,8 @@ class HexUuidLiteralTest extends TestCase
 
     public function testFormatUuidFromMysql()
     {
-        $value = new MySqlUuidLiteral('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = new MySqlUuidLiteral('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -65,8 +65,8 @@ class HexUuidLiteralTest extends TestCase
     }
     public function testFormatUuidFromPostgres()
     {
-        $value = new PostgresUuidLiteral('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = new PostgresUuidLiteral('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -74,8 +74,8 @@ class HexUuidLiteralTest extends TestCase
     }
     public function testFormatUuidFromSqlServer()
     {
-        $value = new SqlServerUuidLiteral('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = new SqlServerUuidLiteral('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -83,8 +83,8 @@ class HexUuidLiteralTest extends TestCase
     }
     public function testFormatUuidFromSqlite()
     {
-        $value = new SqliteUuidLiteral('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = new SqliteUuidLiteral('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -95,8 +95,8 @@ class HexUuidLiteralTest extends TestCase
 
     public function testFormatUuid()
     {
-        $value = 'f47ac10b58cc4372a5670e02b2c3d479';
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = 'F47AC10B58CC4372A5670E02B2C3D479';
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -105,24 +105,24 @@ class HexUuidLiteralTest extends TestCase
 
     public function testGetUuidFromLiteral()
     {
-        $literal = new HexUuidLiteral('f47ac10b-58cc-4372-a567-0e02b2c3d479');
-        $expectedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $literal = new HexUuidLiteral('F47AC10B-58CC-4372-A567-0E02B2C3D479');
+        $expectedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $this->assertEquals($expectedUuid, HexUuidLiteral::getUuidFromLiteral($literal));
     }
 
     public function testGetFormattedUuid()
     {
-        $literal = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $literal = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $this->assertEquals($expectedFormattedUuid, HexUuidLiteral::getFormattedUuid($literal));
     }
 
     public function testGetFormattedUuidBinaryStored()
     {
-        $literal = hex2bin('f47ac10b58cc4372a5670e02b2c3d479');
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $literal = hex2bin('F47AC10B58CC4372A5670E02B2C3D479');
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $this->assertEquals($expectedFormattedUuid, HexUuidLiteral::getFormattedUuid($literal));
     }

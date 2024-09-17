@@ -29,12 +29,11 @@ class HexUuidLiteral extends Literal
             return $value;
         }
 
-        
-        if (empty(HexUuidLiteral::getFormattedUuid($value, false))) {
+        try {
+            return new HexUuidLiteral($value);
+        } catch (InvalidArgumentException $ex) {
             return $value;
         }
-        
-        return new HexUuidLiteral($value);
     }
 
     /**
@@ -54,13 +53,11 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public function formatUuid(HexUuidLiteral|string $item): string
+    public function formatUuid(HexUuidLiteral|string $item = null): string
     {
         if (empty($item)) {
-            return $item;
+            $item = $this->getLiteralValue();
         }
-
-        $originalItem = $item;
 
         if ($item instanceof HexUuidLiteral) {
             $pattern = "/^" . $item->prefix . '(.*)' . $item->suffix . "$/";
@@ -87,7 +84,7 @@ class HexUuidLiteral extends Literal
             throw new InvalidArgumentException("Invalid UUID format");
         }
 
-        return strtolower($item);
+        return strtoupper($item);
     }
 
     public static function getUuidFromLiteral(HexUuidLiteral $literal): string

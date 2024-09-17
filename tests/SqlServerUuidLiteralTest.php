@@ -2,7 +2,6 @@
 
 namespace Tests;
 
-use ByJG\MicroOrm\Literal\PostgresUuidLiteral;
 use ByJG\MicroOrm\Literal\SqlServerUuidLiteral;
 
 class SqlServerUuidLiteralTest extends \Tests\HexUuidLiteralTest
@@ -14,8 +13,8 @@ class SqlServerUuidLiteralTest extends \Tests\HexUuidLiteralTest
 
     public function testBinaryString()
     {
-        $value = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-        $expectedBinaryString = '0xf47ac10b58cc4372a5670e02b2c3d479';
+        $value = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
+        $expectedBinaryString = '0xF47AC10B58CC4372A5670E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
@@ -24,8 +23,8 @@ class SqlServerUuidLiteralTest extends \Tests\HexUuidLiteralTest
 
     public function testFormatUuidFromBinRepresent()
     {
-        $value = '0xf47ac10b58cc4372a5670e02b2c3d479';
-        $expectedFormattedUuid = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+        $value = '0xF47AC10B58CC4372A5670E02B2C3D479';
+        $expectedFormattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
         $hexUuidLiteral = $this->instance($value);
 
