@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -304,9 +305,10 @@ class Mapper
     }
 
     /**
+     * @param DbDriverInterface $dbDriver
      * @return mixed|null
      */
-    public function generateKey(object $instance): mixed
+    public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
@@ -314,6 +316,6 @@ class Mapper
 
         $func = $this->primaryKeySeedFunction;
 
-        return $func($instance);
+        return $func($dbDriver, $instance);
     }
 }

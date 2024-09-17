@@ -4,12 +4,13 @@ namespace Tests\Model;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableSqliteUuidPKAttribute;
+use ByJG\MicroOrm\Literal\Literal;
 
 #[TableSqliteUuidPKAttribute(tableName: 'usersuuid')]
 class UsersWithUuidKey
 {
     #[FieldAttribute(primaryKey: true)]
-    protected ?string $Id = null;
+    protected string|Literal|null $Id = null;
 
     #[FieldAttribute(fieldName: 'name')]
     protected ?string $name;

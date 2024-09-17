@@ -69,10 +69,11 @@ class RepositoryUuidTest extends TestCase
         $this->repository->save($users);
 
         $query = $this->repository->getMapper()->getQuery();
-        $query->top(1);
+        $query->where('id = :id', ['id' => $users->getId()]);
         $result = $this->repository->getByQuery($query);
         $this->assertCount(1, $result);
 
         $uuid = HexUuidLiteral::getFormattedUuid($result[0]->getId(), throwErrorIfInvalid: true);
+        $this->assertEquals('Bla99991919', $result[0]->getName());
     }
 }

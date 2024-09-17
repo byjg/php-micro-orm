@@ -358,8 +358,17 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $keyReturned = $this->insert($instance, $updatable);
-            if (count($pkList) == 1) {
+            $keyGen = $this->getMapper()->generateKey($this->getDbDriver(), $instance) ?? [];
+            if (!empty($keyGen) && !is_array($keyGen)) {
+                $keyGen = [$keyGen];
+            }
+            $position = 0;
+            foreach ($keyGen as $value) {
+                $array[$pkList[$position]] = $value;
+                $updatable->field($this->mapper->getPrimaryKey()[$position++], $value);
+            }
+            $keyReturned = $this->insert($updatable, $keyGen);
+            if (count($pkList) == 1 && !empty($keyReturned)) {
                 $array[$pkList[0]] = $keyReturned;
             }
         } else {
@@ -392,19 +401,19 @@ class Repository
     }
 
     /**
-     * @param $instance
      * @param InsertQuery $updatable
-     * @return int
+     * @param mixed $keyGen
+     * @return mixed
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insert($instance, InsertQuery $updatable): mixed
+    protected function insert(InsertQuery $updatable, mixed $keyGen): mixed
     {
-        $keyGen = $this->getMapper()->generateKey($instance);
         if (empty($keyGen)) {
             return $this->insertWithAutoInc($updatable);
         } else {
-            return $this->insertWithKeyGen($updatable, $keyGen);
+            $this->insertWithKeyGen($updatable);
+            return null;
         }
     }
 
@@ -423,17 +432,14 @@ class Repository
 
     /**
      * @param InsertQuery $updatable
-     * @param mixed $keyGen
-     * @return mixed
+     * @return void
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(InsertQuery $updatable, mixed $keyGen): mixed
+    protected function insertWithKeyGen(InsertQuery $updatable): void
     {
-        $updatable->field($this->mapper->getPrimaryKey()[0], $keyGen);
         $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
         $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
-        return $keyGen;
     }
 
     /**
