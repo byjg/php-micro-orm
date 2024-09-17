@@ -15,6 +15,27 @@ class HexUuidLiteral extends Literal
     {
         parent::__construct($this->binaryString($value));
     }
+    
+    public static function create(mixed $value): mixed
+    {
+        if ($value instanceof HexUuidLiteral) {
+            return $value;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $i => $val) {
+                $value[$i] = HexUuidLiteral::create($val);
+            }
+            return $value;
+        }
+
+        
+        if (empty(HexUuidLiteral::getFormattedUuid($value, false))) {
+            return $value;
+        }
+        
+        return new HexUuidLiteral($value);
+    }
 
     /**
      * @throws InvalidArgumentException
