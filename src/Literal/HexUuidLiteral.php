@@ -66,13 +66,17 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public static function getFormattedUuid(HexUuidLiteral|string $item, bool $throwErrorIfInvalid = true): ?string
+    public static function getFormattedUuid(HexUuidLiteral|string|null $item, bool $throwErrorIfInvalid = true): ?string
     {
         if ($item instanceof Literal) {
             $item = $item->__toString();
         }
 
-        if ((strlen($item) === 16) && !ctype_print($item)) {
+        if (is_null($item) || $item === '') {
+            return null;
+        }
+
+        if (strlen($item) === 16 && !ctype_print($item)) {
             $item = bin2hex($item);
         }
 
