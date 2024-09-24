@@ -1202,6 +1202,34 @@ class RepositoryTest extends TestCase
 
     }
 
+    public function testGetEntity()
+    {
+        /** @var Info $usersModel */
+        $infoModel = $this->infoMapper->getEntity([
+            'id' => 3,
+            'iduser' => 3,
+            'value' => 3.5      // Value is the object model property
+        ]);
+
+        $this->assertEquals(3, $infoModel->getId());
+        $this->assertEquals(3, $infoModel->getIduser());
+        $this->assertEquals(3.5, $infoModel->getValue());
+    }
+
+    public function testGetEntity2()
+    {
+        /** @var Info $usersModel */
+        $infoModel = $this->infoMapper->getEntity([
+            'id' => 3,
+            'iduser' => 3,
+            'property' => 3.5     // Property is the field name and is mapped to value
+        ]);
+
+        $this->assertEquals(3, $infoModel->getId());
+        $this->assertEquals(3, $infoModel->getIduser());
+        $this->assertEquals(3.5, $infoModel->getValue());
+    }
+
     public function testQueryInstanceWithWrongModel()
     {
         $this->expectException(InvalidArgumentException::class);
@@ -1213,5 +1241,6 @@ class RepositoryTest extends TestCase
 
         $query = $this->repository->queryInstance($infoModel);
     }
+
 
 }
