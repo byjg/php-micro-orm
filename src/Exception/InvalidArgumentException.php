@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class InvalidArgumentException extends \Exception
+use Exception;
+
+class InvalidArgumentException extends Exception
 {
 
 }

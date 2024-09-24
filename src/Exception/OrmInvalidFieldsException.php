@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class OrmInvalidFieldsException extends \Exception
+use Exception;
+
+class OrmInvalidFieldsException extends Exception
 {
 
 }
