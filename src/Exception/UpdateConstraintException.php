@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class UpdateConstraintException extends \Exception
+use Exception;
+
+class UpdateConstraintException extends Exception
 {
 
 }

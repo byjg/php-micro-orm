@@ -2,60 +2,109 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Attributes\FieldAttribute;
+use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
-use ByJG\Serializer\BinderObject;
+use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\Serializer\ObjectCopy;
+use Closure;
+use ReflectionAttribute;
+use ReflectionClass;
+use ReflectionException;
 
 class Mapper
 {
 
-    private $entity;
-    private $table;
-    private $primaryKey;
-    private $primaryKeySeedFunction;
+    private string $entity;
+    private string $table;
+    private array $primaryKey;
+    private ?Closure $primaryKeySeedFunction = null;
 
     /**
      * @var FieldMapping[]
      */
-    private $fieldMap = [];
-    private $preserveCaseName = false;
+    private array $fieldMap = [];
+    private bool $preserveCaseName = false;
 
     /**
      * Mapper constructor.
      *
      * @param string $entity
-     * @param string $table
-     * @param string $primaryKey
-     * @throws \ByJG\MicroOrm\Exception\OrmModelInvalidException
+     * @param string|null $table
+     * @param string|array|null $primaryKey
+     * @throws OrmModelInvalidException
+     * @throws ReflectionException
      */
     public function __construct(
-        $entity,
-        $table,
-        $primaryKey
+        string $entity,
+        ?string $table = null,
+        string|array|null $primaryKey = null
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
         }
-        $primaryKey = (array)$primaryKey;
 
         $this->entity = $entity;
-        $this->table = $table;
-        $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+        if (empty($table) || empty($primaryKey)) {
+            $this->processAttribute($entity);
+        } else {
+            $primaryKey = (array)$primaryKey;
+
+            $this->table = $table;
+            $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+        }
     }
 
-    public function withPrimaryKeySeedFunction(\Closure $primaryKeySeedFunction)
+    /**
+     * @throws ReflectionException
+     * @throws OrmModelInvalidException
+     */
+    protected function processAttribute(string $entity): void
+    {
+        $reflection = new ReflectionClass($entity);
+        $attributes = $reflection->getAttributes(TableAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
+        if (count($attributes) == 0) {
+            throw new OrmModelInvalidException("Entity '$entity' does not have the TableAttribute");
+        }
+
+        $tableAttribute = $attributes[0]->newInstance();
+        $this->table = $tableAttribute->getTableName();
+        if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
+            $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
+        }
+
+        $this->primaryKey = [];
+        foreach ($reflection->getProperties() as $property) {
+            $attributes = $property->getAttributes(FieldAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
+            if (count($attributes) == 0) {
+                continue;
+            }
+
+            $fieldAttribute = $attributes[0]->newInstance();
+            $fieldMapping = $fieldAttribute->getFieldMapping($property->getName());
+            $this->addFieldMapping($fieldMapping);
+
+            if ($fieldAttribute->isPrimaryKey()) {
+                $this->primaryKey[] = $this->fixFieldName($fieldAttribute->getFieldName());
+            }
+        }
+    }
+
+    public function withPrimaryKeySeedFunction(Closure $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
     }
 
-    public function withPreserveCaseName()
+    public function withPreserveCaseName(): static
     {
         $this->preserveCaseName = true;
         return $this;
     }
 
-    protected function fixFieldName($field)
+    public function fixFieldName(?string $field): ?string
     {
         if (is_null($field)) {
             return null;
@@ -68,15 +117,16 @@ class Mapper
         return $field;
     }
 
-    public function prepareField(array $fieldList)
+    public function prepareField(array $fieldList): array
     {
+        $result = [];
         foreach ($fieldList as $key => $value) {
             $result[$this->fixFieldName($key)] = $value;
         }
         return $result;
     }
 
-    public function addFieldMapping(FieldMapping $fieldMapping)
+    public function addFieldMapping(FieldMapping $fieldMapping): static
     {
         $propertyName = $this->fixFieldName($fieldMapping->getPropertyName());
         $fieldName = $this->fixFieldName($fieldMapping->getFieldName());
@@ -91,13 +141,12 @@ class Mapper
     /**
      * @param string $property
      * @param string $fieldName
-     * @param \Closure|null|bool $updateFunction
-     * @param \Closure $selectFunction
+     * @param Closure|null $updateFunction
+     * @param Closure|null $selectFunction
      * @return $this
-     * @throws InvalidArgumentException
      * @deprecated Use addFieldMapping instead
      */
-    public function addFieldMap($property, $fieldName, \Closure $updateFunction = null, \Closure $selectFunction = null)
+    public function addFieldMap(string $property, string $fieldName, Closure $updateFunction = null, Closure $selectFunction = null): static
     {
         $fieldMapping = FieldMapping::create($property)
             ->withFieldName($fieldName);
@@ -113,9 +162,10 @@ class Mapper
     }
 
     /**
+     * @param array $fieldValues
      * @return object
      */
-    public function getEntity(array $fieldValues = [])
+    public function getEntity(array $fieldValues = []): object
     {
         $class = $this->entity;
         $instance = new $class();
@@ -125,7 +175,7 @@ class Mapper
         }
 
         foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            if (!empty($fieldMap->getFieldAlias() && isset($fieldValues[$fieldMap->getFieldAlias()]))) {
+            if (!empty($fieldMap->getFieldAlias()) && isset($fieldValues[$fieldMap->getFieldAlias()])) {
                 $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
             }
             if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
@@ -133,13 +183,13 @@ class Mapper
                 unset($fieldValues[$fieldMap->getFieldName()]);
             }
         }
-        BinderObject::bind($fieldValues, $instance);
+        ObjectCopy::copy($fieldValues, $instance);
 
         foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
             $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
         }
         if (count($this->getFieldMap()) > 0) {
-            BinderObject::bind($fieldValues, $instance);
+            ObjectCopy::copy($fieldValues, $instance);
         }
 
         return $instance;
@@ -179,7 +229,7 @@ class Mapper
     /**
      * @return string
      */
-    public function getTable()
+    public function getTable(): string
     {
         return $this->table;
     }
@@ -187,25 +237,45 @@ class Mapper
     /**
      * @return array
      */
-    public function getPrimaryKey()
+    public function getPrimaryKey(): array
     {
         return $this->primaryKey;
+    }
+
+    public function getPkFilter(array|string|int|LiteralInterface $pkId): array
+    {
+        $pkList = $this->getPrimaryKey();
+        if (!is_array($pkId)) {
+            $pkId = [$pkId];
+        }
+
+        if (count($pkList) !== count($pkId)) {
+            throw new InvalidArgumentException("The primary key must have " . count($pkList) . " values");
+        }
+
+        $filterList = [];
+        $filterKeys = [];
+        foreach ($pkList as $pk) {
+            $filterList[] = $pk . " = :pk$pk";
+            $filterKeys["pk$pk"] = array_shift($pkId);
+        }
+
+        return [implode(' and ', $filterList), $filterKeys];
     }
 
     /**
      * @return bool
      */
-    public function isPreserveCaseName()
+    public function isPreserveCaseName(): bool
     {
         return $this->preserveCaseName;
     }
 
     /**
      * @param string|null $property
-     * @param string|null $key
      * @return FieldMapping[]|FieldMapping|null
      */
-    public function getFieldMap($property = null)
+    public function getFieldMap(string $property = null): array|FieldMapping|null
     {
         if (empty($property)) {
             return $this->fieldMap;
@@ -217,19 +287,17 @@ class Mapper
             return null;
         }
 
-        $fieldMap = $this->fieldMap[$property];
-
-        return $fieldMap;
+        return $this->fieldMap[$property];
     }
 
     /**
-     * @param null $fieldName
-     * @return array|mixed|null
+     * @param string|null $fieldName
+     * @return string|null
      */
-    public function getFieldAlias($fieldName = null)
+    public function getFieldAlias(?string $fieldName = null): ?string
     {
         $fieldMapVar = $this->getFieldMap($fieldName);
-        if (empty($fieldMap)) {
+        if (empty($fieldMapVar)) {
             return null;
         }
 
@@ -237,9 +305,10 @@ class Mapper
     }
 
     /**
+     * @param DbDriverInterface $dbDriver
      * @return mixed|null
      */
-    public function generateKey($instance)
+    public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
@@ -247,23 +316,6 @@ class Mapper
 
         $func = $this->primaryKeySeedFunction;
 
-        return $func($instance);
-    }
-
-    public static function defaultClosure()
-    {
-        return function ($value) {
-            if (empty($value) && $value !== 0 && $value !== '0' && $value !== false) {
-                return null;
-            }
-            return $value;
-        };
-    }
-
-    public static function doNotUpdateClosure()
-    {
-        return function () {
-            return false;
-        };
+        return $func($dbDriver, $instance);
     }
 }

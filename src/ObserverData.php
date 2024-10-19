@@ -11,15 +11,15 @@ class ObserverData
     protected string $event;
 
     // The data that was inserted or updated. It is null in case of delete.
-    protected $data;
+    protected mixed $data;
 
     // The data before update. In case of insert comes null, and in case of delete comes with the param filters.
-    protected $oldData;
+    protected mixed $oldData;
 
     // The repository is listening to the event (the same as $myRepository)
     protected Repository $repository;
 
-    public function __construct(string $table, string $event, $data, $oldData, Repository $repository)
+    public function __construct(string $table, string $event, mixed $data, mixed $oldData, Repository $repository)
     {
         $this->table = $table;
         $this->event = $event;
@@ -47,7 +47,7 @@ class ObserverData
     /**
      * @return mixed
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }
@@ -55,7 +55,7 @@ class ObserverData
     /**
      * @return mixed
      */
-    public function getOldData()
+    public function getOldData(): mixed
     {
         return $this->oldData;
     }

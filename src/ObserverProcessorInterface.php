@@ -6,9 +6,9 @@ use Throwable;
 
 interface ObserverProcessorInterface
 {
-    public function process(ObserverData $observerData);
+    public function process(ObserverData $observerData): void;
 
-    public function getObserverdTable(): string;
+    public function getObservedTable(): string;
 
     public function onError(Throwable $exception, ObserverData $observerData): void;
 }

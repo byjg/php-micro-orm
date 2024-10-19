@@ -1,19 +1,19 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\InsertQuery;
-use ByJG\MicroOrm\Updatable;
+use ByJG\MicroOrm\SqlObject;
+use ByJG\MicroOrm\SqlObjectEnum;
 use PHPUnit\Framework\TestCase;
 
 class InsertQueryTest extends TestCase
 {
     /**
-     * @var Updatable
+     * @var InsertQuery|null
      */
-    protected $object;
+    protected ?InsertQuery $object;
 
     protected function setUp(): void
     {
@@ -29,33 +29,20 @@ class InsertQueryTest extends TestCase
     {
         $this->object->table('test');
 
-        $this->object->fields(['fld1']);
-        $this->object->fields(['fld2', 'fld3']);
+        $this->object->field('fld1', 'A');
+        $this->object->field('fld2', 'B');
+        $this->object->field('fld3', 'C');
 
-        $params = [];
-        $sql = $this->object->build($params);
+        $sqlObject = $this->object->build();
         $this->assertEquals(
-            [
-                'INSERT INTO test( fld1, fld2, fld3 )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-                []
-            ],
-            [
-                $sql,
-                $params
-            ]
+            new SqlObject('INSERT INTO test( fld1, fld2, fld3 )  values ( :fld1, :fld2, :fld3 ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
+            $sqlObject
         );
 
-        $params = [];
-        $sql = $this->object->build($params, new DbSqliteFunctions());
+        $sqlObject = $this->object->build(new DbSqliteFunctions());
         $this->assertEquals(
-            [
-                'INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( [[fld1]], [[fld2]], [[fld3]] ) ',
-                []
-            ],
-            [
-                $sql,
-                $params
-            ]
+            new SqlObject('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( :fld1, :fld2, :fld3 ) ', [ 'fld1' => 'A', 'fld2'=> 'B', 'fld3' => 'C' ], SqlObjectEnum::INSERT),
+            $sqlObject
         );
     }
 
@@ -63,23 +50,16 @@ class InsertQueryTest extends TestCase
     {
         $this->object->table('test');
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  * FROM test',
-                'params' => []
-            ],
+            new SqlObject('SELECT  * FROM test'),
             $this->object->convert()->build()
         );
 
-
-        $this->object
-            ->fields(['fld1'])
-            ->fields(['fld2', 'fld3']);
+        $this->object->field('fld1', 'A');
+        $this->object->field('fld2', 'B');
+        $this->object->field('fld3', 'C');
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test',
-                'params' => []
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test'),
             $this->object->convert()->build()
         );
 
@@ -87,10 +67,7 @@ class InsertQueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste',
-                'params' => [ 'teste' => 10 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', [ 'teste' => 10 ]),
             $this->object->convert()->build()
         );
 
@@ -98,21 +75,15 @@ class InsertQueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20',
-                'params' => [ 'teste' => 10 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', [ 'teste' => 10 ]),
             $this->object->convert()->build()
         );
 
         $this->object
-            ->where('fld1 = [[teste2]]', [ 'teste2' => 40 ]);
+            ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            [
-                'sql' => 'SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = [[teste2]]',
-                'params' => [ 'teste' => 10, 'teste2' => 40 ]
-            ],
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', [ 'teste' => 10, 'teste2' => 40 ]),
             $this->object->convert()->build()
         );
     }

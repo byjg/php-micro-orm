@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
+use InvalidArgumentException;
 
 class TransactionManager
 {
@@ -12,29 +13,29 @@ class TransactionManager
     /**
      * @var DbDriverInterface[]
      */
-    protected static $connectionList = [];
+    protected static array $connectionList = [];
 
     /**
      * It has an active transaction?
      *
      * @var bool
      */
-    protected static $transaction = false;
+    protected static bool $transaction = false;
 
     /**
      * Add or reuse a connection
      *
-     * @param $uriString
-     * @return \ByJG\AnyDataset\Db\DbDriverInterface
+     * @param string $uriString
+     * @return DbDriverInterface
      */
-    public function addConnection($uriString)
+    public function addConnection(string $uriString): DbDriverInterface
     {
-        $dbDriver = Factory::getDbRelationalInstance($uriString);
+        $dbDriver = Factory::getDbInstance($uriString);
         $this->addDbDriver($dbDriver);
         return self::$connectionList[$uriString];
     }
 
-    public function addDbDriver(DbDriverInterface $dbDriver)
+    public function addDbDriver(DbDriverInterface $dbDriver): void
     {
         $uriString = $dbDriver->getUri()->__toString();
 
@@ -45,11 +46,11 @@ class TransactionManager
                 self::$connectionList[$uriString]->beginTransaction();
             }
         } elseif (self::$connectionList[$uriString] !== $dbDriver) {
-            throw new \InvalidArgumentException("The connection already exists with a different instance");
+            throw new InvalidArgumentException("The connection already exists with a different instance");
         }
     }
 
-    public function addRepository(Repository $repository)
+    public function addRepository(Repository $repository): void
     {
         $this->addDbDriver($repository->getDbDriver());
     }
@@ -57,7 +58,7 @@ class TransactionManager
     /**
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count(self::$connectionList);
     }
@@ -65,9 +66,9 @@ class TransactionManager
     /**
      * Start a database transaction with the opened connections
      *
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     * @throws TransactionException
      */
-    public function beginTransaction()
+    public function beginTransaction(): void
     {
         if (self::$transaction) {
             throw new TransactionException("Transaction Already Started");
@@ -83,9 +84,9 @@ class TransactionManager
     /**
      * Commit all open transactions
      *
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     * @throws TransactionException
      */
-    public function commitTransaction()
+    public function commitTransaction(): void
     {
         if (!self::$transaction) {
             throw new TransactionException("There is no Active Transaction");
@@ -101,9 +102,9 @@ class TransactionManager
     /**
      * Rollback all open transactions
      *
-     * @throws \ByJG\MicroOrm\Exception\TransactionException
+     * @throws TransactionException
      */
-    public function rollbackTransaction()
+    public function rollbackTransaction(): void
     {
         if (!self::$transaction) {
             throw new TransactionException("There is no Active Transaction");
@@ -118,7 +119,7 @@ class TransactionManager
     /**
      * Destroy all connections
      */
-    public function destroy()
+    public function destroy(): void
     {
         foreach (self::$connectionList as $dbDriver) {
             if (self::$transaction) {
