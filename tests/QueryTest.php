@@ -86,11 +86,19 @@ class QueryTest extends TestCase
             $this->object->build()
         );
 
+        $this->object
+            ->having('count(fld1) > 1');
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40 ]),
+            $this->object->build()
+        );
+
         $iteratorFilter = new IteratorFilter();
         $iteratorFilter->and('fld4', Relation::EQUAL, 40);
         $this->object->where($iteratorFilter);
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 AND  fld4 = :fld4  GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40, 'fld4' => 40 ]),
+            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 AND  fld4 = :fld4  GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40, 'fld4' => 40 ]),
             $this->object->build()
         );
     }

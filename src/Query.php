@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Exception\InvalidArgumentException;
 class Query extends QueryBasic
 {
     protected array $groupBy = [];
+    protected array $having = [];
     protected array $orderBy = [];
     protected ?int $limitStart = null;
     protected ?int $limitEnd = null;
@@ -30,6 +31,19 @@ class Query extends QueryBasic
     {
         $this->groupBy = array_merge($this->groupBy, $fields);
     
+        return $this;
+    }
+
+    /**
+     * Example:
+     *    $query->having('count(price) > 10');
+     *
+     * @param string $filter
+     * @return $this
+     */
+    public function having(string $filter): static
+    {
+        $this->having[] = $filter;
         return $this;
     }
 
@@ -98,6 +112,8 @@ class Query extends QueryBasic
 
         $sql .= $this->addGroupBy();
 
+        $sql .= $this->addHaving();
+
         $sql .= $this->addOrderBy();
 
         $sql = $this->addForUpdate($dbDriver, $sql);
@@ -125,6 +141,14 @@ class Query extends QueryBasic
             return "";
         }
         return ' GROUP BY ' . implode(', ', $this->groupBy);
+    }
+
+    protected function addHaving(): string
+    {
+        if (empty($this->having)) {
+            return "";
+        }
+        return ' HAVING ' . implode(' AND ', $this->having);
     }
 
     /**
