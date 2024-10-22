@@ -3,13 +3,14 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 
 class InsertSelectQuery extends Updatable
 {
     protected array $fields = [];
 
-    protected ?QueryBasic $query = null;
+    protected ?QueryBuilderInterface $query = null;
 
     protected ?SqlObject $sqlObject = null;
 
@@ -32,7 +33,7 @@ class InsertSelectQuery extends Updatable
         return $this;
     }
 
-    public function fromQuery(QueryBasic $query): static
+    public function fromQuery(QueryBuilderInterface $query): static
     {
         $this->query = $query;
 
@@ -49,6 +50,7 @@ class InsertSelectQuery extends Updatable
     /**
      * @param DbFunctionsInterface|null $dbHelper
      * @return SqlObject
+     * @throws InvalidArgumentException
      * @throws OrmInvalidFieldsException
      */
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject
