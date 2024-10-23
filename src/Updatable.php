@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\MicroOrm\Interface\UpdateBuilderInterface;
 
 abstract class Updatable implements UpdateBuilderInterface
 {

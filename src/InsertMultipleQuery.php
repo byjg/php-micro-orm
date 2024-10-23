@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 
 class InsertMultipleQuery extends Updatable
 {

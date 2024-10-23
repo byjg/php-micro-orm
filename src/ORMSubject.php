@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use Throwable;
 
 class ORMSubject

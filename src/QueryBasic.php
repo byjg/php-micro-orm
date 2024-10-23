@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\Serializer\Serialize;
 
 class QueryBasic implements QueryBuilderInterface

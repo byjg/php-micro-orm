@@ -12,6 +12,8 @@ use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
+use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;

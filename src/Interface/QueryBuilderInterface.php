@@ -1,9 +1,10 @@
 <?php
 
-namespace ByJG\MicroOrm;
+namespace ByJG\MicroOrm\Interface;
 
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\SqlObject;
 
 interface QueryBuilderInterface
 {

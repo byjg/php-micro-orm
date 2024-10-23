@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class UpdateQuery extends Updatable

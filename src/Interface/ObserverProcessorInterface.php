@@ -1,7 +1,8 @@
 <?php
 
-namespace ByJG\MicroOrm;
+namespace ByJG\MicroOrm\Interface;
 
+use ByJG\MicroOrm\ObserverData;
 use Throwable;
 
 interface ObserverProcessorInterface
