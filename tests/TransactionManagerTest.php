@@ -1,15 +1,14 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
-use ByJG\MicroOrm\TransactionManager;
 use ByJG\MicroOrm\Exception\TransactionException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\TransactionManager;
 use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/Model/Users.php';
+use Tests\Model\Users;
 
 class TransactionManagerTest extends TestCase
 {
@@ -69,10 +68,10 @@ class TransactionManagerTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = Factory::getDbRelationalInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbRelationalInstance("sqlite:///tmp/b.db");
-        $dbDrive3 = Factory::getDbRelationalInstance("sqlite:///tmp/a.db");
-        $dbDrive4 = Factory::getDbRelationalInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
+        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
+        $dbDrive3 = Factory::getDbInstance("sqlite:///tmp/a.db");
+        $dbDrive4 = Factory::getDbInstance("sqlite:///tmp/b.db");
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -82,8 +81,8 @@ class TransactionManagerTest extends TestCase
 
     public function testAddDbDriver()
     {
-        $dbDrive1 = Factory::getDbRelationalInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbRelationalInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
+        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -97,7 +96,7 @@ class TransactionManagerTest extends TestCase
 
     public function testAddRepository()
     {
-        $dbDriver = Factory::getDbRelationalInstance("sqlite:///tmp/a.db");
+        $dbDriver = Factory::getDbInstance("sqlite:///tmp/a.db");
 
         $dbDriver->execute('create table users (
             id integer primary key  autoincrement,
@@ -164,8 +163,8 @@ class TransactionManagerTest extends TestCase
 
     public function testTransaction()
     {
-        $dbDrive1 = Factory::getDbRelationalInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbRelationalInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
+        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
 
         $dbDrive1->execute('create table users1 (
             id integer primary key  autoincrement,

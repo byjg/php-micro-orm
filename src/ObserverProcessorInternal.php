@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 
 class ObserverProcessorInternal
 {
@@ -15,7 +16,7 @@ class ObserverProcessorInternal
         $this->repository = $repository;
     }
 
-    public function getObserverdProcessor(): ObserverProcessorInterface
+    public function getObservedProcessor(): ObserverProcessorInterface
     {
         return $this->observerProcessor;
     }

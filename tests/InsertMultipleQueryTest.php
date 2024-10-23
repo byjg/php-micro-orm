@@ -30,10 +30,9 @@ class InsertMultipleQueryTest extends TestCase
         $this->object->addRow(['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']);
         $this->object->addRow(['fld1' => 'D', 'fld2' => 'E', 'fld3' => 'F']);
 
-        $params = [];
-        $sql = $this->object->build($params);
+        $sqlObject = $this->object->build();
 
-        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 )  values  ( :fld11, :fld21, :fld31 ), ( :fld12, :fld22, :fld32 )', $sql);
+        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 )  values  ( :fld11, :fld21, :fld31 ), ( :fld12, :fld22, :fld32 )', $sqlObject->getSql());
         $this->assertEquals([
             'fld11' => 'A',
             'fld21' => 'B',
@@ -41,7 +40,7 @@ class InsertMultipleQueryTest extends TestCase
             'fld12' => 'D',
             'fld22' => 'E',
             'fld32' => 'F',
-        ], $params);
+        ], $sqlObject->getParameters());
     }
 
     public function testInsertStatic()
@@ -52,9 +51,9 @@ class InsertMultipleQueryTest extends TestCase
         $query->addRow(['fld1' => 'D', 'fld2' => 'E', 'fld3' => 'F']);
 
         $params = [];
-        $sql = $query->build($params);
+        $sqlObject = $query->build();
 
-        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 )  values  ( :fld11, :fld21, :fld31 ), ( :fld12, :fld22, :fld32 )', $sql);
+        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 )  values  ( :fld11, :fld21, :fld31 ), ( :fld12, :fld22, :fld32 )', $sqlObject->getSql());
         $this->assertEquals([
             'fld11' => 'A',
             'fld21' => 'B',
@@ -62,7 +61,7 @@ class InsertMultipleQueryTest extends TestCase
             'fld12' => 'D',
             'fld22' => 'E',
             'fld32' => 'F',
-        ], $params);
+        ], $sqlObject->getParameters());
     }
 
     public function testInsertError()

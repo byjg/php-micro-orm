@@ -2,18 +2,43 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class InsertQuery extends Updatable
 {
-    protected $fields = [];
+    protected array $fields = [];
 
-    public static function getInstance()
+    public static function getInstance(string $table = null, array $fields = []): self
     {
-        return new InsertQuery();
+        $query = new InsertQuery();
+        if (!is_null($table)) {
+            $query->table($table);
+        }
+
+        foreach ($fields as $field => $value) {
+            $query->field($field, $value);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Fields to be used for the INSERT
+     * Example:
+     *   $query->fields(['name', 'price']);
+     *
+     * @param string $field
+     * @param int|float|bool|string|LiteralInterface|null $value
+     * @return $this
+     */
+    public function field(string $field, int|float|bool|string|LiteralInterface|null $value): self
+    {
+        $this->fields[$field] = $value;
+        return $this;
     }
 
     /**
@@ -24,35 +49,36 @@ class InsertQuery extends Updatable
      * @param array $fields
      * @return $this
      */
-    public function fields(array $fields)
+    public function fields(array $fields): static
     {
-        $this->fields = array_merge($this->fields, (array)$fields);
-        
+        // swap the key and value of the $fields array and set null as value
+        $fields = array_flip($fields);
+        $fields = array_map(function ($item) {
+            return null;
+        }, $fields);
+
+        $this->fields = array_merge($this->fields, $fields);
+
         return $this;
     }
 
-    protected function getFields()
+    protected function getFields(): string
     {
-        if (empty($this->fields)) {
-            return ' * ';
-        }
-
         return ' ' . implode(', ', $this->fields) . ' ';
     }
-    
+
     /**
-     * @param $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @return SqlObject
+     * @throws OrmInvalidFieldsException
      */
-    public function build(&$params, DbFunctionsInterface $dbHelper = null)
+    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
         if (empty($this->fields)) {
-            throw new OrmInvalidFieldsException('You must specifiy the fields for insert');
+            throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
-        $fieldsStr = $this->fields;
+        $fieldsStr = array_keys($this->fields);
         if (!is_null($dbHelper)) {
             $fieldsStr = $dbHelper->delimiterField($fieldsStr);
         }
@@ -66,15 +92,21 @@ class InsertQuery extends Updatable
             . $tableStr
             . '( ' . implode(', ', $fieldsStr) . ' ) '
             . ' values '
-            . '( [[' . implode(']], [[', $this->fields) . ']] ) ';
+            . '( :' . implode(', :', array_keys($this->fields)) . ' ) ';
 
-        return ORMHelper::processLiteral($sql, $params);
+        $params = $this->fields;
+        $sql = ORMHelper::processLiteral($sql, $params);
+        return new SqlObject($sql, $params, SqlObjectEnum::INSERT);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
-            ->fields($this->fields)
+            ->fields(array_keys($this->fields))
             ->table($this->table);
 
         foreach ($this->where as $item) {
