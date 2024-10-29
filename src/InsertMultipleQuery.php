@@ -4,11 +4,12 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 
 class InsertMultipleQuery extends Updatable
 {
-    protected $fields = [];
-    protected $row = [];
+    protected array $fields = [];
+    protected array $row = [];
 
     public static function getInstance(string $table = null, array $fields = []): self
     {
@@ -22,14 +23,14 @@ class InsertMultipleQuery extends Updatable
         return $query;
     }
 
-    public function fields(array $fields)
+    public function fields(array $fields): static
     {
         $this->fields = $fields;
         $this->row = [];
         return $this;
     }
 
-    public function addRow($row)
+    public function addRow(array $row): static
     {
         if (count($this->fields) !== count($row)) {
             throw new \InvalidArgumentException('The row must have the same number of fields');
@@ -44,15 +45,16 @@ class InsertMultipleQuery extends Updatable
         }
 
         $this->row[] = $rowToAdd;
+
+        return $this;
     }
 
     /**
-     * @param $params
      * @param DbFunctionsInterface|null $dbHelper
-     * @return null|string|string[]
-     * @throws \ByJG\MicroOrm\Exception\OrmInvalidFieldsException
+     * @return SqlObject
+     * @throws OrmInvalidFieldsException
      */
-    public function build(&$params, DbFunctionsInterface $dbHelper = null)
+    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -87,7 +89,9 @@ class InsertMultipleQuery extends Updatable
             $rowNum++;
         }
 
-        return ORMHelper::processLiteral(trim($sql, ","), $params);
+        $sql = ORMHelper::processLiteral(trim($sql, ","), $params);
+
+        return new SqlObject($sql, $params);
     }
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface

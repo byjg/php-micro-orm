@@ -3,25 +3,26 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class Recursive
 {
-    protected $name;
-    protected $fields = [];
-    protected $where = [];
-    protected $dbDriver = null;
+    protected string $name;
+    protected array $fields = [];
+    protected array $where = [];
+    protected ?DbDriverInterface $dbDriver = null;
 
-    public static function getInstance($name)
+    public static function getInstance(string $name): Recursive
     {
         return new self($name);
     }
 
-    public function __construct($name)
+    public function __construct(string $name)
     {
         $this->name = $name;
     }
 
-    public function getTableName()
+    public function getTableName(): string
     {
         return $this->name;
     }
@@ -30,7 +31,7 @@ class Recursive
      * Example:
      *   $recursive->field('id', 1, 'id + 10');
      */
-    public function field($name, $base, $recursion)
+    public function field(string $name, string|int|LiteralInterface $base, string $recursion): static
     {
         $this->fields[$name] = ["$base as $name", $recursion];
         return $this;
@@ -41,37 +42,35 @@ class Recursive
      *    $recursive->filter('price > [[amount]]', [ 'amount' => 1000] );
      *
      * @param string $filter
-     * @param array $params
      * @return $this
      */
-    public function where($filter)
+    public function where(string $filter): static
     {
         $this->where[] = [ 'filter' => $filter ];
         return $this;
     }
 
-    public function build(DbDriverInterface $dbDriver = null)
+    public function build(DbDriverInterface $dbDriver = null): SqlObject
     {
         $this->dbDriver = $dbDriver;
 
-        $sql = "WITH RECURSIVE {$this->name}(" . implode(", ", array_keys($this->fields)) . ") AS (";
+        $sql = "WITH RECURSIVE $this->name(" . implode(", ", array_keys($this->fields)) . ") AS (";
         $sql .= $this->getBase();
         $sql .= " UNION ALL ";
         $sql .= $this->getRecursion();
         $sql .= ") ";
-        return $sql;
+        return new SqlObject($sql);
     }
 
-    protected function getBase()
+    protected function getBase(): string
     {
-        $sql = "SELECT " . implode(", ", array_column($this->fields, 0));
-        return $sql;
+        return "SELECT " . implode(", ", array_column($this->fields, 0));
     }
 
-    protected function getRecursion()
+    protected function getRecursion(): string
     {
         $sql = "SELECT " . implode(", ", array_column($this->fields, 1));
-        $sql .= " FROM {$this->name}";
+        $sql .= " FROM $this->name";
         $sql .= ' WHERE ' . implode(' AND ', array_column($this->where, 'filter'));
     
         return $sql;

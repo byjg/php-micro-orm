@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm\Exception;
 
-class OrmBeforeInvalidException extends \Exception
+use Exception;
+
+class OrmBeforeInvalidException extends Exception
 {
 
 }

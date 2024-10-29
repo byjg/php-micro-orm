@@ -1,18 +1,14 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
-use ByJG\MicroOrm\Literal;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\MicroOrm\Updatable;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/Model/Items.php';
+use Tests\Model\Items;
 
 class RepositoryPkListTest extends TestCase
 {
@@ -36,7 +32,7 @@ class RepositoryPkListTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
+        $this->dbDriver = Factory::getDbInstance(self::URI);
 
         $this->dbDriver->execute('CREATE TABLE items (
             storeid INTEGER,

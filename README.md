@@ -56,6 +56,97 @@ These are the key components:
 * DbDriverIntarce is the implementation to the Database connection.
 * Repository put all this together
 
+
+## Getting Started
+
+### Table Structure
+
+We have the following table structure in the database for this example:
+
+```sql
+CREATE TABLE `mytable` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `company_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+We want to be able to interact with this table using the ORM.
+
+### Defining the Model
+
+A Model in our context is a class that symbolizes the data you wish to store or fetch from the database.
+This Model class can be as simple as a class with public properties. 
+Alternatively, it can be a class equipped with getter and setter methods for more controlled access and 
+manipulation of the data. 
+
+To map the database fields, you can add attributes to the Model class. Each property in the Model class represents a field in the database. 
+
+Let's look at an example:
+```php
+#[TableAttribute(tableName: 'mytable')]
+class MyModel
+{
+    #[FieldAttribute(primaryKey: true)]
+    public ?int $id;
+
+    #[FieldAttribute()]
+    public ?string $name;
+
+    #[FieldAttribute(fieldName: 'company_id')
+    public ?int $companyId;
+}
+```
+
+In this example, we have a class `MyModel` with three properties: `id`, `name`, and `companyId`.
+
+The `id` property is marked as a primary key. The `name` property is a simple field.
+The `companyId` property is a field with a different name in the database `company_id`.
+
+The `TableAttribute` is used to define the table name in the database.
+
+### Connecting the repository
+
+After defining the Model, you can connect the Model with the repository.
+
+```php
+$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
+
+$repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
+```
+
+### Querying the database
+
+You can query the database using the repository.
+
+```php
+$myModel = $repository->get(1);
+```
+
+or
+
+```php
+$query = Query::getInstance()
+    ->field('name')
+    ->where('company_id = :cid', ['cid' => 1]);
+
+$result = $repository->getByQuery($query);
+```
+
+or, the same example above:
+
+```php
+$filterModel = $repository->entity([
+    'company_id' => 1
+]);
+
+$query = $repository->queryInstance($filterModel);
+$query->field('name');
+
+$result = $repository->getByQuery($query);
+```
+
 ## Basics
 
 * [Defining the Model](docs/getting-started-model.md)
@@ -71,7 +162,6 @@ These are the key components:
 * [Using FieldAlias](docs/using-fieldalias.md)
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
-
 
 ## Install
 

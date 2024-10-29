@@ -4,13 +4,14 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
+use ByJG\MicroOrm\Interface\UpdateBuilderInterface;
 
 abstract class Updatable implements UpdateBuilderInterface
 {
-    protected $table = "";
-    protected $where = [];
+    use WhereTrait;
+
+    protected string $table = "";
+    protected array $where = [];
 
     /**
      * Example
@@ -19,7 +20,7 @@ abstract class Updatable implements UpdateBuilderInterface
      * @param string $table
      * @return $this
      */
-    public function table($table)
+    public function table(string $table): static
     {
         $this->table = $table;
 
@@ -34,34 +35,16 @@ abstract class Updatable implements UpdateBuilderInterface
      * @param array $params
      * @return $this
      */
-    public function where($filter, array $params = [])
+    public function where(string $filter, array $params = []): static
     {
         $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
         return $this;
     }
 
-    
-    protected function getWhere()
+
+    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null): bool
     {
-        $whereStr = [];
-        $params = [];
-
-        foreach ($this->where as $item) {
-            $whereStr[] = $item['filter'];
-            $params = array_merge($params, $item['params']);
-        }
-        
-        if (empty($whereStr)) {
-            return null;
-        }
-        
-        return [ implode(' AND ', $whereStr), $params ];
+        $sqlObject = $this->build($dbHelper);
+        return $dbDriver->execute($sqlObject->getSql(), array_merge($sqlObject->getParameters(), $params));
     }
-
-    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null)
-    {
-        $sql = $this->build($params, $dbHelper);
-        return $dbDriver->execute($sql, $params);
-    }
-
 }

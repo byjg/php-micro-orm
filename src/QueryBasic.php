@@ -5,17 +5,20 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Serializer\SerializerObject;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\Serializer\Serialize;
 
 class QueryBasic implements QueryBuilderInterface
 {
-    protected $fields = [];
-    protected $table = "";
-    protected $alias = "";
-    protected $where = [];
-    protected $join = [];
-    protected $dbDriver = null;
-    protected $recursive = null;
+    use WhereTrait;
+
+    protected array $fields = [];
+    protected QueryBasic|string $table = "";
+    protected ?string $alias = "";
+    protected array $where = [];
+    protected array $join = [];
+    protected DbDriverInterface|null $dbDriver = null;
+    protected ?Recursive $recursive = null;
 
     public static function getInstance(): QueryBasic
     {
@@ -28,9 +31,10 @@ class QueryBasic implements QueryBuilderInterface
      *
      * @param array $fields
      * @return $this
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function fields(array $fields)
+    public function fields(array $fields): static
     {
         foreach ($fields as $field) {
             $this->field($field);
@@ -39,7 +43,11 @@ class QueryBasic implements QueryBuilderInterface
         return $this;
     }
 
-    public function field($field, $alias = null)
+    /**
+     * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
+     */
+    public function field(Mapper|QueryBasic|string $field, ?string $alias = null): static
     {
         if ($field instanceof Mapper) {
             $this->addFieldFromMapper($field);
@@ -60,14 +68,15 @@ class QueryBasic implements QueryBuilderInterface
     }
 
     /**
-     * @param \ByJG\MicroOrm\Mapper $mapper
+     * @param Mapper $mapper
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    protected function addFieldFromMapper(Mapper $mapper)
+    protected function addFieldFromMapper(Mapper $mapper): void
     {
         $entityClass = $mapper->getEntity();
         $entity = new $entityClass();
-        $serialized = SerializerObject::instance($entity)->serialize();
+        $serialized = Serialize::from($entity)->toArray();
 
         foreach (array_keys($serialized) as $fieldName) {
             $fieldMapping = $mapper->getFieldMap($fieldName);
@@ -90,11 +99,11 @@ class QueryBasic implements QueryBuilderInterface
      * Example
      *    $query->table('product');
      *
-     * @param string $table
-     * @param string $alias
+     * @param QueryBasic|string $table
+     * @param string|null $alias
      * @return $this
      */
-    public function table($table, $alias = null)
+    public function table(QueryBasic|string $table, ?string $alias = null): static
     {
         $this->table = $table;
         $this->alias = $alias;
@@ -106,12 +115,12 @@ class QueryBasic implements QueryBuilderInterface
      * Example:
      *    $query->join('sales', 'product.id = sales.id');
      *
-     * @param Query|string $table
+     * @param string|QueryBasic $table
      * @param string $filter
-     * @param string $alias
+     * @param string|null $alias
      * @return $this
      */
-    public function join($table, $filter, $alias = null)
+    public function join(QueryBasic|string $table, string $filter, ?string $alias = null): static
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'INNER', 'alias' => empty($alias) ? $table : $alias];
         return $this;
@@ -121,12 +130,12 @@ class QueryBasic implements QueryBuilderInterface
      * Example:
      *    $query->leftJoin('sales', 'product.id = sales.id');
      *
-     * @param Query|string $table
+     * @param string|QueryBasic $table
      * @param string $filter
-     * @param string $alias
+     * @param string|null $alias
      * @return $this
      */
-    public function leftJoin($table, $filter, $alias = null)
+    public function leftJoin(QueryBasic|string $table, string $filter, ?string $alias = null): static
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'LEFT', 'alias' => empty($alias) ? $table : $alias];
         return $this;
@@ -136,24 +145,24 @@ class QueryBasic implements QueryBuilderInterface
      * Example:
      *    $query->rightJoin('sales', 'product.id = sales.id');
      *
-     * @param Query|string $table
+     * @param string|QueryBasic $table
      * @param string $filter
-     * @param string $alias
+     * @param string|null $alias
      * @return $this
      */
-    public function rightJoin($table, $filter, $alias = null)
+    public function rightJoin(QueryBasic|string $table, string $filter, ?string $alias = null): static
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>$filter, 'type' => 'RIGHT', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
-    public function crossJoin($table, $alias = null)
+    public function crossJoin(QueryBasic|string $table, ?string $alias = null): static
     {
         $this->join[] = [ 'table'=>$table, 'filter'=>'', 'type' => 'CROSS', 'alias' => empty($alias) ? $table : $alias];
         return $this;
     }
 
-    public function withRecursive(Recursive $recursive)
+    public function withRecursive(Recursive $recursive): static
     {
         $this->recursive = $recursive;
         if (empty($this->table)) {
@@ -163,21 +172,9 @@ class QueryBasic implements QueryBuilderInterface
     }
 
     /**
-     * Example:
-     *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     *
-     * @param string $filter
-     * @param array $params
-     * @return $this
+     * @throws InvalidArgumentException
      */
-    public function where($filter, array $params = [])
-    {
-        $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
-        return $this;
-    }
-
-
-    protected function getFields()
+    protected function getFields(): array
     {
         if (empty($this->fields)) {
             return [' * ', [] ];
@@ -193,8 +190,8 @@ class QueryBasic implements QueryBuilderInterface
                 $fieldList .= $field;
             } elseif ($field instanceof QueryBasic) {
                 $subQuery = $field->build($this->dbDriver);
-                $fieldList .= '(' . $subQuery['sql'] . ') as ' . $alias;
-                $params = array_merge($params, $subQuery['params']);
+                $fieldList .= '(' . $subQuery->getSql() . ') as ' . $alias;
+                $params = array_merge($params, $subQuery->getParameters());
             } else {
                 $fieldList .= $field . ' as ' . $alias;
             }
@@ -207,7 +204,7 @@ class QueryBasic implements QueryBuilderInterface
      * @return array
      * @throws InvalidArgumentException
      */
-    protected function getJoin()
+    protected function getJoin(): array
     {
         [ $joinStr, $params ] = $this->buildTable($this->table, $this->alias);
         foreach ($this->join as $item) {
@@ -221,52 +218,38 @@ class QueryBasic implements QueryBuilderInterface
         return [ $joinStr, $params ];
     }
 
-    protected function buildTable($table, $alias, $supportParams = true)
+    /**
+     * @throws InvalidArgumentException
+     */
+    protected function buildTable(QueryBasic|string $table, QueryBasic|string|null $alias, bool $supportParams = true): array
     {
         $params = [];
         if ($table instanceof QueryBasic) {
             $subQuery = $table->build($this->dbDriver);
-            if (!empty($subQuery["params"]) && !$supportParams) {
+            if (!empty($subQuery->getParameters()) && !$supportParams) {
                 throw new InvalidArgumentException("SubQuery does not support filters");
             }
             if (empty($alias) || $alias instanceof QueryBasic) {
                 throw new InvalidArgumentException("SubQuery requires you define an alias");
             }
-            $table = "({$subQuery["sql"]})";
-            $params = $subQuery["params"];
+            $table = "({$subQuery->getSql()})";
+            $params = $subQuery->getParameters();
         }
         return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
     }   
     
-    protected function getWhere()
-    {
-        $whereStr = [];
-        $params = [];
-
-        foreach ($this->where as $item) {
-            $whereStr[] = $item['filter'];
-            $params = array_merge($params, $item['params']);
-        }
-        
-        if (empty($whereStr)) {
-            return null;
-        }
-        
-        return [ implode(' AND ', $whereStr), $params ];
-    }
-
     /**
-     * @param \ByJG\AnyDataset\Db\DbDriverInterface|null $dbDriver
-     * @return array
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @param DbDriverInterface|null $dbDriver
+     * @return SqlObject
+     * @throws InvalidArgumentException
      */
-    public function build(?DbDriverInterface $dbDriver = null)
+    public function build(?DbDriverInterface $dbDriver = null): SqlObject
     {
         $this->dbDriver = $dbDriver;
 
         $sql = "";
         if (!empty($this->recursive)) {
-            $sql = $this->recursive->build($dbDriver);
+            $sql = $this->recursive->build($dbDriver)->getSql();
         }
 
         [ $fieldList , $params ] = $this->getFields();
@@ -286,12 +269,12 @@ class QueryBasic implements QueryBuilderInterface
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return [ 'sql' => $sql, 'params' => $params ];
+        return new SqlObject($sql, $params);
     }
 
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
     }
 }

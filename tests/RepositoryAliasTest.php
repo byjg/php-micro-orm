@@ -1,6 +1,6 @@
 <?php
 
-namespace Test;
+namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
@@ -10,8 +10,7 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
-
-require_once __DIR__ . '/Model/Customer.php';
+use Tests\Model\Customer;
 
 class RepositoryAliasTest extends TestCase
 {
@@ -35,7 +34,7 @@ class RepositoryAliasTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbRelationalInstance(self::URI);
+        $this->dbDriver = Factory::getDbInstance(self::URI);
 
         $this->dbDriver->execute('create table customers (
             id integer primary key  autoincrement,
@@ -95,8 +94,7 @@ class RepositoryAliasTest extends TestCase
 
     public function testQueryWithAlias()
     {
-        $query = Query::getInstance()
-            ->table('customers')
+        $query = $this->repository->queryInstance()
             ->fields(
                 [
                     'id',

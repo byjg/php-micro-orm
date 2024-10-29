@@ -4,19 +4,18 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\Util\Uri;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 
 class Union implements QueryBuilderInterface
 {
-    protected $queryList = [];
+    protected array $queryList = [];
 
-    protected $queryAgreggation = null;
+    protected ?Query $queryAggregation = null;
 
     public function __construct()
     {
-        $this->queryAgreggation = Query::getInstance()->table("__TMP__");
+        $this->queryAggregation = Query::getInstance()->table("__TMP__");
     }
 
     public static function getInstance(): Union
@@ -24,6 +23,9 @@ class Union implements QueryBuilderInterface
         return new Union();
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function addQuery(QueryBasic $query): Union
     {
         if (get_class($query) !== QueryBasic::class) {
@@ -43,64 +45,67 @@ class Union implements QueryBuilderInterface
      */
     public function orderBy(array $fields): Union
     {
-        $this->queryAgreggation->orderBy($fields);
+        $this->queryAggregation->orderBy($fields);
 
         return $this;
     }
 
     public function groupBy(array $fields): Union
     {
-        $this->queryAgreggation->groupBy($fields);
+        $this->queryAggregation->groupBy($fields);
 
         return $this;
     }
 
     /**
-     * @param $start
-     * @param $end
+     * @param int $start
+     * @param int $end
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function limit($start, $end): Union
+    public function limit(int $start, int $end): Union
     {
-        $this->queryAgreggation->limit($start, $end);
+        $this->queryAggregation->limit($start, $end);
         return $this;
     }
 
     /**
-     * @param $top
+     * @param int $top
      * @return $this
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function top($top): Union
+    public function top(int $top): Union
     {
-        $this->queryAgreggation->top($top);
+        $this->queryAggregation->top($top);
         return $this;
     }
 
-    public function build(?DbDriverInterface $dbDriver  = null)
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function build(?DbDriverInterface $dbDriver  = null): SqlObject
     {
         $unionQuery = [];
         $params = [];
         foreach ($this->queryList as $query) {
             $build = $query->build($dbDriver);
-            $unionQuery[] = $build['sql'];
-            $params = array_merge($params, $build['params']);
+            $unionQuery[] = $build->getSql();
+            $params = array_merge($params, $build->getParameters());
         }
 
         $unionQuery = implode(" UNION ", $unionQuery);
 
-        $build = $this->queryAgreggation->build($dbDriver);
+        $build = $this->queryAggregation->build($dbDriver);
 
-        $unionQuery = trim($unionQuery . " " . substr($build['sql'], strpos($build['sql'], "__TMP__") + 8));
+        $unionQuery = trim($unionQuery . " " . substr($build->getSql(), strpos($build->getSql(), "__TMP__") + 8));
 
-        return ["sql" => $unionQuery, "params" => $params];
+        return new SqlObject($unionQuery, $params);
     }
 
 
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject['sql'], $sqlObject['params']);
+        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
     }
 }
