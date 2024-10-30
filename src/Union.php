@@ -103,9 +103,9 @@ class Union implements QueryBuilderInterface
     }
 
 
-    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null): GenericIterator
+    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
+        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters(), $cache?->getCache(), $cache?->getTtl() ?? 60);
     }
 }

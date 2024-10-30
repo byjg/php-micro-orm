@@ -252,7 +252,7 @@ class Repository
      * @param Mapper[] $mapper
      * @return array
      */
-    public function getByQuery(QueryBuilderInterface $query, array $mapper = []): array
+    public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
     {
         $mapper = array_merge([$this->mapper], $mapper);
         $sqlBuild = $query->build($this->getDbDriver());
@@ -260,7 +260,7 @@ class Repository
         $params = $sqlBuild->getParameters();
         $sql = $sqlBuild->getSql();
         $result = [];
-        $iterator = $this->getDbDriver()->getIterator($sql, $params);
+        $iterator = $this->getDbDriver()->getIterator($sql, $params, $cache?->getCache(), $cache?->getTtl() ?? 60);
 
         foreach ($iterator as $row) {
             $collection = [];
