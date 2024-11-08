@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use Closure;
 
 class FieldMapping
@@ -12,14 +13,19 @@ class FieldMapping
     private string $fieldName;
 
     /**
-     * @var Closure
+     * @var callable
      */
-    private Closure $updateFunction;
+    private mixed $updateFunction;
 
     /**
-     * @var Closure
+     * @var callable
      */
-    private Closure $selectFunction;
+    private mixed $selectFunction;
+
+    /**
+     * @var callable
+     */
+    private mixed $insertFunction;
 
     /**
      * @var string
@@ -48,19 +54,26 @@ class FieldMapping
         $this->fieldAlias = $propertyName;
         $this->propertyName = $propertyName;
 
-        $this->selectFunction = MapperClosure::standard();
-        $this->updateFunction = MapperClosure::standard();
+        $this->selectFunction = MapperFunctions::STANDARD;
+        $this->updateFunction = MapperFunctions::STANDARD;
+        $this->insertFunction = MapperFunctions::READ_ONLY;
     }
 
-    public function withUpdateFunction(Closure $updateFunction): static
+    public function withUpdateFunction(callable $updateFunction): static
     {
         $this->updateFunction = $updateFunction;
         return $this;
     }
 
-    public function withSelectFunction(Closure $selectFunction): static
+    public function withSelectFunction(callable $selectFunction): static
     {
         $this->selectFunction = $selectFunction;
+        return $this;
+    }
+
+    public function withInsertFunction(callable $insertFunction): static
+    {
+        $this->insertFunction = $insertFunction;
         return $this;
     }
 
@@ -122,9 +135,14 @@ class FieldMapping
         return call_user_func_array($this->selectFunction, [$value, $instance]);
     }
 
-    public function getUpdateFunctionValue(mixed $value, mixed $instance): mixed
+    public function getUpdateFunctionValue(mixed $value, mixed $instance, DbFunctionsInterface $helper): mixed
     {
-        return call_user_func_array($this->updateFunction, [$value, $instance]);
+        return call_user_func_array($this->updateFunction, [$value, $instance, $helper]);
+    }
+
+    public function getInsertFunctionValue(mixed $value, mixed $instance, DbFunctionsInterface $helper): mixed
+    {
+        return call_user_func_array($this->insertFunction, [$value, $instance, $helper]);
     }
 
     public function isSyncWithDb(): bool

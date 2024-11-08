@@ -2,50 +2,39 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\MicroOrm\Literal\HexUuidLiteral;
-use ByJG\MicroOrm\Literal\Literal;
 use Closure;
 
+/**
+ * Class MapperClosure
+ * @deprecated Use MapperFunctions instead
+ */
 class MapperClosure
 {
     public static function standard(): Closure
     {
         return function ($value) {
-            if (empty($value) && $value !== 0 && $value !== '0' && $value !== false) {
-                return null;
-            }
-            return $value;
+            return MapperFunctions::standard($value);
         };
     }
 
     public static function readOnly(): Closure
     {
         return function () {
-            return false;
+            return MapperFunctions::readOnly();
         };
     }
 
     public static function updateBinaryUuid(): Closure
     {
         return (function ($value, $instance) {
-            if (empty($value)) {
-                return null;
-            }
-            if (!($value instanceof Literal)) {
-                $value = new HexUuidLiteral($value);
-            }
-            return $value;
+            return MapperFunctions::updateBinaryUuid($value);
         });
     }
 
     public static function selectBinaryUuid(): Closure
     {
         return (function ($value, $instance) {
-            $fieldValue = HexUuidLiteral::getFormattedUuid($value, false);
-            if (is_null($fieldValue)) {
-                return null;
-            }
-            return $fieldValue;
+            return MapperFunctions::selectBinaryUuid($value);
         });
     }
 

@@ -20,7 +20,8 @@ class Mapper
     private string $entity;
     private string $table;
     private array $primaryKey;
-    private ?Closure $primaryKeySeedFunction = null;
+    private mixed $primaryKeySeedFunction = null;
+    private bool $softDelete = false;
 
     /**
      * @var FieldMapping[]
@@ -69,6 +70,7 @@ class Mapper
             throw new OrmModelInvalidException("Entity '$entity' does not have the TableAttribute");
         }
 
+        /** @var TableAttribute $tableAttribute */
         $tableAttribute = $attributes[0]->newInstance();
         $this->table = $tableAttribute->getTableName();
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
@@ -92,7 +94,7 @@ class Mapper
         }
     }
 
-    public function withPrimaryKeySeedFunction(Closure $primaryKeySeedFunction): static
+    public function withPrimaryKeySeedFunction(callable $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
@@ -135,6 +137,11 @@ class Mapper
             ->withFieldName($fieldName)
             ->withFieldAlias($fieldAlias)
         ;
+
+        if ($fieldName === 'deleted_at') {
+            $this->softDelete = true;
+        }
+
         return $this;
     }
 
@@ -314,8 +321,11 @@ class Mapper
             return null;
         }
 
-        $func = $this->primaryKeySeedFunction;
+        return call_user_func_array($this->primaryKeySeedFunction, [$dbDriver, $instance]);
+    }
 
-        return $func($dbDriver, $instance);
+    public function getSoftDelete(): bool
+    {
+        return $this->softDelete;
     }
 }

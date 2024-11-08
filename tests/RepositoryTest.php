@@ -28,6 +28,8 @@ use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
+use DateTime;
+use Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Info;
@@ -80,7 +82,10 @@ class RepositoryTest extends TestCase
         $this->dbDriver->execute('create table info (
             id integer primary key  autoincrement,
             iduser INTEGER,
-            property number(10,2));'
+            property number(10,2),
+            created_at datetime,
+            updated_at datetime,
+            deleted_at datetime);'
         );
         $this->dbDriver->execute("insert into info (iduser, property) values (1, 30.4)");
         $this->dbDriver->execute("insert into info (iduser, property) values (1, 1250.96)");
@@ -147,7 +152,7 @@ class RepositoryTest extends TestCase
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($instance->getCreatedate());
+                $date = new DateTime($instance->getCreatedate());
                 return intval($date->format('Y'));
             })
         );
@@ -348,7 +353,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($instance->getCreateDate());
+                $date = new DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
             })
         );
@@ -545,7 +550,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new \DateTime($instance->getCreateDate());
+                $date = new DateTime($instance->getCreateDate());
                 return intval($date->format('Y'));
             })
         );
@@ -692,7 +697,7 @@ class RepositoryTest extends TestCase
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function testGetScalar()
     {
@@ -1211,6 +1216,8 @@ class RepositoryTest extends TestCase
             ->orderBy(['property']);
 
         $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+
+        /** @var ModelWithAttributes[] $result */
         $result = $infoRepository->getByQuery($query);
 
         $this->assertEquals(count($result), 1);
@@ -1218,6 +1225,133 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getPk());
         $this->assertEquals(3, $result[0]->iduser);
         $this->assertEquals(3.5, $result[0]->value);
+        $this->assertNull($result[0]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($result[0]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($result[0]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testMappingAttributeInsert()
+    {
+        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+
+        $query = new Query();
+        $query->table($this->infoMapper->getTable())
+            ->where('iduser = :id', ['id' => 123])
+            ->orderBy(['property']);
+        $result = $infoRepository->getByQuery($query);
+        $this->assertEmpty($result);
+
+        $info = new ModelWithAttributes();
+        $info->iduser = 123;
+        $info->value = 98.5;
+        $infoRepository->save($info);
+
+        /** @var ModelWithAttributes[] $result */
+        $result = $infoRepository->getByQuery($query);
+        $this->assertEquals(count($result), 1);
+
+        $this->assertEquals(4, $result[0]->getPk());
+        $this->assertEquals(123, $result[0]->iduser);
+        $this->assertEquals(98.5, $result[0]->value);
+        $this->assertNotNull($result[0]->getCreatedAt());
+        $this->assertNotNull($result[0]->getUpdatedAt());
+        $this->assertNull($result[0]->getDeletedAt());
+
+        // Check if the updated_at works
+        sleep(2);
+        $info->value = 99.5;
+        $infoRepository->save($info);
+        /** @var ModelWithAttributes[] $result2 */
+        $result2 = $infoRepository->getByQuery($query);
+        $this->assertEquals(count($result2), 1);
+
+        $this->assertEquals(4, $result2[0]->getPk());
+        $this->assertEquals(123, $result2[0]->iduser);
+        $this->assertEquals(99.5, $result2[0]->value);
+        $this->assertNotNull($result2[0]->getCreatedAt());
+        $this->assertEquals($result[0]->getCreatedAt(), $result2[0]->getCreatedAt());
+        $this->assertNotNull($result2[0]->getUpdatedAt());
+        $this->assertNotEquals($result[0]->getUpdatedAt(), $result2[0]->getUpdatedAt());
+        $this->assertNull($result2[0]->getDeletedAt());
+    }
+
+    public function testMappingAttributeSoftDeleteAndGetByQuery()
+    {
+        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+
+        $query = $infoRepository->queryInstance()
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+        $result = $infoRepository->getByQuery($query);
+
+        $this->assertEquals(3, $result[0]->getPk());
+        $this->assertEquals(3, $result[0]->iduser);
+        $this->assertEquals(3.5, $result[0]->value);
+        $this->assertNull($result[0]->getCreatedAt());
+        $this->assertNull($result[0]->getUpdatedAt());
+        $this->assertNull($result[0]->getDeletedAt());
+
+        $infoRepository->delete(3);
+
+        $result = $infoRepository->getByQuery($query);
+        $this->assertCount(0, $result);
+
+//        // Check if the updated_at works
+//        sleep(2);
+//        $info->value = 99.5;
+//        $infoRepository->save($info);
+//        /** @var ModelWithAttributes[] $result2 */
+//        $result2 = $infoRepository->getByQuery($query);
+//        $this->assertEquals(count($result2), 1);
+//
+//        $this->assertEquals(4, $result2[0]->getPk());
+//        $this->assertEquals(123, $result2[0]->iduser);
+//        $this->assertEquals(99.5, $result2[0]->value);
+//        $this->assertNotNull($result2[0]->getCreatedAt());
+//        $this->assertEquals($result[0]->getCreatedAt(), $result2[0]->getCreatedAt());
+//        $this->assertNotNull($result2[0]->getUpdatedAt());
+//        $this->assertNotEquals($result[0]->getUpdatedAt(), $result2[0]->getUpdatedAt());
+//        $this->assertNull($result2[0]->getDeletedAt());
+    }
+
+    public function testMappingAttributeSoftDeleteAndGetByFilter()
+    {
+        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+
+        $iteratorFilter = new IteratorFilter();
+        $iteratorFilter->and('iduser', Relation::EQUAL, 3);
+        $result = $infoRepository->getByFilter($iteratorFilter);
+
+        $this->assertEquals(3, $result[0]->getPk());
+        $this->assertEquals(3, $result[0]->iduser);
+        $this->assertEquals(3.5, $result[0]->value);
+        $this->assertNull($result[0]->getCreatedAt());
+        $this->assertNull($result[0]->getUpdatedAt());
+        $this->assertNull($result[0]->getDeletedAt());
+
+        $infoRepository->delete(3);
+
+        $result = $infoRepository->getByFilter($iteratorFilter);
+        $this->assertCount(0, $result);
+    }
+
+    public function testMappingAttributeSoftDeleteAndGetByPK()
+    {
+        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+
+        $result = $infoRepository->get(3);
+
+        $this->assertEquals(3, $result->getPk());
+        $this->assertEquals(3, $result->iduser);
+        $this->assertEquals(3.5, $result->value);
+        $this->assertNull($result->getCreatedAt());
+        $this->assertNull($result->getUpdatedAt());
+        $this->assertNull($result->getDeletedAt());
+
+        $infoRepository->delete(3);
+
+        $result = $infoRepository->get(3);
+        $this->assertNull($result);
     }
 
     public function testQueryInstanceWithModel()

@@ -3,7 +3,7 @@
 namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
-use ByJG\MicroOrm\MapperClosure;
+use ByJG\MicroOrm\MapperFunctions;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class FieldUuidAttribute extends FieldAttribute
@@ -15,6 +15,6 @@ class FieldUuidAttribute extends FieldAttribute
         bool $syncWithDb = null
     )
     {
-        parent::__construct($primaryKey, $fieldName, $fieldAlias, $syncWithDb, MapperClosure::updateBinaryUuid(), MapperClosure::selectBinaryUuid());
+        parent::__construct($primaryKey, $fieldName, $fieldAlias, $syncWithDb, MapperFunctions::UPDATE_BINARY_UUID, MapperFunctions::SELECT_BINARY_UUID);
     }
 }

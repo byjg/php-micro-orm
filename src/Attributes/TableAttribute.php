@@ -3,16 +3,15 @@
 namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
-use Closure;
 
 #[Attribute(Attribute::TARGET_CLASS)]
 class TableAttribute
 {
 
     private string $tableName;
-    private ?Closure $primaryKeySeedFunction;
+    private mixed $primaryKeySeedFunction;
 
-    public function __construct(string $tableName, ?Closure $primaryKeySeedFunction = null)
+    public function __construct(string $tableName, callable $primaryKeySeedFunction = null)
     {
 
         $this->tableName = $tableName;
@@ -24,7 +23,7 @@ class TableAttribute
         return $this->tableName;
     }
 
-    public function getPrimaryKeySeedFunction(): ?Closure
+    public function getPrimaryKeySeedFunction(): ?callable
     {
         return $this->primaryKeySeedFunction;
     }
