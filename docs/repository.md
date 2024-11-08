@@ -39,7 +39,7 @@ $query = $repository->queryInstance($model);
 
 The `getDbDriver` method returns the database driver. It allows you to use SQL commands directly. 
 To find more about the database driver, please refer to the [AnyDataset documentation](https://github.com/byjg/anydataset)
-and the [Query](query.md).
+and the [Query](querying-the-database.md).
 
 ```php
 $dbDriver = $repository->getDbDriver();
