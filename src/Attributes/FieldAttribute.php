@@ -17,6 +17,7 @@ class FieldAttribute
     private ?bool $syncWithDb;
     private ?bool $primaryKey;
     private ?string $propertyName;
+    private ?string $parentTable;
 
     public function __construct(
         bool $primaryKey = null,
@@ -25,7 +26,8 @@ class FieldAttribute
         bool $syncWithDb = null,
         callable $updateFunction = null,
         callable $selectFunction = null,
-        callable $insertFunction = null
+        callable $insertFunction = null,
+        string   $parentTable = null
     )
     {
         $this->primaryKey = $primaryKey;
@@ -35,6 +37,7 @@ class FieldAttribute
         $this->updateFunction = $updateFunction;
         $this->selectFunction = $selectFunction;
         $this->syncWithDb = $syncWithDb;
+        $this->parentTable = $parentTable;
 
         if ($this->syncWithDb === false && !is_null($this->updateFunction)) {
             throw new InvalidArgumentException("You cannot have an updateFunction when syncWithDb is false");
@@ -78,5 +81,10 @@ class FieldAttribute
     public function isPrimaryKey(): ?bool
     {
         return $this->primaryKey;
+    }
+
+    public function getParentTable(): ?string
+    {
+        return $this->parentTable;
     }
 }

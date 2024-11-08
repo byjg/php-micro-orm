@@ -39,6 +39,8 @@ class FieldMapping
 
     private bool $syncWithDb = true;
 
+    private ?string $parentTable = null;
+
     public static function create(string $propertyName): FieldMapping
     {
         return new FieldMapping($propertyName);
@@ -86,6 +88,12 @@ class FieldMapping
     public function withFieldAlias(string $fieldAlias): static
     {
         $this->fieldAlias = $fieldAlias;
+        return $this;
+    }
+
+    public function withParentTable(string $parentTable): static
+    {
+        $this->parentTable = $parentTable;
         return $this;
     }
 
@@ -148,5 +156,10 @@ class FieldMapping
     public function isSyncWithDb(): bool
     {
         return $this->syncWithDb;
+    }
+
+    public function getParentTable(): ?string
+    {
+        return $this->parentTable;
     }
 }

@@ -23,11 +23,14 @@ class Mapper
     private mixed $primaryKeySeedFunction = null;
     private bool $softDelete = false;
 
+    private DatabaseRelationship $relationship;
+
     /**
      * @var FieldMapping[]
      */
     private array $fieldMap = [];
     private bool $preserveCaseName = false;
+    private ?string $tableAlias = null;
 
     /**
      * Mapper constructor.
@@ -41,7 +44,8 @@ class Mapper
     public function __construct(
         string $entity,
         ?string $table = null,
-        string|array|null $primaryKey = null
+        string|array|null $primaryKey = null,
+        ?string           $tableAlias = null
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
@@ -54,7 +58,9 @@ class Mapper
             $primaryKey = (array)$primaryKey;
 
             $this->table = $table;
+            $this->tableAlias = $tableAlias;
             $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+            $this->relationship = new DatabaseRelationship($this);
         }
     }
 
@@ -73,9 +79,11 @@ class Mapper
         /** @var TableAttribute $tableAttribute */
         $tableAttribute = $attributes[0]->newInstance();
         $this->table = $tableAttribute->getTableName();
+        $this->tableAlias = $tableAttribute->getTableAlias();
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
+        $this->relationship = new DatabaseRelationship($this);
 
         $this->primaryKey = [];
         foreach ($reflection->getProperties() as $property) {
@@ -90,6 +98,10 @@ class Mapper
 
             if ($fieldAttribute->isPrimaryKey()) {
                 $this->primaryKey[] = $this->fixFieldName($fieldAttribute->getFieldName());
+            }
+
+            if (!empty($fieldAttribute->getParentTable())) {
+                $this->relationship->addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
             }
         }
     }
@@ -141,6 +153,11 @@ class Mapper
         if ($fieldName === 'deleted_at') {
             $this->softDelete = true;
         }
+
+        if (!empty($fieldMapping->getParentTable())) {
+            $this->relationship->addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
+        }
+
 
         return $this;
     }
@@ -241,6 +258,11 @@ class Mapper
         return $this->table;
     }
 
+    public function getTableAlias(): string
+    {
+        return $this->tableAlias ?? $this->table;
+    }
+
     /**
      * @return array
      */
@@ -327,5 +349,10 @@ class Mapper
     public function getSoftDelete(): bool
     {
         return $this->softDelete;
+    }
+
+    public function getDatabaseRelationship(): DatabaseRelationship
+    {
+        return $this->relationship;
     }
 }

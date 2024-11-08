@@ -105,14 +105,14 @@ class Repository
         return $this->getMapper()->getEntity($values);
     }
 
-    public function queryInstance(object $model = null): Query
+    public function queryInstance(object $model = null, string ...$tales): Query
     {
         $query = Query::getInstance()
-            ->table($this->mapper->getTable())
+            ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
         ;
 
         if ($this->getMapper()->getSoftDelete()) {
-            $query->where('deleted_at is null');
+            $query->where("{$this->mapper->getTableAlias()}.deleted_at is null");
         }
 
         if (!is_null($model)) {
