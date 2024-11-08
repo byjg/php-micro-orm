@@ -187,8 +187,10 @@ class RepositoryTest extends TestCase
         $result = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
         $this->assertCount(1, $result);
 
+        $cacheObject = new CacheQueryResult($cacheEngine, "mykey", 120);
+
         // Get the result and save to cache
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: new CacheQueryResult($cacheEngine, 120))->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
         $this->assertCount(1, $result);
 
         // Delete the record
@@ -202,7 +204,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(0, $result);
 
         // Check if query with cache the record is found
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: new CacheQueryResult($cacheEngine, 120))->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
         $this->assertCount(1, $result);
     }
 
@@ -1288,8 +1290,10 @@ class RepositoryTest extends TestCase
         $result = $infoRepository->getByQuery($query);
         $this->assertCount(1, $result);
 
+        $cacheObject = new CacheQueryResult($cacheEngine, "qry",  120);
+
         // Get the result and save to cache
-        $result = $infoRepository->getByQuery($query, cache: new CacheQueryResult($cacheEngine, 120));
+        $result = $infoRepository->getByQuery($query, cache: $cacheObject);
         $this->assertCount(1, $result);
 
         // Delete the record
@@ -1303,7 +1307,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(0, $result);
 
         // Check if query with cache the record is found
-        $result = $infoRepository->getByQuery($query, cache: new CacheQueryResult($cacheEngine, 120));
+        $result = $infoRepository->getByQuery($query, cache: $cacheObject);
         $this->assertCount(1, $result);
     }
 

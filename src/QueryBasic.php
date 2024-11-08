@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\Serializer\Serialize;
@@ -275,6 +276,10 @@ class QueryBasic implements QueryBuilderInterface
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
     {
         $sqlObject = $this->build($dbDriver);
-        return $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters(), $cache?->getCache(), $cache?->getTtl() ?? 60);
+        $sqlStatement = new SqlStatement($sqlObject->getSql());
+        if (!empty($cache)) {
+            $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+        }
+        return $sqlStatement->getIterator($dbDriver, $sqlObject->getParameters());
     }
 }

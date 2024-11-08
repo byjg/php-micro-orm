@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -258,9 +259,12 @@ class Repository
         $sqlBuild = $query->build($this->getDbDriver());
 
         $params = $sqlBuild->getParameters();
-        $sql = $sqlBuild->getSql();
+        $sql = new SqlStatement($sqlBuild->getSql());
+        if (!empty($cache)) {
+            $sql->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+        }
         $result = [];
-        $iterator = $this->getDbDriver()->getIterator($sql, $params, $cache?->getCache(), $cache?->getTtl() ?? 60);
+        $iterator = $sql->getIterator($this->getDbDriver(), $params);
 
         foreach ($iterator as $row) {
             $collection = [];
