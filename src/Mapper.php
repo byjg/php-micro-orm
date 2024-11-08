@@ -23,8 +23,6 @@ class Mapper
     private mixed $primaryKeySeedFunction = null;
     private bool $softDelete = false;
 
-    private DatabaseRelationship $relationship;
-
     /**
      * @var FieldMapping[]
      */
@@ -60,7 +58,7 @@ class Mapper
             $this->table = $table;
             $this->tableAlias = $tableAlias;
             $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
-            $this->relationship = new DatabaseRelationship($this);
+            DatabaseRelationship::addMapper($this);
         }
     }
 
@@ -83,7 +81,7 @@ class Mapper
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
-        $this->relationship = new DatabaseRelationship($this);
+        DatabaseRelationship::addMapper($this);
 
         $this->primaryKey = [];
         foreach ($reflection->getProperties() as $property) {
@@ -101,7 +99,7 @@ class Mapper
             }
 
             if (!empty($fieldAttribute->getParentTable())) {
-                $this->relationship->addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
+                DatabaseRelationship::addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
             }
         }
     }
@@ -155,7 +153,7 @@ class Mapper
         }
 
         if (!empty($fieldMapping->getParentTable())) {
-            $this->relationship->addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
+            DatabaseRelationship::addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
         }
 
 
@@ -349,10 +347,5 @@ class Mapper
     public function getSoftDelete(): bool
     {
         return $this->softDelete;
-    }
-
-    public function getDatabaseRelationship(): DatabaseRelationship
-    {
-        return $this->relationship;
     }
 }
