@@ -4,12 +4,18 @@ namespace Tests;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
+use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Mapper;
+use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
 use ByJG\MicroOrm\SqlObject;
+use ByJG\MicroOrm\SqlObjectEnum;
+use ByJG\MicroOrm\UpdateQuery;
 use PHPUnit\Framework\TestCase;
+use Tests\Model\ModelWithAttributes;
 
 class QueryTest extends TestCase
 {
@@ -26,6 +32,7 @@ class QueryTest extends TestCase
     protected function tearDown(): void
     {
         $this->object = null;
+        ORM::clearRelationships();
     }
 
     public function testQueryBasic()
@@ -352,7 +359,7 @@ class QueryTest extends TestCase
     }
 
     /**
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function testSubQueryTableWithoutAlias()
@@ -379,7 +386,7 @@ class QueryTest extends TestCase
     }
 
     /**
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function testSubQueryTableWithFilter()
@@ -439,7 +446,7 @@ class QueryTest extends TestCase
     }
 
     /**
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function testSubQueryJoinWithoutAlias()
@@ -467,7 +474,7 @@ class QueryTest extends TestCase
     }
 
     /**
-     * @throws \ByJG\MicroOrm\Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function testSubQueryJoinWithFilter()
@@ -525,5 +532,69 @@ class QueryTest extends TestCase
             $result
         );
 
+    }
+
+    public function testSoftDeleteQuery()
+    {
+        // Sanity test
+        $query = Query::getInstance()
+            ->table('info')
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
+
+        // Test with soft delete
+        new Mapper(ModelWithAttributes::class);
+        $query = Query::getInstance()
+            ->table('info')
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id AND info.deleted_at is null ORDER BY property", ["id" => 3]), $query->build());
+
+        // Test Unsafe
+        $query->unsafe();
+        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
+    }
+
+    public function testSoftDeleteUpdate()
+    {
+        // Sanity test
+        $query = UpdateQuery::getInstance()
+            ->table('info')
+            ->set('property', 'value')
+            ->where('iduser = :id', ['id' => 3]);
+        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+
+        // Test with soft delete
+        new Mapper(ModelWithAttributes::class);
+        $query = UpdateQuery::getInstance()
+            ->table('info')
+            ->set('property', 'value')
+            ->where('iduser = :id', ['id' => 3]);
+        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id AND info.deleted_at is null", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+
+        // Test Unsafe
+        $query->unsafe();
+        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+    }
+
+    public function testSoftDeleteDelete()
+    {
+        // Sanity test
+        $query = DeleteQuery::getInstance()
+            ->table('info')
+            ->where('iduser = :id', ['id' => 3]);
+        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+
+        // Test with soft delete
+        new Mapper(ModelWithAttributes::class);
+        $query = DeleteQuery::getInstance()
+            ->table('info')
+            ->where('iduser = :id', ['id' => 3]);
+        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id AND info.deleted_at is null", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+
+        // Test Unsafe
+        $query->unsafe();
+        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
     }
 }

@@ -111,10 +111,6 @@ class Repository
             ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
         ;
 
-        if ($this->getMapper()->getSoftDelete()) {
-            $query->where("{$this->mapper->getTableAlias()}.deleted_at is null");
-        }
-
         if (!is_null($model)) {
             $entity = $this->getMapper()->getEntity();
             if (!($model instanceof $entity)) {
@@ -176,7 +172,7 @@ class Repository
     {
         [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
 
-        if ($this->mapper->getSoftDelete()) {
+        if ($this->mapper->isSoftDeleteEnabled()) {
             $updatable = UpdateQuery::getInstance()
                 ->table($this->mapper->getTable())
                 ->set('deleted_at', new Literal($this->getDbDriverWrite()->getDbHelper()->sqlDate('Y-m-d H:i:s')))
@@ -225,10 +221,6 @@ class Repository
 
         $query = $this->getMapper()->getQuery()
             ->where($filter, $params);
-
-        if ($this->getMapper()->getSoftDelete()) {
-            $query->where('deleted_at is null');
-        }
 
         if ($forUpdate) {
             $query->forUpdate();

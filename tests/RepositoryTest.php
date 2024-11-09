@@ -19,6 +19,7 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\MapperClosure;
 use ByJG\MicroOrm\ObserverData;
+use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
@@ -101,6 +102,7 @@ class RepositoryTest extends TestCase
     {
         $uri = new Uri(self::URI);
         unlink($uri->getPath());
+        ORM::clearRelationships();
     }
 
     public function testGet()
@@ -1295,23 +1297,6 @@ class RepositoryTest extends TestCase
 
         $result = $infoRepository->getByQuery($query);
         $this->assertCount(0, $result);
-
-//        // Check if the updated_at works
-//        sleep(2);
-//        $info->value = 99.5;
-//        $infoRepository->save($info);
-//        /** @var ModelWithAttributes[] $result2 */
-//        $result2 = $infoRepository->getByQuery($query);
-//        $this->assertEquals(count($result2), 1);
-//
-//        $this->assertEquals(4, $result2[0]->getPk());
-//        $this->assertEquals(123, $result2[0]->iduser);
-//        $this->assertEquals(99.5, $result2[0]->value);
-//        $this->assertNotNull($result2[0]->getCreatedAt());
-//        $this->assertEquals($result[0]->getCreatedAt(), $result2[0]->getCreatedAt());
-//        $this->assertNotNull($result2[0]->getUpdatedAt());
-//        $this->assertNotEquals($result[0]->getUpdatedAt(), $result2[0]->getUpdatedAt());
-//        $this->assertNull($result2[0]->getDeletedAt());
     }
 
     public function testMappingAttributeSoftDeleteAndGetByFilter()

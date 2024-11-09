@@ -58,7 +58,7 @@ class Mapper
             $this->table = $table;
             $this->tableAlias = $tableAlias;
             $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
-            DatabaseRelationship::addMapper($this);
+            ORM::addMapper($this);
         }
     }
 
@@ -81,7 +81,7 @@ class Mapper
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
-        DatabaseRelationship::addMapper($this);
+        ORM::addMapper($this);
 
         $this->primaryKey = [];
         foreach ($reflection->getProperties() as $property) {
@@ -99,7 +99,7 @@ class Mapper
             }
 
             if (!empty($fieldAttribute->getParentTable())) {
-                DatabaseRelationship::addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
+                ORM::addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
             }
         }
     }
@@ -153,7 +153,7 @@ class Mapper
         }
 
         if (!empty($fieldMapping->getParentTable())) {
-            DatabaseRelationship::addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
+            ORM::addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
         }
 
 
@@ -344,7 +344,7 @@ class Mapper
         return call_user_func_array($this->primaryKeySeedFunction, [$dbDriver, $instance]);
     }
 
-    public function getSoftDelete(): bool
+    public function isSoftDeleteEnabled(): bool
     {
         return $this->softDelete;
     }

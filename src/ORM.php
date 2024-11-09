@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use InvalidArgumentException;
 
-class DatabaseRelationship
+class ORM
 {
     private static array $relationships = [];
 
@@ -112,6 +112,11 @@ class DatabaseRelationship
         return null;
     }
 
+    public static function getMapper(string $tableName): ?Mapper
+    {
+        return static::$mapper[$tableName] ?? null;
+    }
+
     public static function getQueryInstance(string ...$tables): Query
     {
         $query = new Query();
@@ -126,8 +131,6 @@ class DatabaseRelationship
                 throw new InvalidArgumentException("No relationship found between the tables");
             }
         }
-
-        $deletedAt = [];
 
         $first = true;
         foreach ($relationships as $relationship) {
@@ -144,18 +147,6 @@ class DatabaseRelationship
                 $first = false;
             }
             $query->join($child, "{$parentAlis}.{$primaryKey} = {$childAlias}.{$foreignKey}", $childAlias);
-
-            if (static::$mapper[$parent]->getSoftDelete() && !isset($deletedAt[$parent])) {
-                $deletedAt[$parent] = "{$parentAlis}.deleted_at is null";
-            }
-
-            if (static::$mapper[$child]->getSoftDelete() && !isset($deletedAt[$child])) {
-                $deletedAt[$child] = "{$childAlias}.deleted_at is null";
-            }
-        }
-
-        foreach ($deletedAt as $condition) {
-            $query->where($condition);
         }
 
         return $query;
@@ -179,5 +170,12 @@ class DatabaseRelationship
         } else {
             unset(static::$incompleteRelationships[static::getNormalizedKey($parentTable, $childTable)]);
         }
+    }
+
+    public static function clearRelationships(): void
+    {
+        static::$relationships = [];
+        static::$incompleteRelationships = [];
+        static::$mapper = [];
     }
 }

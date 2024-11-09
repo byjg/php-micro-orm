@@ -4,20 +4,17 @@ Soft deletes are a way to "delete" a record without actually removing it from th
 This is useful for keeping a record of the data that was deleted, and for maintaining referential integrity
 in the database.
 
-**NOTE:**
+The get this working automatically you need to define a field named `deleted_at` in your table **and**
+create a Object Mapper that supports this field.
 
-```
-SOFT DELETE ARE PARTIALLY IMPLEMENTED ON SOME METHOD. PLEASE LOOK THE REFERENCE TABLE BEFORE CONTINUE
-```
-
-## How to use
+## How to Enable Soft Delete
 
 You just define in the field mapper the field named `deleted_at` and the repository will automatically will
 filter the records that have this field set.
 
 There is some ways to define the field `deleted_at`:
 
-### Using the `DeletedAt` trait
+### Using the `DeletedAt` trait in your model
 
 ```php
 <?php
@@ -58,7 +55,7 @@ class MyModel
 }
 ```
 
-### Using the `FieldMapper` class
+### Using the `FieldMap` class
 
 ```php
 <?php
@@ -90,23 +87,18 @@ $mapper->addFieldMapping(
 
 ```
 
-## Methods that support soft delete
+## Disabling Soft Delete Temporarily
 
-### Repository::class
+Once one of the methods above is used, the soft delete is enabled by default. If you want to disable it temporarily
+you can add to your query the argument `unsafe()`.
 
-| Method        | Support | Note                                                                 |
-|:--------------|:-------:|:---------------------------------------------------------------------|
-| queryInstance |   YES   | It will return a `Query::class` with the filter `deleted_at is null` |
-| get           |   YES   | Get a record by PK where `deleted_at is null`                        |
-| delete        |   YES   | Soft Delete a record by PK, setting `deleted_at = now()`             |
-| getByFilter   |   YES   | It will return an array where `deleted_at is null`                   |
-| deleteByQuery |   NO    | -                                                                    |
-| getScalar     |   NO    | -                                                                    |
-| getByQuery    |   NO    | -                                                                    |
-| update        |   NO    | -                                                                    |
+```php
+<?php
+$query = Query::getInstance();
 
-## How Handle cases where Soft Delete is not supported
-
-If you are using a method that does not support soft delete, you'll need to manually filter the records
-where `deleted_at is null`
-
+// This will not return the records are marked as deleted 
+$query->table('my_table');
+    
+// This will return all records, including the ones marked as deleted
+$query->table('my_table')->unsafe();
+```
