@@ -20,6 +20,7 @@ class Mapper
     private string $entity;
     private string $table;
     private array $primaryKey;
+    private array $primaryKeyModel;
     private mixed $primaryKeySeedFunction = null;
     private bool $softDelete = false;
 
@@ -58,6 +59,7 @@ class Mapper
             $this->table = $table;
             $this->tableAlias = $tableAlias;
             $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+            $this->primaryKeyModel = $primaryKey;
             ORM::addMapper($this);
         }
     }
@@ -96,6 +98,7 @@ class Mapper
 
             if ($fieldAttribute->isPrimaryKey()) {
                 $this->primaryKey[] = $this->fixFieldName($fieldAttribute->getFieldName());
+                $this->primaryKeyModel[] = $property->getName();
             }
 
             if (!empty($fieldAttribute->getParentTable())) {
@@ -267,6 +270,14 @@ class Mapper
     public function getPrimaryKey(): array
     {
         return $this->primaryKey;
+    }
+
+    /**
+     * @return array
+     */
+    public function getPrimaryKeyModel(): array
+    {
+        return $this->primaryKeyModel;
     }
 
     public function getPkFilter(array|string|int|LiteralInterface $pkId): array

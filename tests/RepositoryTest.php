@@ -33,6 +33,7 @@ use DateTime;
 use Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use Tests\Model\ActiveRecordModel;
 use Tests\Model\Info;
 use Tests\Model\ModelWithAttributes;
 use Tests\Model\Users;
@@ -1430,4 +1431,110 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $result);
     }
 
+    public function testActiveRecordGet()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        //
+        $model = ActiveRecordModel::get(3);
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordFilter()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::EQUAL, 1));
+
+        $this->assertCount(2, $model);
+        $this->assertEquals(1, $model[0]->getPk());
+        $this->assertEquals(1, $model[0]->iduser);
+        $this->assertEquals(30.4, $model[0]->value);
+        $this->assertNull($model[0]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model[0]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model[0]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        $this->assertEquals(2, $model[1]->getPk());
+        $this->assertEquals(1, $model[1]->iduser);
+        $this->assertEquals(1250.96, $model[1]->value);
+        $this->assertNull($model[1]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model[1]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model[1]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordNew()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        //
+        $model = ActiveRecordModel::get(4);
+        $this->assertEmpty($model);
+
+        $model = ActiveRecordModel::new([
+            'iduser' => 5,
+            'value' => 55.8
+        ]);
+        $model->save();
+
+        $this->assertEquals(4, $model->getPk());
+        $this->assertEquals(5, $model->iduser);
+        $this->assertEquals(55.8, $model->value);
+        $this->assertNotNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        $model = ActiveRecordModel::get(4);
+        $this->assertEquals(4, $model->getPk());
+        $this->assertEquals(5, $model->iduser);
+        $this->assertEquals(55.8, $model->value);
+        $this->assertNotNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordUpdate()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        //
+        $model = ActiveRecordModel::get(3);
+
+        $model->value = 99.1;
+        $model->save();
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(99.1, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        $model = ActiveRecordModel::get(3);
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(99.1, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordDelete()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        //
+        $model = ActiveRecordModel::get(3);
+        $this->assertNotEmpty($model);
+
+        $model->delete();
+
+        $model = ActiveRecordModel::get(3);
+        $this->assertEmpty($model);
+    }
 }
