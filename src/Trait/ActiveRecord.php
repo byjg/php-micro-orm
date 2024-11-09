@@ -21,6 +21,11 @@ trait ActiveRecord
         self::$repository = new Repository($dbDriver, static::class);
     }
 
+    public static function tableName(): string
+    {
+        return self::$repository->getMapper()->getTable();
+    }
+
     public function save()
     {
         self::$repository->save($this);

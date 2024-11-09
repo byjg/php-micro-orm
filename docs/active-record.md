@@ -83,6 +83,8 @@ $myClass->delete();
 ```php
 <?php
 $query = MyClass::joinWith('other_table');
-// to some query here
+// do some query here
+// ...
+// Execute the query
 $myClassList = MyClass::query($query);
 ```

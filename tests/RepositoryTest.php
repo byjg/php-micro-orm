@@ -1435,6 +1435,8 @@ class RepositoryTest extends TestCase
     {
         ActiveRecordModel::initialize($this->dbDriver);
 
+        $this->assertEquals('info', ActiveRecordModel::tableName());
+
         //
         $model = ActiveRecordModel::get(3);
 
