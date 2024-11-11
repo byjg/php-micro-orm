@@ -1470,6 +1470,24 @@ class RepositoryTest extends TestCase
         $this->assertNull($model[1]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
     }
 
+    public function testActiveRecordEmptyFilter()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::filter(new IteratorFilter());
+
+        $this->assertCount(3, $model);
+    }
+
+    public function testActiveRecordAll()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::all();
+
+        $this->assertCount(3, $model);
+    }
+
     public function testActiveRecordNew()
     {
         ActiveRecordModel::initialize($this->dbDriver);

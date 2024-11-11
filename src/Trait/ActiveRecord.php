@@ -72,11 +72,18 @@ trait ActiveRecord
 
     /**
      * @param IteratorFilter $filter
+     * @param int $page
+     * @param int $limit
      * @return static[]
      */
     public static function filter(IteratorFilter $filter, int $page = 0, int $limit = 50): array
     {
         return self::$repository->getByFilter($filter, page: $page, limit: $limit);
+    }
+
+    public static function all(int $page = 0, int $limit = 50): array
+    {
+        return self::$repository->getByFilter(page: $page, limit: $limit);
     }
 
     public static function joinWith(string ...$tables): Query

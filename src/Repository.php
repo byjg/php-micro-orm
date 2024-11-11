@@ -211,16 +211,17 @@ class Repository
      * @param bool $forUpdate
      * @return array
      */
-    public function getByFilter(string|IteratorFilter $filter, array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
+    public function getByFilter(string|IteratorFilter $filter = "", array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
     {
         if ($filter instanceof IteratorFilter) {
             $formatter = new IteratorFilterSqlFormatter();
             $filter = $formatter->getFilter($filter->getRawFilters(), $params);
         }
 
-
-        $query = $this->getMapper()->getQuery()
-            ->where($filter, $params);
+        $query = $this->getMapper()->getQuery();
+        if (!empty($filter)) {
+            $query->where($filter, $params);
+        }
 
         if ($forUpdate) {
             $query->forUpdate();
