@@ -1261,7 +1261,7 @@ class RepositoryTest extends TestCase
         $this->assertNull($result[0]->getDeletedAt());
 
         // Check if the updated_at works
-        sleep(2);
+        sleep(1);
         $info->value = 99.5;
         $infoRepository->save($info);
         /** @var ModelWithAttributes[] $result2 */
