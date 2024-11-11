@@ -74,7 +74,7 @@ trait ActiveRecord
      * @param IteratorFilter $filter
      * @return static[]
      */
-    public static function filter(IteratorFilter $filter, $page = 0, $limit = 50): array
+    public static function filter(IteratorFilter $filter, int $page = 0, int $limit = 50): array
     {
         return self::$repository->getByFilter($filter, page: $page, limit: $limit);
     }
