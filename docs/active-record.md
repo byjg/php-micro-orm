@@ -33,6 +33,9 @@ class MyClass
 MyClass::initialize($dbDriver);
 ```
 
+One the class is initialized you can use the Active Record to save, update, delete and retrieve the data.
+If you call the `initialize` method more than once, it won't have any effect, unless you call the method `reset`.
+
 ## Using the Active Record
 
 Once is properly configured you can use the Active Record to save, update, delete and retrieve the data.

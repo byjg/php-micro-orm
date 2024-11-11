@@ -16,9 +16,21 @@ trait ActiveRecord
 
     public static function initialize(DbDriverInterface $dbDriver)
     {
-        self::$dbDriver = $dbDriver;
+        if (!is_null(self::$dbDriver)) {
+            return;
+        }
 
+        self::$dbDriver = $dbDriver;
         self::$repository = new Repository($dbDriver, static::class);
+    }
+
+    public static function reset(?DbDriverInterface $dbDriver = null)
+    {
+        self::$dbDriver = null;
+        self::$repository = null;
+        if (!is_null($dbDriver)) {
+            self::initialize($dbDriver);
+        }
     }
 
     public static function tableName(): string
