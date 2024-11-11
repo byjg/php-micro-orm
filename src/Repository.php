@@ -211,7 +211,7 @@ class Repository
      * @param bool $forUpdate
      * @return array
      */
-    public function getByFilter(string|IteratorFilter $filter, array $params = [], bool $forUpdate = false): array
+    public function getByFilter(string|IteratorFilter $filter, array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
     {
         if ($filter instanceof IteratorFilter) {
             $formatter = new IteratorFilterSqlFormatter();
@@ -224,6 +224,10 @@ class Repository
 
         if ($forUpdate) {
             $query->forUpdate();
+        }
+
+        if (!is_null($limit)) {
+            $query->limit($page, ($page + 1) * $limit);
         }
 
         return $this->getByQuery($query);
