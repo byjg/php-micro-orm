@@ -7,6 +7,9 @@ use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 
 trait WhereTrait
 {
+    protected array $where = [];
+    protected bool $unsafe = false;
+
     /**
      * Example:
      *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
@@ -28,10 +31,30 @@ trait WhereTrait
 
     protected function getWhere(): ?array
     {
+        $where = $this->where;
+
+        if (!$this->unsafe) {
+            $tableList = [];
+            $from = $this->alias ?? $this->table;
+            if (!($from instanceof QueryBasic) && ORM::getMapper($from)?->isSoftDeleteEnabled() === true) {
+                $tableList[] = $from;
+                $where[] = ["filter" => "{$from}.deleted_at is null", "params" => []];
+            }
+
+            if (isset($this->join)) {
+                foreach ($this->join as $item) {
+                    if (!($item['table'] instanceof QueryBasic) && !in_array($item['table'], $tableList) && ORM::getMapper($item['table'])?->isSoftDeleteEnabled() === true) {
+                        $tableList[] = $item['table'];
+                        $where[] = ["filter" => "{$item['table']}.deleted_at is null", "params" => []];
+                    }
+                }
+            }
+        }
+
         $whereStr = [];
         $params = [];
 
-        foreach ($this->where as $item) {
+        foreach ($where as $item) {
             $whereStr[] = $item['filter'];
             $params = array_merge($params, $item['params']);
         }
@@ -41,5 +64,10 @@ trait WhereTrait
         }
 
         return [ implode(' AND ', $whereStr), $params ];
+    }
+
+    public function unsafe()
+    {
+        $this->unsafe = true;
     }
 }

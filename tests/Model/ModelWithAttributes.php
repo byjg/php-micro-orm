@@ -4,10 +4,17 @@ namespace Tests\Model;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
+use ByJG\MicroOrm\Trait\CreatedAt;
+use ByJG\MicroOrm\Trait\DeletedAt;
+use ByJG\MicroOrm\Trait\UpdatedAt;
 
 #[TableAttribute("info")]
 class ModelWithAttributes
 {
+    use CreatedAt;
+    use DeletedAt;
+    use UpdatedAt;
+
     #[FieldAttribute(primaryKey: true, fieldName: "id")]
     protected $pk;
     #[FieldAttribute]

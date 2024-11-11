@@ -11,7 +11,6 @@ abstract class Updatable implements UpdateBuilderInterface
     use WhereTrait;
 
     protected string $table = "";
-    protected array $where = [];
 
     /**
      * Example
@@ -26,21 +25,6 @@ abstract class Updatable implements UpdateBuilderInterface
 
         return $this;
     }
-
-    /**
-     * Example:
-     *    $query->filter('price > [[amount]]', [ 'amount' => 1000] );
-     *
-     * @param string $filter
-     * @param array $params
-     * @return $this
-     */
-    public function where(string $filter, array $params = []): static
-    {
-        $this->where[] = [ 'filter' => $filter, 'params' => $params  ];
-        return $this;
-    }
-
 
     public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null): bool
     {

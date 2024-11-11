@@ -20,13 +20,16 @@ class Mapper
     private string $entity;
     private string $table;
     private array $primaryKey;
-    private ?Closure $primaryKeySeedFunction = null;
+    private array $primaryKeyModel;
+    private mixed $primaryKeySeedFunction = null;
+    private bool $softDelete = false;
 
     /**
      * @var FieldMapping[]
      */
     private array $fieldMap = [];
     private bool $preserveCaseName = false;
+    private ?string $tableAlias = null;
 
     /**
      * Mapper constructor.
@@ -40,7 +43,8 @@ class Mapper
     public function __construct(
         string $entity,
         ?string $table = null,
-        string|array|null $primaryKey = null
+        string|array|null $primaryKey = null,
+        ?string           $tableAlias = null
     ) {
         if (!class_exists($entity)) {
             throw new OrmModelInvalidException("Entity '$entity' does not exists");
@@ -53,7 +57,10 @@ class Mapper
             $primaryKey = (array)$primaryKey;
 
             $this->table = $table;
+            $this->tableAlias = $tableAlias;
             $this->primaryKey = array_map([$this, 'fixFieldName'], $primaryKey);
+            $this->primaryKeyModel = $primaryKey;
+            ORM::addMapper($this);
         }
     }
 
@@ -69,11 +76,14 @@ class Mapper
             throw new OrmModelInvalidException("Entity '$entity' does not have the TableAttribute");
         }
 
+        /** @var TableAttribute $tableAttribute */
         $tableAttribute = $attributes[0]->newInstance();
         $this->table = $tableAttribute->getTableName();
+        $this->tableAlias = $tableAttribute->getTableAlias();
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
+        ORM::addMapper($this);
 
         $this->primaryKey = [];
         foreach ($reflection->getProperties() as $property) {
@@ -88,11 +98,16 @@ class Mapper
 
             if ($fieldAttribute->isPrimaryKey()) {
                 $this->primaryKey[] = $this->fixFieldName($fieldAttribute->getFieldName());
+                $this->primaryKeyModel[] = $property->getName();
+            }
+
+            if (!empty($fieldAttribute->getParentTable())) {
+                ORM::addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
             }
         }
     }
 
-    public function withPrimaryKeySeedFunction(Closure $primaryKeySeedFunction): static
+    public function withPrimaryKeySeedFunction(callable $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
@@ -135,6 +150,16 @@ class Mapper
             ->withFieldName($fieldName)
             ->withFieldAlias($fieldAlias)
         ;
+
+        if ($fieldName === 'deleted_at') {
+            $this->softDelete = true;
+        }
+
+        if (!empty($fieldMapping->getParentTable())) {
+            ORM::addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
+        }
+
+
         return $this;
     }
 
@@ -234,12 +259,25 @@ class Mapper
         return $this->table;
     }
 
+    public function getTableAlias(): string
+    {
+        return $this->tableAlias ?? $this->table;
+    }
+
     /**
      * @return array
      */
     public function getPrimaryKey(): array
     {
         return $this->primaryKey;
+    }
+
+    /**
+     * @return array
+     */
+    public function getPrimaryKeyModel(): array
+    {
+        return $this->primaryKeyModel;
     }
 
     public function getPkFilter(array|string|int|LiteralInterface $pkId): array
@@ -314,8 +352,11 @@ class Mapper
             return null;
         }
 
-        $func = $this->primaryKeySeedFunction;
+        return call_user_func_array($this->primaryKeySeedFunction, [$dbDriver, $instance]);
+    }
 
-        return $func($dbDriver, $instance);
+    public function isSoftDeleteEnabled(): bool
+    {
+        return $this->softDelete;
     }
 }

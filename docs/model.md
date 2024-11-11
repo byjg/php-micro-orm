@@ -78,49 +78,27 @@ The `FieldAttribute` can be used in the following properties:
 
 The `TableAttribute` has the following parameters:
 
-* `tableName`: The name of the table in the database.
-* `primaryKeySeedFunction` (optional): A function that returns the seed for the primary key. The function must return a value.
+| Field                      | Description                                                                             | Required |
+|----------------------------|-----------------------------------------------------------------------------------------|:--------:|
+| **tableName**              | The name of the table in the database.                                                  |   Yes    |
+| **primaryKeySeedFunction** | A function that returns the seed for the primary key. The function must return a value. |    No    |
 
 ## Field Attributes parameters
 
 The `FieldAttribute` has the following parameters:
 
-* primaryKey (optional): If the field is a primary key.
-* fieldName (optional): The name of the field in the database. If not set, the field name is the same as the property name.
-* fieldAlias (optional): The alias of the field in the database. If not set, the field alias is the same as the property name.
-* syncWithDb (optional): If the field should be synchronized with the database. Default is true.
-* updateFunction (optional): A function that is called when the field is updated. The function must return a value.
-* selectFunction (optional): A function that is called when the field is selected. The function must return a value.
+| Field              | Description                                                                                                                                      | Required |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|:--------:|
+| **primaryKey**     | If the field is a primary key. It is required at least one field to be a PK.  It is used for insert/updates/deletes.                             |    No    |
+| **fieldName**      | The name of the field in the database. If not set, the field name is the same as the property name.                                              |    No    |
+| **fieldAlias**     | The alias of the field in the database. If not set, the field alias is the same as the field name.                                               |    No    |
+| **syncWithDb**     | If the field should be synchronized with the database. Default is true.                                                                          |    No    |
+| **updateFunction** | A function that is called when the field is updated. The function must return a value.                                                           |    No    |
+| **selectFunction** | A function that is called when the field is selected. The function must return a value.                                                          |    No    |
+| **insertFunction** | A function that is called when the field is inserted. The function must return a value.                                                          |    No    |
+| **parentTable**    | The parent table of the field. This is used in the case of a foreign key. See [Auto Discovering Relationship](auto-discovering-relationship.md). |    No    |
 
-```tip
-To use a function as a parameter, you must inherit from the `FieldAttribute` and
-in the constructor call the parent with the function.
-```
-
-## Special Field Attributes: FieldReadOnlyAttribute
-
-* It is used to define a field that is read-only.
-* It sets the MapperClosure::readonly() method to the updateFunction.
-
-## Closure Function Signature
-
-### primaryKeySeedFunction:
-
-```php
-function (object $instance) {
-    // $instance is the instance of the model with the properties set
-    return mixed;
-}
-```
-
-### selectFunction and updateFunction:
-
-```php
-function (mixed $fieldValue, mixed $data) {
-    // $value is the value to be set in the property
-    // $data is an array with the value properties set
-    return $fieldValue;
-}
-```
+See also [Controlling the Data](controlling-the-data.md) for more information about the `updateFunction`,
+`selectFunction`, and `insertFunction`.
 
 

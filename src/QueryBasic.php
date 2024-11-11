@@ -16,7 +16,6 @@ class QueryBasic implements QueryBuilderInterface
     protected array $fields = [];
     protected QueryBasic|string $table = "";
     protected ?string $alias = "";
-    protected array $where = [];
     protected array $join = [];
     protected DbDriverInterface|null $dbDriver = null;
     protected ?Recursive $recursive = null;

@@ -15,11 +15,13 @@ use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
 use ReflectionException;
+use stdClass;
 
 class Repository
 {
@@ -103,10 +105,10 @@ class Repository
         return $this->getMapper()->getEntity($values);
     }
 
-    public function queryInstance(object $model = null): Query
+    public function queryInstance(object $model = null, string ...$tales): Query
     {
         $query = Query::getInstance()
-            ->table($this->mapper->getTable())
+            ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
         ;
 
         if (!is_null($model)) {
@@ -169,6 +171,16 @@ class Repository
     public function delete(array|string|int|LiteralInterface $pkId): bool
     {
         [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
+
+        if ($this->mapper->isSoftDeleteEnabled()) {
+            $updatable = UpdateQuery::getInstance()
+                ->table($this->mapper->getTable())
+                ->set('deleted_at', new Literal($this->getDbDriverWrite()->getDbHelper()->sqlDate('Y-m-d H:i:s')))
+                ->where($filterList, $filterKeys);
+            $this->update($updatable);
+            return true;
+        }
+
         $updatable = DeleteQuery::getInstance()
             ->table($this->mapper->getTable())
             ->where($filterList, $filterKeys);
@@ -205,6 +217,7 @@ class Repository
             $formatter = new IteratorFilterSqlFormatter();
             $filter = $formatter->getFilter($filter->getRawFilters(), $params);
         }
+
 
         $query = $this->getMapper()->getQuery()
             ->where($filter, $params);
@@ -313,7 +326,7 @@ class Repository
         $mapper = $this->getMapper();
 
         // Copy the values to the instance
-        $valuesToUpdate = new \stdClass();
+        $valuesToUpdate = new stdClass();
         ObjectCopy::copy(
             $array,
             $valuesToUpdate,
@@ -325,7 +338,7 @@ class Repository
             },
             function ($propName, $targetName, $value) use ($mapper, $instance) {
                 $fieldMap = $mapper->getFieldMap($propName);
-                return $fieldMap?->getUpdateFunctionValue($value, $instance) ?? $value;
+                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
             }
         );
         $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
@@ -350,6 +363,12 @@ class Repository
         if ($isInsert) {
             $closure = $this->beforeInsert;
             $array = $closure($array);
+            foreach ($this->getMapper()->getFieldMap() as $mapper) {
+                $fieldValue = $mapper->getInsertFunctionValue($array[$mapper->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+                if ($fieldValue !== false) {
+                    $array[$mapper->getFieldName()] = $fieldValue;
+                }
+            }
             $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
         } else {
             $closure = $this->beforeUpdate;
