@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm\Trait;
 
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
@@ -21,7 +22,7 @@ trait ActiveRecord
         }
 
         self::$dbDriver = $dbDriver;
-        self::$repository = new Repository($dbDriver, static::class);
+        self::$repository = new Repository($dbDriver, self::discoverClass());
     }
 
     public static function reset(?DbDriverInterface $dbDriver = null)
@@ -87,6 +88,12 @@ trait ActiveRecord
     public static function query(Query $query): array
     {
         return self::$repository->getByQuery($query);
+    }
+
+    // Override this method to create a custom mapper instead of discovering by attributes in the class
+    protected static function discoverClass(): string|Mapper
+    {
+        return static::class;
     }
 
 }

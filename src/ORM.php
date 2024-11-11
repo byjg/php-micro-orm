@@ -176,6 +176,12 @@ class ORM
     {
         static::$relationships = [];
         static::$incompleteRelationships = [];
+        foreach (static::$mapper as $mapper) {
+            // Reset the ActiveRecord DbDriver
+            if (method_exists($mapper->getEntity(), 'reset')) {
+                call_user_func([$mapper->getEntity(), 'reset']);
+            }
+        }
         static::$mapper = [];
     }
 }
