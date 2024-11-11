@@ -1571,4 +1571,11 @@ class RepositoryTest extends TestCase
         ActiveRecordModel::initialize();
         $this->assertTrue(true);
     }
+
+    public function testInitializeActiveRecordDefaultDbDriver2()
+    {
+        ORM::defaultDbDriver($this->dbDriver);
+        $model = ActiveRecordModel::get(1);
+        $this->assertNotNull($model);
+    }
 }

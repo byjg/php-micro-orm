@@ -40,16 +40,19 @@ trait ActiveRecord
 
     public static function tableName(): string
     {
+        self::initialize();
         return self::$repository->getMapper()->getTable();
     }
 
     public function save()
     {
+        self::initialize();
         self::$repository->save($this);
     }
 
     public function delete()
     {
+        self::initialize();
         $pk = self::$repository->getMapper()->getPrimaryKeyModel();
 
         $filter = [];
@@ -62,11 +65,13 @@ trait ActiveRecord
 
     public static function new(array $data): static
     {
+        self::initialize();
         return self::$repository->entity($data);
     }
 
     public static function get(mixed ...$pk)
     {
+        self::initialize();
         return self::$repository->get(...$pk);
     }
 
@@ -78,16 +83,19 @@ trait ActiveRecord
      */
     public static function filter(IteratorFilter $filter, int $page = 0, int $limit = 50): array
     {
+        self::initialize();
         return self::$repository->getByFilter($filter, page: $page, limit: $limit);
     }
 
     public static function all(int $page = 0, int $limit = 50): array
     {
+        self::initialize();
         return self::$repository->getByFilter(page: $page, limit: $limit);
     }
 
     public static function joinWith(string ...$tables): Query
     {
+        self::initialize();
         $tables[] = self::$repository->getMapper()->getTable();
         return ORM::getQueryInstance(...$tables);
     }
@@ -98,6 +106,7 @@ trait ActiveRecord
      */
     public static function query(Query $query): array
     {
+        self::initialize();
         return self::$repository->getByQuery($query);
     }
 
