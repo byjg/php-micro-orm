@@ -4,13 +4,13 @@ Soft deletes are a way to "delete" a record without actually removing it from th
 This is useful for keeping a record of the data that was deleted, and for maintaining referential integrity
 in the database.
 
-The get this working automatically you need to define a field named `deleted_at` in your table **and**
+To enable this feature you need to define a field named `deleted_at` in your table **and**
 create a Object Mapper that supports this field.
 
 ## How to Enable Soft Delete
 
-You just define in the field mapper the field named `deleted_at` and the repository will automatically will
-filter the records that have this field set.
+Once you define a FieldMapping to the `deleted_at` field, Repository class will automatically filter the records 
+that have this field equals null. 
 
 There is some ways to define the field `deleted_at`:
 
