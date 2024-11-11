@@ -6,6 +6,8 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\Cache\Psr16\ArrayCacheEngine;
+use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -169,9 +171,43 @@ class RepositoryTest extends TestCase
             ->table('users')
             ->where('id = :id', ['id' => 1]);
 
-        $iterator = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $iterator = $query->buildAndGetIterator($this->repository->getDbDriver(), null)->toArray();
         $this->assertEquals(1, count($iterator));
     }
+
+    public function testBuildAndGetIteratorWithCache()
+    {
+        $query = Query::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+
+        $cacheEngine = new ArrayCacheEngine();
+
+        // Sanity test
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $this->assertCount(1, $result);
+
+        $cacheObject = new CacheQueryResult($cacheEngine, "mykey", 120);
+
+        // Get the result and save to cache
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
+        $this->assertCount(1, $result);
+
+        // Delete the record
+        $deleteQuery = DeleteQuery::getInstance()
+            ->table('users')
+            ->where('id = :id', ['id' => 1]);
+        $deleteQuery->buildAndExecute($this->repository->getDbDriver());
+
+        // Check if query with no cache the record is not found
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $this->assertCount(0, $result);
+
+        // Check if query with cache the record is found
+        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
+        $this->assertCount(1, $result);
+    }
+
 
     public function testInsert()
     {
@@ -1242,5 +1278,37 @@ class RepositoryTest extends TestCase
         $query = $this->repository->queryInstance($infoModel);
     }
 
+    public function testQueryWithCache()
+    {
+        $query = $this->infoMapper->getQueryBasic()
+            ->where('id = :id1', ['id1'=>3]);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $cacheEngine = new ArrayCacheEngine();
+
+        // Sanity test
+        $result = $infoRepository->getByQuery($query);
+        $this->assertCount(1, $result);
+
+        $cacheObject = new CacheQueryResult($cacheEngine, "qry",  120);
+
+        // Get the result and save to cache
+        $result = $infoRepository->getByQuery($query, cache: $cacheObject);
+        $this->assertCount(1, $result);
+
+        // Delete the record
+        $deleteQuery = DeleteQuery::getInstance()
+            ->table($this->infoMapper->getTable())
+            ->where('id = :id', ['id' => 3]);
+        $deleteQuery->buildAndExecute($this->repository->getDbDriver());
+
+        // Check if query with no cache the record is not found
+        $result = $infoRepository->getByQuery($query);
+        $this->assertCount(0, $result);
+
+        // Check if query with cache the record is found
+        $result = $infoRepository->getByQuery($query, cache: $cacheObject);
+        $this->assertCount(1, $result);
+    }
 
 }
