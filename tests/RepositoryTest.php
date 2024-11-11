@@ -1539,4 +1539,18 @@ class RepositoryTest extends TestCase
         $model = ActiveRecordModel::get(3);
         $this->assertEmpty($model);
     }
+
+    public function testInitializeActiveRecordDefaultDbDriverError()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("You must initialize the ORM with a DbDriverInterface");
+        ActiveRecordModel::initialize();
+    }
+
+    public function testInitializeActiveRecordDefaultDbDriver()
+    {
+        ORM::defaultDbDriver($this->dbDriver);
+        ActiveRecordModel::initialize();
+        $this->assertTrue(true);
+    }
 }

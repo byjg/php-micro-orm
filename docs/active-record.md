@@ -36,6 +36,17 @@ MyClass::initialize($dbDriver);
 One the class is initialized you can use the Active Record to save, update, delete and retrieve the data.
 If you call the `initialize` method more than once, it won't have any effect, unless you call the method `reset`.
 
+It is possible define a Default DBDriver for all classes using the Active Record.
+
+```php
+<?php
+// Set a default DBDriver
+ORM::defaultDriver($dbDriver);
+
+// Initialize the Active Record
+MyClass::initialize()
+```
+
 ## Using the Active Record
 
 Once is properly configured you can use the Active Record to save, update, delete and retrieve the data.

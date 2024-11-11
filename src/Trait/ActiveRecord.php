@@ -15,10 +15,14 @@ trait ActiveRecord
 
     protected static ?Repository $repository = null;
 
-    public static function initialize(DbDriverInterface $dbDriver)
+    public static function initialize(?DbDriverInterface $dbDriver = null)
     {
         if (!is_null(self::$dbDriver)) {
             return;
+        }
+
+        if (is_null($dbDriver)) {
+            $dbDriver = ORM::defaultDbDriver();
         }
 
         self::$dbDriver = $dbDriver;
