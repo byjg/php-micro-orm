@@ -11,6 +11,7 @@ use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertQuery;
@@ -1447,6 +1448,89 @@ class RepositoryTest extends TestCase
         $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
         $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
     }
+
+    public function testActiveRecordRefresh()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $this->assertEquals('info', ActiveRecordModel::tableName());
+
+        /**
+         * @var ActiveRecordModel $model
+         */
+        $model = ActiveRecordModel::get(3);
+
+        $createdAt = $model->getCreatedAt();
+        $updatedAt = $model->getUpdatedAt();
+        $deletedAt = $model->getDeletedAt();
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertNull($createdAt); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($updatedAt); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($deletedAt); // Because it was not set in the initial insert outside the ORM
+
+        // Update the record OUTSIDE the Active Record
+        $this->dbDriver->execute("UPDATE info SET iduser = 4, property = 44.44 WHERE id = 3");
+
+        // Check model isn't updated (which is the expected behavior)
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        // Refresh the model
+        $model->refresh();
+
+        // Check model is updated
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(4, $model->iduser);
+        $this->assertEquals(44.44, $model->value);
+        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordRefreshError()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $this->expectException(OrmInvalidFieldsException::class);
+        $this->expectExceptionMessage("Primary key 'pk' is null");
+
+        $model = ActiveRecordModel::new();
+        $model->refresh();
+    }
+
+    public function testActiveRecordFill()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::get(3);
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        $model->fill([
+            'iduser' => 4,
+            'value' => 44.44
+        ]);
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(4, $model->iduser);
+        $this->assertEquals(44.44, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
 
     public function testActiveRecordFilter()
     {

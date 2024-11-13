@@ -4,10 +4,13 @@ namespace ByJG\MicroOrm\Trait;
 
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
+use ByJG\Serializer\ObjectCopy;
+use ByJG\Serializer\Serialize;
 
 trait ActiveRecord
 {
@@ -50,29 +53,50 @@ trait ActiveRecord
         self::$repository->save($this);
     }
 
-    public function delete()
+    protected function pkList(): array
     {
         self::initialize();
         $pk = self::$repository->getMapper()->getPrimaryKeyModel();
 
         $filter = [];
         foreach ($pk as $field) {
+            $pkValue = $this->{$field};
+            if (empty($pkValue)) {
+                throw new OrmInvalidFieldsException("Primary key '$field' is null");
+            }
             $filter[] = $this->{$field};
         }
 
-        self::$repository->delete($filter);
+        return $filter;
     }
 
-    public static function new(array $data): static
+    public function delete()
+    {
+        self::$repository->delete($this->pkList());
+    }
+
+    public static function new(mixed $data = null): static
     {
         self::initialize();
-        return self::$repository->entity($data);
+        $data = $data ?? [];
+        return self::$repository->entity(Serialize::from($data)->toArray());
     }
 
     public static function get(mixed ...$pk)
     {
         self::initialize();
         return self::$repository->get(...$pk);
+    }
+
+    public function fill(mixed $data)
+    {
+        $newData = self::new($data)->toArray();
+        ObjectCopy::copy($newData, $this);
+    }
+
+    public function refresh()
+    {
+        $this->fill(self::$repository->get(...$this->pkList()));
     }
 
     /**
@@ -98,6 +122,15 @@ trait ActiveRecord
         self::initialize();
         $tables[] = self::$repository->getMapper()->getTable();
         return ORM::getQueryInstance(...$tables);
+    }
+
+    public function toArray(bool $includeNullValue = false): array
+    {
+        if ($includeNullValue) {
+            return Serialize::from($this)->toArray();
+        }
+
+        return Serialize::from($this)->withDoNotParseNullValues()->toArray();
     }
 
     /**

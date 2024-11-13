@@ -92,6 +92,25 @@ $myClass = MyClass::get(1);
 $myClass->delete();
 ```
 
+### Refresh a record
+
+```php
+<?php
+// Retrieve a record
+$myClass = MyClass::get(1);
+
+// do some changes in the database
+// **OR**
+// expect that the record in the database was changed by another process
+
+// Get the updated data from the database
+$myClass->refresh();
+```
+
+### Update a model from another model or array
+
+```php
+
 ### Using the `Query` class
 
 ```php
