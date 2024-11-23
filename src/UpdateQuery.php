@@ -11,6 +11,8 @@ class UpdateQuery extends Updatable
 {
     protected array $set = [];
 
+    protected array $joinTables = [];
+
     /**
      * @throws InvalidArgumentException
      */
@@ -49,6 +51,24 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
+    protected function getJoinTables(DbFunctionsInterface $dbHelper = null): array
+    {
+        if (is_null($dbHelper)) {
+            if (!empty($this->joinTables)) {
+                throw new InvalidArgumentException('You must specify a DbFunctionsInterface to use join tables');
+            }
+            return ['sql' => '', 'position' => 'before_set'];
+        }
+
+        return $dbHelper->getJoinTablesUpdate($this->joinTables);
+    }
+
+    public function join(string $table, string $joinCondition): UpdateQuery
+    {
+        $this->joinTables[] = ["table" => $table, "condition" => $joinCondition];
+        return $this;
+    }
+
     /**
      * @param DbFunctionsInterface|null $dbHelper
      * @return SqlObject
@@ -81,8 +101,14 @@ class UpdateQuery extends Updatable
             $tableName = $dbHelper->delimiterTable($tableName);
         }
 
-        $sql = 'UPDATE ' . $tableName . ' SET '
-            . implode(', ', $fieldsStr)
+        $joinTables = $this->getJoinTables($dbHelper);
+        $joinBeforeSet = $joinTables['position'] === 'before_set' ? $joinTables['sql'] : '';
+        $joinAfterSet = $joinTables['position'] === 'after_set' ? $joinTables['sql'] : '';
+
+        $sql = 'UPDATE ' . $tableName
+            . $joinBeforeSet
+            . ' SET ' . implode(', ', $fieldsStr)
+            . $joinAfterSet
             . ' WHERE ' . $whereStr[0];
 
         $params = array_merge($params, $whereStr[1]);
