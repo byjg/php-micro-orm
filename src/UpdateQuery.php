@@ -83,12 +83,16 @@ class UpdateQuery extends Updatable
         $fieldsStr = [];
         $params = [];
         foreach ($this->set as $field => $value) {
-            $fieldName = $field;
+            $fieldName = explode('.', $field);
+            $paramName = preg_replace('/[^A-Za-z0-9_]/', '', $fieldName[count($fieldName) - 1]);
             if (!is_null($dbHelper)) {
-                $fieldName = $dbHelper->delimiterField($fieldName);
+                foreach ($fieldName as $key => $item) {
+                    $fieldName[$key] = $dbHelper->delimiterField($item);
+                }
             }
-            $fieldsStr[] = "$fieldName = :$field ";
-            $params[$field] = $value;
+            $fieldName = implode('.', $fieldName);
+            $fieldsStr[] = "$fieldName = :{$paramName} ";
+            $params[$paramName] = $value;
         }
         
         $whereStr = $this->getWhere();
