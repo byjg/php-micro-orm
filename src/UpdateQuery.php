@@ -90,6 +90,7 @@ class UpdateQuery extends Updatable
                     $fieldName[$key] = $dbHelper->delimiterField($item);
                 }
             }
+            /** @psalm-suppress InvalidArgument $fieldName */
             $fieldName = implode('.', $fieldName);
             $fieldsStr[] = "$fieldName = :{$paramName} ";
             $params[$paramName] = $value;
