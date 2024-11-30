@@ -11,6 +11,7 @@ use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertQuery;
@@ -1261,7 +1262,7 @@ class RepositoryTest extends TestCase
         $this->assertNull($result[0]->getDeletedAt());
 
         // Check if the updated_at works
-        sleep(2);
+        sleep(1);
         $info->value = 99.5;
         $infoRepository->save($info);
         /** @var ModelWithAttributes[] $result2 */
@@ -1448,6 +1449,89 @@ class RepositoryTest extends TestCase
         $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
     }
 
+    public function testActiveRecordRefresh()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $this->assertEquals('info', ActiveRecordModel::tableName());
+
+        /**
+         * @var ActiveRecordModel $model
+         */
+        $model = ActiveRecordModel::get(3);
+
+        $createdAt = $model->getCreatedAt();
+        $updatedAt = $model->getUpdatedAt();
+        $deletedAt = $model->getDeletedAt();
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertNull($createdAt); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($updatedAt); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($deletedAt); // Because it was not set in the initial insert outside the ORM
+
+        // Update the record OUTSIDE the Active Record
+        $this->dbDriver->execute("UPDATE info SET iduser = 4, property = 44.44 WHERE id = 3");
+
+        // Check model isn't updated (which is the expected behavior)
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        // Refresh the model
+        $model->refresh();
+
+        // Check model is updated
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(4, $model->iduser);
+        $this->assertEquals(44.44, $model->value);
+        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordRefreshError()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $this->expectException(OrmInvalidFieldsException::class);
+        $this->expectExceptionMessage("Primary key 'pk' is null");
+
+        $model = ActiveRecordModel::new();
+        $model->refresh();
+    }
+
+    public function testActiveRecordFill()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::get(3);
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(3, $model->iduser);
+        $this->assertEquals(3.5, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+
+        $model->fill([
+            'iduser' => 4,
+            'value' => 44.44
+        ]);
+
+        $this->assertEquals(3, $model->getPk());
+        $this->assertEquals(4, $model->iduser);
+        $this->assertEquals(44.44, $model->value);
+        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+
     public function testActiveRecordFilter()
     {
         ActiveRecordModel::initialize($this->dbDriver);
@@ -1468,6 +1552,24 @@ class RepositoryTest extends TestCase
         $this->assertNull($model[1]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
         $this->assertNull($model[1]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
         $this->assertNull($model[1]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+    }
+
+    public function testActiveRecordEmptyFilter()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::filter(new IteratorFilter());
+
+        $this->assertCount(3, $model);
+    }
+
+    public function testActiveRecordAll()
+    {
+        ActiveRecordModel::initialize($this->dbDriver);
+
+        $model = ActiveRecordModel::all();
+
+        $this->assertCount(3, $model);
     }
 
     public function testActiveRecordNew()
@@ -1538,5 +1640,26 @@ class RepositoryTest extends TestCase
 
         $model = ActiveRecordModel::get(3);
         $this->assertEmpty($model);
+    }
+
+    public function testInitializeActiveRecordDefaultDbDriverError()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("You must initialize the ORM with a DbDriverInterface");
+        ActiveRecordModel::initialize();
+    }
+
+    public function testInitializeActiveRecordDefaultDbDriver()
+    {
+        ORM::defaultDbDriver($this->dbDriver);
+        ActiveRecordModel::initialize();
+        $this->assertTrue(true);
+    }
+
+    public function testInitializeActiveRecordDefaultDbDriver2()
+    {
+        ORM::defaultDbDriver($this->dbDriver);
+        $model = ActiveRecordModel::get(1);
+        $this->assertNotNull($model);
     }
 }

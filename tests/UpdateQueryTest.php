@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\Helpers\DbMysqlFunctions;
+use ByJG\AnyDataset\Db\Helpers\DbPgsqlFunctions;
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\SqlObject;
@@ -114,4 +116,52 @@ class UpdateQueryTest extends TestCase
         );
     }
 
+    public function testUpdateJoinFail()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->object->table('test');
+        $this->object->join('table2', 'table2.id = test.id');
+        $this->object->build();
+    }
+
+    public function testUpdateJoinMySQl()
+    {
+        $this->object->table('test');
+        $this->object->join('table2', 'table2.id = test.id');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
+        $this->object->where('fld1 = :id', ['id' => 10]);
+
+        $sqlObject = $this->object->build(new DbMysqlFunctions());
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE `test` INNER JOIN `table2` ON table2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
+    }
+
+    public function testUpdateJoinPostgres()
+    {
+        $this->object->table('test');
+        $this->object->join('table2', 'table2.id = test.id');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
+        $this->object->where('fld1 = :id', ['id' => 10]);
+
+        $sqlObject = $this->object->build(new DbPgsqlFunctions());
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE "test" SET "fld1" = :fld1 , "fld2" = :fld2 , "fld3" = :fld3  FROM "table2" ON table2.id = test.id WHERE fld1 = :id',
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
+
+    }
 }

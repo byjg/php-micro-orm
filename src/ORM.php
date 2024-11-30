@@ -2,10 +2,12 @@
 
 namespace ByJG\MicroOrm;
 
-use InvalidArgumentException;
+use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 
 class ORM
 {
+    private static ?DbDriverInterface $dbDriver = null;
     private static array $relationships = [];
 
     /**
@@ -176,6 +178,25 @@ class ORM
     {
         static::$relationships = [];
         static::$incompleteRelationships = [];
+        foreach (static::$mapper as $mapper) {
+            // Reset the ActiveRecord DbDriver
+            if (method_exists($mapper->getEntity(), 'reset')) {
+                call_user_func([$mapper->getEntity(), 'reset']);
+            }
+        }
         static::$mapper = [];
+    }
+
+    public static function defaultDbDriver(?DbDriverInterface $dbDriver = null): DbDriverInterface
+    {
+        if (is_null($dbDriver)) {
+            if (is_null(static::$dbDriver)) {
+                throw new InvalidArgumentException("You must initialize the ORM with a DbDriverInterface");
+            }
+            return static::$dbDriver;
+        }
+
+        static::$dbDriver = $dbDriver;
+        return $dbDriver;
     }
 }
