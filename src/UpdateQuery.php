@@ -131,6 +131,10 @@ class UpdateQuery extends Updatable
             $query->where($item['filter'], $item['params']);
         }
 
+        foreach ($this->joinTables as $joinTable) {
+            $query->join($joinTable['table'], $joinTable['condition']);
+        }
+
         return $query;
     }
 }
