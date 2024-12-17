@@ -44,9 +44,14 @@ trait WhereTrait
             /** @psalm-suppress RedundantCondition This is a Trait, and $this->join is defined elsewhere */
             if (isset($this->join)) {
                 foreach ($this->join as $item) {
-                    if (!($item['table'] instanceof QueryBasic) && !in_array($item['table'], $tableList) && ORM::getMapper($item['table'])?->isSoftDeleteEnabled() === true) {
-                        $tableList[] = $item['table'];
-                        $where[] = ["filter" => "{$item['table']}.deleted_at is null", "params" => []];
+                    if ($item['table'] instanceof QueryBasic) {
+                        continue;
+                    }
+
+                    $tableName = $item["alias"] ?? $item['table'];
+                    if (!in_array($tableName, $tableList) && ORM::getMapper($item['table'])?->isSoftDeleteEnabled() === true) {
+                        $tableList[] = $tableName;
+                        $where[] = ["filter" => "{$tableName}.deleted_at is null", "params" => []];
                     }
                 }
             }
