@@ -10,17 +10,17 @@ use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class InsertQuery extends Updatable
 {
-    protected array $fields = [];
+    protected array $values = [];
 
-    public static function getInstance(string $table = null, array $fields = []): self
+    public static function getInstance(string $table = null, array $fieldsAndValues = []): self
     {
         $query = new InsertQuery();
         if (!is_null($table)) {
             $query->table($table);
         }
 
-        foreach ($fields as $field => $value) {
-            $query->field($field, $value);
+        foreach ($fieldsAndValues as $field => $value) {
+            $query->set($field, $value);
         }
 
         return $query;
@@ -28,28 +28,30 @@ class InsertQuery extends Updatable
 
     /**
      * Fields to be used for the INSERT
+     *
      * Example:
-     *   $query->fields(['name', 'price']);
+     *   $query->set('name', 'price');
      *
      * @param string $field
      * @param int|float|bool|string|LiteralInterface|null $value
      * @return $this
      */
-    public function field(string $field, int|float|bool|string|LiteralInterface|null $value): self
+    public function set(string $field, int|float|bool|string|LiteralInterface|null $value): self
     {
-        $this->fields[$field] = $value;
+        $this->values[$field] = $value;
         return $this;
     }
 
     /**
      * Fields to be used for the INSERT
-     * Example:
+     * Use this method to add the fields will be prepared for the INSERT - same query, but with different values, executed multiple times
+ * Example:
      *   $query->fields(['name', 'price']);
      *
      * @param array $fields
      * @return $this
      */
-    public function fields(array $fields): static
+    public function defineFields(array $fields): static
     {
         // swap the key and value of the $fields array and set null as value
         $fields = array_flip($fields);
@@ -57,14 +59,9 @@ class InsertQuery extends Updatable
             return null;
         }, $fields);
 
-        $this->fields = array_merge($this->fields, $fields);
+        $this->values = array_merge($this->values, $fields);
 
         return $this;
-    }
-
-    protected function getFields(): string
-    {
-        return ' ' . implode(', ', $this->fields) . ' ';
     }
 
     /**
@@ -74,11 +71,11 @@ class InsertQuery extends Updatable
      */
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject
     {
-        if (empty($this->fields)) {
+        if (empty($this->values)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
-        $fieldsStr = array_keys($this->fields);
+        $fieldsStr = array_keys($this->values); // get the fields from the first element only
         if (!is_null($dbHelper)) {
             $fieldsStr = $dbHelper->delimiterField($fieldsStr);
         }
@@ -92,9 +89,9 @@ class InsertQuery extends Updatable
             . $tableStr
             . '( ' . implode(', ', $fieldsStr) . ' ) '
             . ' values '
-            . '( :' . implode(', :', array_keys($this->fields)) . ' ) ';
+            . '( :' . implode(', :', array_keys($this->values)) . ' ) ';
 
-        $params = $this->fields;
+        $params = $this->values;
         $sql = ORMHelper::processLiteral($sql, $params);
         return new SqlObject($sql, $params, SqlObjectEnum::INSERT);
     }
@@ -106,7 +103,7 @@ class InsertQuery extends Updatable
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
-            ->fields(array_keys($this->fields))
+            ->fields(array_keys($this->values))
             ->table($this->table);
 
         foreach ($this->where as $item) {

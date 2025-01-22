@@ -157,6 +157,7 @@ $result = $repository->getByQuery($query);
 ## Advanced Topics
 
 * [Active Record](docs/active-record.md)
+* [Auto Discovering Relationship](docs/auto-discovering-relationship.md)
 * [The Literal Object](docs/the-literal-object.md)
 * [Soft Delete](docs/softdelete.md)
 * [Caching the Results](docs/cache.md)

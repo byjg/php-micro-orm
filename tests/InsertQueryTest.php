@@ -29,9 +29,9 @@ class InsertQueryTest extends TestCase
     {
         $this->object->table('test');
 
-        $this->object->field('fld1', 'A');
-        $this->object->field('fld2', 'B');
-        $this->object->field('fld3', 'C');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
 
         $sqlObject = $this->object->build();
         $this->assertEquals(
@@ -54,9 +54,9 @@ class InsertQueryTest extends TestCase
             $this->object->convert()->build()
         );
 
-        $this->object->field('fld1', 'A');
-        $this->object->field('fld2', 'B');
-        $this->object->field('fld3', 'C');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
 
         $this->assertEquals(
             new SqlObject('SELECT  fld1, fld2, fld3 FROM test'),

@@ -433,7 +433,7 @@ class RepositoryTest extends TestCase
 
         $insertQuery = InsertQuery::getInstance()
             ->table('users')
-            ->fields([
+            ->defineFields([
                 'name',
                 'createdate'
             ]);
@@ -451,8 +451,8 @@ class RepositoryTest extends TestCase
 
         $insertQuery = InsertQuery::getInstance()
             ->table('users')
-            ->field('name', 'inserted name')
-            ->field('createdate', '2024-09-03')
+            ->set('name', 'inserted name')
+            ->set('createdate', '2024-09-03')
         ;
         $insertQuery->buildAndExecute($this->repository->getDbDriver());
 
