@@ -99,7 +99,8 @@ class InsertBulkQuery extends Updatable
             implode(', ', $placeholders)
         );
 
-        return new SqlObject(ORMHelper::processLiteral($sql), $params);
+        $sql = ORMHelper::processLiteral($sql, $params);
+        return new SqlObject($sql, $params);
     }
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
