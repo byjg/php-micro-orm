@@ -3,6 +3,8 @@
 Once you have defined the model, (see [Getting Started](getting-started-model.md)) you can start to interact with the database
 and doing queries, updates, and deletes.
 
+## Update
+
 Update a single record is simple as:
 
 ```php
@@ -14,7 +16,9 @@ $repository->save($users);
 
 This code will update the record with the ID 10 and set the name to "New name".
 
-The idea is to insert a new record. If you don't set the ID, the library will assume that you are inserting a new record.
+## Insert
+
+If you don't set the ID, the library will assume that you are inserting a new record.
 
 ```php
 <?php
@@ -23,7 +27,7 @@ $users->name = "New name";
 $repository->save($users);
 ```
 
-## Advanced Cases
+## Using the UpdateQuery (Special Cases)
 
 In some cases you need to update multiples records at once. See an example:
 
@@ -37,4 +41,63 @@ $updateQuery->set('fld3', 'C');
 $updateQuery->where('fld1 > :id', ['id' => 10]);
 ```
 
-This code will update the table `test` and set the fields `fld1`, `fld2`, and `fld3` to `A`, `B`, and `C` respectively where the `fld1` is greater than 10.
+This code will update the table `test` and set the fields `fld1`, `fld2`, and `fld3` to `A`, `B`, and `C`
+respectively where the `fld1` is greater than 10.
+
+## Insert records with InsertQuery
+
+You can insert records using the `InsertQuery` object. See an example:
+
+```php
+<?php
+$insertQuery = new \ByJG\MicroOrm\InsertQuery();
+$insertQuery->table('test');
+$insertQuery->set('fld1', 'A');
+$insertQuery->set('fld2', 'B');
+$insertQuery->set('fld3', 'C');
+```
+
+## Insert records from another select
+
+You can insert records from another select using the `InsertSelectQuery` object. See an example:
+
+```php
+<?php
+
+// Define the query to select the records
+$query = new QueryBasic();
+$query->table('table2');
+$query->field('fldA');
+$query->field('fldB');
+$query->field('fldC');
+$query->where('fldA = :valueA', ['valueA' => 1]);
+
+// Define the insert select query
+$insertSelectQuery = new \ByJG\MicroOrm\InsertSelectQuery();
+$insertSelectQuery->table('test');
+$insertSelectQuery->fields(['fld1', 'fld2', 'fld3']);
+$insertSelectQuery->fromQuery($query); // The query to select the records
+```
+
+## Insert records in batch
+
+You can insert records in batch using the `InsertBulkQuery` object. See an example:
+
+```php
+<?php
+$insertBulk = new InsertBulkQuery('test', ['fld1', 'fld2']);
+$insertBulk->values(['fld1' => 'A', 'fld2' => 'B']);
+$insertBulk->values(['fld1' => 'D', 'fld2' => 'E']);
+$insertBulk->values(['fld1' => 'G', 'fld2' => 'H']);
+```
+
+## Delete records
+
+You can delete records using the `DeleteQuery` object. See an example:
+
+```php
+<?php
+$deleteQuery = new \ByJG\MicroOrm\DeleteQuery();
+$deleteQuery->table('test');
+$deleteQuery->where('fld1 = :value', ['value' => 'A']);
+```

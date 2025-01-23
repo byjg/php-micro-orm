@@ -14,6 +14,7 @@ use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\FieldMapping;
+use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Literal\Literal;
@@ -76,9 +77,11 @@ class RepositoryTest extends TestCase
             name varchar(45),
             createdate datetime);'
         );
-        $this->dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
-        $this->dbDriver->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
-        $this->dbDriver->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
+        $insertBulk = InsertBulkQuery::getInstance('users', ['name', 'createdate']);
+        $insertBulk->values(['name' => 'John Doe', 'createdate' => '2017-01-02']);
+        $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
+        $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
+        $insertBulk->buildAndExecute($this->dbDriver);
         $this->userMapper = new Mapper(Users::class, 'users', 'Id');
 
 
@@ -90,9 +93,11 @@ class RepositoryTest extends TestCase
             updated_at datetime,
             deleted_at datetime);'
         );
-        $this->dbDriver->execute("insert into info (iduser, property) values (1, 30.4)");
-        $this->dbDriver->execute("insert into info (iduser, property) values (1, 1250.96)");
-        $this->dbDriver->execute("insert into info (iduser, property) values (3, '3.5')");
+        $insertMultiple = InsertBulkQuery::getInstance('info', ['iduser', 'property']);
+        $insertMultiple->values(['iduser' => 1, 'property' => 30.4]);
+        $insertMultiple->values(['iduser' => 1, 'property' => 1250.96]);
+        $insertMultiple->values(['iduser' => 3, 'property' => 3.5]);
+        $insertMultiple->buildAndExecute($this->dbDriver);
         $this->infoMapper = new Mapper(Info::class, 'info', 'id');
         $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
 
