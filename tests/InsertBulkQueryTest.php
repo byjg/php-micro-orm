@@ -3,6 +3,7 @@
 namespace Tests;
 
 use ByJG\MicroOrm\InsertBulkQuery;
+use ByJG\MicroOrm\Literal\Literal;
 use PHPUnit\Framework\TestCase;
 
 class InsertBulkQueryTest extends TestCase
@@ -11,8 +12,22 @@ class InsertBulkQueryTest extends TestCase
     {
         $insertBulk = new InsertBulkQuery('test', ['fld1', 'fld2']);
         $insertBulk->values(['fld1' => 'A', 'fld2' => 'B']);
+        $insertBulk->values(['fld1' => 'D', 'fld2' => new Literal("E")]);
+        $insertBulk->values(['fld1' => "G'1", 'fld2' => 'H']);
+
+        $sqlObject = $insertBulk->build();
+
+        $this->assertEquals("INSERT INTO test (fld1, fld2) VALUES ('A', 'B'), ('D', 'E'), ('G''1', 'H')", $sqlObject->getSql());
+        $this->assertEquals([], $sqlObject->getParameters());
+    }
+
+    public function testInsertSafe()
+    {
+        $insertBulk = new InsertBulkQuery('test', ['fld1', 'fld2']);
+        $insertBulk->values(['fld1' => 'A', 'fld2' => 'B']);
         $insertBulk->values(['fld1' => 'D', 'fld2' => 'E']);
         $insertBulk->values(['fld1' => 'G', 'fld2' => 'H']);
+        $insertBulk->withSafeParameters();
 
         $sqlObject = $insertBulk->build();
 
@@ -27,6 +42,7 @@ class InsertBulkQueryTest extends TestCase
         ], $sqlObject->getParameters());
     }
 
+
     public function testInsertDifferentOrder()
     {
         $insertBulk = new InsertBulkQuery('test', ['fld1', 'fld2', 'fld3']);
@@ -36,18 +52,8 @@ class InsertBulkQueryTest extends TestCase
 
         $sqlObject = $insertBulk->build();
 
-        $this->assertEquals('INSERT INTO test (fld1, fld2, fld3) VALUES (:p0_0, :p0_1, :p0_2), (:p1_0, :p1_1, :p1_2), (:p2_0, :p2_1, :p2_2)', $sqlObject->getSql());
-        $this->assertEquals([
-            'p0_0' => 'A',
-            'p0_1' => 'B',
-            'p0_2' => 'C',
-            'p1_0' => 'D',
-            'p1_1' => 'E',
-            'p1_2' => 'F',
-            'p2_0' => 'G',
-            'p2_1' => 'H',
-            'p2_2' => 'I',
-        ], $sqlObject->getParameters());
+        $this->assertEquals("INSERT INTO test (fld1, fld2, fld3) VALUES ('A', 'B', 'C'), ('D', 'E', 'F'), ('G', 'H', 'I')", $sqlObject->getSql());
+        $this->assertEquals([], $sqlObject->getParameters());
     }
 
     public function testWrongFieldsValuesCount()

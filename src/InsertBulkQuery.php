@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Literal\Literal;
 use InvalidArgumentException;
 
 class InsertBulkQuery extends Updatable
@@ -14,6 +15,8 @@ class InsertBulkQuery extends Updatable
     protected ?QueryBuilderInterface $query = null;
 
     protected ?SqlObject $sqlObject = null;
+
+    protected bool $safe = false;
 
     public function __construct(string $table, array $fieldNames)
     {
@@ -28,6 +31,12 @@ class InsertBulkQuery extends Updatable
     public static function getInstance(string $table, array $fieldNames): static
     {
         return new InsertBulkQuery($table, $fieldNames);
+    }
+
+    public function withSafeParameters(): static
+    {
+        $this->safe = true;
+        return $this;
     }
 
     /**
@@ -82,7 +91,15 @@ class InsertBulkQuery extends Updatable
             foreach ($columns as $j => $col) {
                 $paramKey = "p{$i}_$j"; // Generate the parameter key
                 $rowPlaceholders[] = ":$paramKey"; // Add to row placeholders
-                $params[$paramKey] = $this->fields[$col][$i]; // Map parameter key to value
+                if ($this->safe) {
+                    $params[$paramKey] = $this->fields[$col][$i];
+                } else {
+                    $value = str_replace("'", "''", $this->fields[$col][$i]);
+                    if (!is_numeric($value)) {
+                        $value = $dbHelper?->delimiterField($value) ?? "'{$value}'";
+                    }
+                    $params[$paramKey] = new Literal($value); // Map parameter key to value
+                }
             }
             $placeholders[] = '(' . implode(', ', $rowPlaceholders) . ')'; // Add row placeholders to query
         }
