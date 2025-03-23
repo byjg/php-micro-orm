@@ -3,9 +3,9 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use InvalidArgumentException;
 
 class InsertSelectQuery extends Updatable
 {
@@ -51,7 +51,6 @@ class InsertSelectQuery extends Updatable
     /**
      * @param DbFunctionsInterface|null $dbHelper
      * @return SqlObject
-     * @throws InvalidArgumentException
      * @throws OrmInvalidFieldsException
      */
     public function build(DbFunctionsInterface $dbHelper = null): SqlObject
@@ -91,6 +90,6 @@ class InsertSelectQuery extends Updatable
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
-        throw new \InvalidArgumentException('It is not possible to convert an InsertMultipleQuery to a Query');
+        throw new InvalidArgumentException('It is not possible to convert an InsertSelectQuery to a Query');
     }
 }

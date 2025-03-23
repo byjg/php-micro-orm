@@ -395,7 +395,7 @@ class Repository
             $position = 0;
             foreach ($keyGen as $value) {
                 $array[$pkList[$position]] = $value;
-                $updatable->field($this->mapper->getPrimaryKey()[$position++], $value);
+                $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
             }
             $keyReturned = $this->insert($updatable, $keyGen);
             if (count($pkList) == 1 && !empty($keyReturned)) {

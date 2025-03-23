@@ -3,8 +3,11 @@
 namespace Tests;
 
 use ByJG\MicroOrm\FieldMapping;
+use ByJG\MicroOrm\Literal\HexUuidLiteral;
+use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
+use ByJG\MicroOrm\ORMHelper;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Class1;
 use Tests\Model\Class2;
@@ -120,5 +123,48 @@ class ORMTest extends TestCase
 
         $query = ORM::getQueryInstance('table2', 'table3');
         $this->assertEquals("SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 INNER JOIN table3 ON table1.id = table3.id_table1", $query->build()->getSql());
+    }
+
+    public function testProcessLiteral()
+    {
+        $query = ORM::getQueryInstance('table1');
+        $query->where('field1 = :value', ['value' => new Literal('upper(field1)')]);
+        $this->assertEquals("SELECT  * FROM table1 WHERE field1 = upper(field1)", $query->build()->getSql());
+
+    }
+
+    public function testProcessHexUuidLiteral()
+    {
+        $query = ORM::getQueryInstance('table1');
+        $query->where('field1 = :value', ['value' => new HexUuidLiteral(hex2bin('01010101010101010101010101010101'))]);
+        $this->assertEquals("SELECT  * FROM table1 WHERE field1 = X'01010101010101010101010101010101'", $query->build()->getSql());
+    }
+
+    public function testProcessLiteralUnsafe()
+    {
+        $query = ORM::getQueryInstance('table1');
+        $query->where('field1 = :value', ['value' => new Literal(10)]);
+
+        $sqlObject = $query->build();
+        $sql = $sqlObject->getSql();
+        $params = $sqlObject->getParameters();
+
+        $sql = ORMHelper::processLiteral($sql, $params);
+        $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 10", $sql);
+    }
+
+    public function testProcessLiteralString()
+    {
+        $query = ORM::getQueryInstance('table1');
+        $query->where('field1 = :value', ['value' => new Literal("'testando'")]);
+        $query->where('field2 = :value2', ['value2' => new Literal("'Joana D''Arc'")]);
+
+        $sqlObject = $query->build();
+        $sql = $sqlObject->getSql();
+        $params = $sqlObject->getParameters();
+
+        $sql = ORMHelper::processLiteral($sql, $params);
+        $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 'testando' AND field2 = 'Joana D''Arc'", $sql);
+        $this->assertEquals([], $params);
     }
 }
