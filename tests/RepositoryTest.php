@@ -9,13 +9,13 @@ use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
-use ByJG\MicroOrm\Constraint\AllowOnlyNewValuesConstraint;
-use ByJG\MicroOrm\Constraint\ClosureConstraint;
+use ByJG\MicroOrm\Constraint\CustomConstraint;
+use ByJG\MicroOrm\Constraint\RequireChangedValuesConstraint;
 use ByJG\MicroOrm\DeleteQuery;
-use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
+use ByJG\MicroOrm\Exception\RequireChangedValuesConstraintException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertBulkQuery;
@@ -1157,13 +1157,13 @@ class RepositoryTest extends TestCase
 
         // Set Zero
         $result[0]->setValue(2);
-        $newInstance = $infoRepository->save($result[0], new AllowOnlyNewValuesConstraint('value'));
+        $newInstance = $infoRepository->save($result[0], new RequireChangedValuesConstraint('value'));
         $this->assertEquals(2, $newInstance->getValue());
     }
 
     public function testConstraintNotAllow()
     {
-        $this->expectException(AllowOnlyNewValuesConstraintException::class);
+        $this->expectException(RequireChangedValuesConstraintException::class);
         $this->expectExceptionMessage("You are not updating the property 'value'");
 
         // This update has an observer, and you change the `test` variable
@@ -1176,7 +1176,7 @@ class RepositoryTest extends TestCase
 
         // Set Zero
         $result[0]->setValue(3.5);
-        $newInstance = $infoRepository->save($result[0], new AllowOnlyNewValuesConstraint('value'));
+        $newInstance = $infoRepository->save($result[0], new RequireChangedValuesConstraint('value'));
     }
 
     public function testConstraintCustomAllow()
@@ -1191,7 +1191,7 @@ class RepositoryTest extends TestCase
 
         // Set Zero
         $result[0]->setValue(2);
-        $newInstance = $infoRepository->save($result[0], new ClosureConstraint(function ($oldInstance, $newInstance) {
+        $newInstance = $infoRepository->save($result[0], new CustomConstraint(function ($oldInstance, $newInstance) {
             return $newInstance->getValue() != 3.5;
         }));
         $this->assertEquals(2, $newInstance->getValue());
@@ -1212,7 +1212,7 @@ class RepositoryTest extends TestCase
 
         // Set Zero
         $result[0]->setValue(3.5);
-        $newInstance = $infoRepository->save($result[0], new ClosureConstraint(function ($oldInstance, $newInstance) {
+        $newInstance = $infoRepository->save($result[0], new CustomConstraint(function ($oldInstance, $newInstance) {
             return $newInstance->getValue() != 3.5;
         }));
     }

@@ -6,7 +6,7 @@ use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 use Closure;
 
-class ClosureConstraint implements UpdateConstraintInterface
+class CustomConstraint implements UpdateConstraintInterface
 {
     private Closure $closure;
     private ?string $errorMessage;

@@ -2,10 +2,10 @@
 
 namespace ByJG\MicroOrm\Constraint;
 
-use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
+use ByJG\MicroOrm\Exception\RequireChangedValuesConstraintException;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 
-class AllowOnlyNewValuesConstraint implements UpdateConstraintInterface
+class RequireChangedValuesConstraint implements UpdateConstraintInterface
 {
     private array $properties;
 
@@ -25,13 +25,13 @@ class AllowOnlyNewValuesConstraint implements UpdateConstraintInterface
         foreach ($this->properties as $property) {
             $method = "get" . ucfirst($property);
             if (!method_exists($oldInstance, $method)) {
-                throw new AllowOnlyNewValuesConstraintException("The property '$property' does not exist in the old instance.");
+                throw new RequireChangedValuesConstraintException("The property '$property' does not exist in the old instance.");
             }
             if (!method_exists($newInstance, $method)) {
-                throw new AllowOnlyNewValuesConstraintException("The property '$property' does not exist in the new instance.");
+                throw new RequireChangedValuesConstraintException("The property '$property' does not exist in the new instance.");
             }
             if ($oldInstance->$method() == $newInstance->$method()) {
-                throw new AllowOnlyNewValuesConstraintException("You are not updating the property '$property'");
+                throw new RequireChangedValuesConstraintException("You are not updating the property '$property'");
             }
         }
     }
