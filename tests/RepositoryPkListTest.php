@@ -124,8 +124,8 @@ class RepositoryPkListTest extends TestCase
 
     //     $items = $this->repository->get(1);
     //     $this->assertEquals(1, $items->getItemId());
-    //     $this->assertEquals('[JOHN DOE] - 2017-01-02', $items->getName());
-    //     $this->assertEquals('2017-01-02', $items->getCreatedate());
+    //     $this->assertEquals('[JOHN DOE] - 2015-05-02', $items->getName());
+    //     $this->assertEquals('2015-05-02', $items->getCreatedate());
     //     $this->assertEquals('2017', $items->getYear());
 
     //     $items = $this->repository->get(2);
@@ -311,7 +311,7 @@ class RepositoryPkListTest extends TestCase
 
     //     $this->assertEquals(1, $items2->getId());
     //     $this->assertEquals('ee', $items2->getName());
-    //     $this->assertEquals('2017-01-02', $items2->getCreatedate());
+    //     $this->assertEquals('2015-05-02', $items2->getCreatedate());
     // }
 
     // public function testUpdateFunction()
@@ -390,7 +390,7 @@ class RepositoryPkListTest extends TestCase
     //     $items = $this->repository->get(1);
     //     $this->assertEquals(1, $items->getId());
     //     $this->assertEquals('John Doe', $items->getName());
-    //     $this->assertEquals('2017-01-02', $items->getCreatedate());
+    //     $this->assertEquals('2015-05-02', $items->getCreatedate());
 
     //     $items = $this->repository->get(2);
     //     $this->assertEmpty($items);
@@ -512,11 +512,11 @@ class RepositoryPkListTest extends TestCase
 
     //     $this->assertEquals(1, $result[0][0]->getId());
     //     $this->assertEquals('John Doe', $result[0][0]->getName());
-    //     $this->assertEquals('2017-01-02', $result[0][0]->getCreatedate());
+    //     $this->assertEquals('2015-05-02', $result[0][0]->getCreatedate());
 
     //     $this->assertEquals(1, $result[1][0]->getId());
     //     $this->assertEquals('John Doe', $result[1][0]->getName());
-    //     $this->assertEquals('2017-01-02', $result[1][0]->getCreatedate());
+    //     $this->assertEquals('2015-05-02', $result[1][0]->getCreatedate());
 
     //     // - ------------------
 
@@ -564,7 +564,7 @@ class RepositoryPkListTest extends TestCase
 
     //     $this->assertEquals(1, $result[0]->getId());
     //     $this->assertEquals('John Doe', $result[0]->getName());
-    //     $this->assertEquals('2017-01-02', $result[0]->getCreatedate());
+    //     $this->assertEquals('2015-05-02', $result[0]->getCreatedate());
 
     //     $this->assertEquals(1, count($result));
     // }

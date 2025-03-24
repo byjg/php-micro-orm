@@ -16,6 +16,8 @@ use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
+use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
@@ -310,12 +312,11 @@ class Repository
      * @param mixed $instance
      * @param UpdateConstraint|null $updateConstraint
      * @return mixed
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
     {
@@ -323,24 +324,15 @@ class Repository
         $array = Serialize::from($instance)
             ->withStopAtFirstLevel()
             ->toArray();
-        $fieldToProperty = [];
         $mapper = $this->getMapper();
 
         // Copy the values to the instance
         $valuesToUpdate = new stdClass();
+
         ObjectCopy::copy(
             $array,
             $valuesToUpdate,
-            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
-                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
-                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
-                $fieldToProperty[$fieldName] = $sourcePropertyName;
-                return $fieldName;
-            },
-            function ($propName, $targetName, $value) use ($mapper, $instance) {
-                $fieldMap = $mapper->getFieldMap($propName);
-                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
-            }
+            new PrepareToUpdateHandler($mapper, $instance, $this->getDbDriverWrite())
         );
         $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
 
@@ -364,10 +356,10 @@ class Repository
         if ($isInsert) {
             $closure = $this->beforeInsert;
             $array = $closure($array);
-            foreach ($this->getMapper()->getFieldMap() as $mapper) {
-                $fieldValue = $mapper->getInsertFunctionValue($array[$mapper->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+            foreach ($this->getMapper()->getFieldMap() as $fieldMap) {
+                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
                 if ($fieldValue !== false) {
-                    $array[$mapper->getFieldName()] = $fieldValue;
+                    $array[$fieldMap->getFieldName()] = $fieldValue;
                 }
             }
             $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
@@ -404,9 +396,8 @@ class Repository
             $this->update($updatable);
         }
 
-        ObjectCopy::copy($array, $instance, function ($sourcePropertyName) use ($fieldToProperty) {
-            return $fieldToProperty[$sourcePropertyName] ?? $sourcePropertyName;
-        });
+        $array = array_merge(Serialize::from($instance)->toArray(), $array);
+        ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($mapper));
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),

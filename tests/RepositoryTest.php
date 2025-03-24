@@ -77,7 +77,7 @@ class RepositoryTest extends TestCase
             createdate datetime);'
         );
         $insertBulk = InsertBulkQuery::getInstance('users', ['name', 'createdate']);
-        $insertBulk->values(['name' => 'John Doe', 'createdate' => '2017-01-02']);
+        $insertBulk->values(['name' => 'John Doe', 'createdate' => '2015-05-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
         $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
         $insertBulk->buildAndExecute($this->dbDriver);
@@ -116,7 +116,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
 
         $users = $this->repository->get("2");
         $this->assertEquals(2, $users->getId());
@@ -126,7 +126,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(new Literal(1));
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
     }
 
     public function testGetByFilter()
@@ -135,7 +135,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $users);
         $this->assertEquals(1, $users[0]->getId());
         $this->assertEquals('John Doe', $users[0]->getName());
-        $this->assertEquals('2017-01-02', $users[0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
         $filter->and('id', Relation::EQUAL, 2);
@@ -153,23 +153,23 @@ class RepositoryTest extends TestCase
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withSelectFunction(function ($value, $instance) {
-                return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
+                return '[' . strtoupper($value) . '] - ' . $instance["createdate"];
             }
             )
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreatedate());
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
 
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
-        $this->assertEquals('[JOHN DOE] - 2017-01-02', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
-        $this->assertEquals(2017, $users->getYear());
+        $this->assertEquals('[JOHN DOE] - 2015-05-02', $users->getName());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals(2015, $users->getYear());
 
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
@@ -361,7 +361,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreateDate());
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
@@ -514,7 +514,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2017-01-02', $users2->getCreatedate());
+        $this->assertEquals('2015-05-02', $users2->getCreatedate());
     }
 
     public function testUpdateObject()
@@ -558,7 +558,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreateDate());
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
@@ -623,7 +623,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
 
         $users = $this->repository->get(2);
         $this->assertEmpty($users);
@@ -754,11 +754,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0][0]->getId());
         $this->assertEquals('John Doe', $result[0][0]->getName());
-        $this->assertEquals('2017-01-02', $result[0][0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[0][0]->getCreatedate());
 
         $this->assertEquals(1, $result[1][0]->getId());
         $this->assertEquals('John Doe', $result[1][0]->getName());
-        $this->assertEquals('2017-01-02', $result[1][0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[1][0]->getCreatedate());
 
         // - ------------------
 
@@ -804,7 +804,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
-        $this->assertEquals('2017-01-02', $result[0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
