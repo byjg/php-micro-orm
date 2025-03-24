@@ -1,3 +1,7 @@
+---
+sidebar_position: 12
+---
+
 # Observers
 
 An observer is a class will be called after an insert, update or delete record in the DB.

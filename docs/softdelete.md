@@ -1,3 +1,7 @@
+---
+sidebar_position: 10
+---
+
 # Soft Deletes
 
 Soft deletes are a way to "delete" a record without actually removing it from the database.

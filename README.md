@@ -153,6 +153,8 @@ $result = $repository->getByQuery($query);
 * [Querying the Database](docs/querying-the-database.md)
 * [Updating the database](docs/updating-the-database.md)
 * [Using the Mapper Object](docs/using-mapper-object.md)
+* [The Model Attributes](docs/model.md)
+* [The Repository Class](docs/repository.md)
 
 ## Advanced Topics
 
@@ -166,6 +168,7 @@ $result = $repository->getByQuery($query);
 * [Using FieldAlias](docs/using-fieldalias.md)
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
+* [Update Constraints](docs/update-constraints.md)
 
 ## Install
 

@@ -1,3 +1,7 @@
+---
+sidebar_position: 5
+---
+
 # The Model Attributes
 
 The Model Attributes are used to define the table structure in the database. 
@@ -19,7 +23,7 @@ class MyModel
     #[FieldAttribute()]
     public ?string $name;
 
-    #[FieldAttribute(fieldName: 'company_id')
+    #[FieldAttribute(fieldName: 'company_id')]
     public ?int $companyId;
     
     #[FieldAttribute(fieldName: 'created_at')]
@@ -82,6 +86,7 @@ The `TableAttribute` has the following parameters:
 |----------------------------|-----------------------------------------------------------------------------------------|:--------:|
 | **tableName**              | The name of the table in the database.                                                  |   Yes    |
 | **primaryKeySeedFunction** | A function that returns the seed for the primary key. The function must return a value. |    No    |
+| **tableAlias**             | The alias of the table in the database.                                                 |    No    |
 
 ## Field Attributes parameters
 
@@ -100,5 +105,32 @@ The `FieldAttribute` has the following parameters:
 
 See also [Controlling the Data](controlling-the-data.md) for more information about the `updateFunction`,
 `selectFunction`, and `insertFunction`.
+
+## Special Table Attributes for UUID primary keys
+
+MicroOrm provides specialized table attributes for tables with UUID primary keys:
+
+* `TableUuidPKAttribute` - Base class for UUID primary key tables (generic implementation)
+* `TableMySqlUuidPKAttribute` - Specific implementation for MySQL databases with UUID primary keys
+* `TableSqliteUuidPKAttribute` - Specific implementation for SQLite databases with UUID primary keys
+
+These attributes automatically configure the primary key generation for UUID fields.
+
+Example:
+
+```php
+#[TableMySqlUuidPKAttribute(tableName: 'my_table')]
+class MyModelWithUuid
+{
+    #[FieldUuidAttribute(primaryKey: true)]
+    public ?string $id;
+
+    #[FieldAttribute()]
+    public ?string $name;
+}
+```
+
+The `FieldUuidAttribute` can be used to mark a field as a UUID primary key. It works in conjunction with the UUID table
+attributes to automatically generate UUID values.
 
 
