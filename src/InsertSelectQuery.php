@@ -7,6 +7,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use InvalidArgumentException;
+use Override;
 
 class InsertSelectQuery extends Updatable
 {
@@ -54,6 +55,7 @@ class InsertSelectQuery extends Updatable
      * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
+    #[Override]
     public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
@@ -89,6 +91,7 @@ class InsertSelectQuery extends Updatable
         return new SqlStatement($sql . $fromObj->getSql(), $fromObj->getParams());
     }
 
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertSelectQuery to a Query');

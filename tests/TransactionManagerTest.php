@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\TransactionManager;
 use InvalidArgumentException;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
 
@@ -18,11 +19,13 @@ class TransactionManagerTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     public function setUp(): void
     {
         $this->object = new TransactionManager();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $this->object->destroy();

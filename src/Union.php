@@ -7,6 +7,7 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use Override;
 
 class Union implements QueryBuilderInterface
 {
@@ -84,6 +85,7 @@ class Union implements QueryBuilderInterface
     /**
      * @throws InvalidArgumentException
      */
+    #[Override]
     public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $unionQuery = [];
@@ -104,6 +106,7 @@ class Union implements QueryBuilderInterface
     }
 
 
+    #[Override]
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
     {
         $sqlStatement = $this->build($dbDriver);

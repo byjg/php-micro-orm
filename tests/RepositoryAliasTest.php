@@ -9,6 +9,7 @@ use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Customer;
 
@@ -32,6 +33,7 @@ class RepositoryAliasTest extends TestCase
      */
     protected $repository;
 
+    #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
@@ -56,6 +58,7 @@ class RepositoryAliasTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->customerMapper);
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $uri = new Uri(self::URI);

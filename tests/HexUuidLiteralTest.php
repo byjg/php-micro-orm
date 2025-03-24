@@ -8,12 +8,14 @@ use ByJG\MicroOrm\Literal\MySqlUuidLiteral;
 use ByJG\MicroOrm\Literal\PostgresUuidLiteral;
 use ByJG\MicroOrm\Literal\SqliteUuidLiteral;
 use ByJG\MicroOrm\Literal\SqlServerUuidLiteral;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class HexUuidLiteralTest extends TestCase
 {
     protected $class;
 
+    #[Override]
     public function setUp(): void
     {
         $this->class = HexUuidLiteral::class;

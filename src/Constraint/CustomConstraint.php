@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm\Constraint;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 use Closure;
+use Override;
 
 class CustomConstraint implements UpdateConstraintInterface
 {
@@ -24,6 +25,7 @@ class CustomConstraint implements UpdateConstraintInterface
     /**
      * @inheritDoc
      */
+    #[Override]
     public function check(mixed $oldInstance, mixed $newInstance): void
     {
         $result = ($this->closure)($oldInstance, $newInstance);

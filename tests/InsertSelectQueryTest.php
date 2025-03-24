@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\InsertSelectQuery;
 use ByJG\MicroOrm\QueryBasic;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class InsertSelectQueryTest extends TestCase
@@ -15,11 +16,13 @@ class InsertSelectQueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new InsertSelectQuery();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;

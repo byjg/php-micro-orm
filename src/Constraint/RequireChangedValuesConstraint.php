@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm\Constraint;
 
 use ByJG\MicroOrm\Exception\RequireChangedValuesConstraintException;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
+use Override;
 
 class RequireChangedValuesConstraint implements UpdateConstraintInterface
 {
@@ -20,6 +21,7 @@ class RequireChangedValuesConstraint implements UpdateConstraintInterface
     /**
      * @inheritDoc
      */
+    #[Override]
     public function check(mixed $oldInstance, mixed $newInstance): void
     {
         foreach ($this->properties as $property) {

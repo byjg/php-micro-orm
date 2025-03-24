@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use Override;
 
 class Query extends QueryBasic
 {
@@ -16,6 +17,7 @@ class Query extends QueryBasic
     protected ?int $top = null;
     protected bool $forUpdate = false;
 
+    #[Override]
     public static function getInstance(): Query
     {
         return new Query();
@@ -105,6 +107,7 @@ class Query extends QueryBasic
      * @return SqlStatement
      * @throws InvalidArgumentException
      */
+    #[Override]
     public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $buildResult = parent::build($dbDriver);

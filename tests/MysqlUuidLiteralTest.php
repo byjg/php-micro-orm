@@ -3,10 +3,11 @@
 namespace Tests;
 
 use ByJG\MicroOrm\Literal\MySqlUuidLiteral;
-use ByJG\MicroOrm\Literal\SqliteUuidLiteral;
+use Override;
 
-class MysqlUuidLiteralTest extends \Tests\HexUuidLiteralTest
+class MysqlUuidLiteralTest extends HexUuidLiteralTest
 {
+    #[Override]
     public function setUp(): void
     {
         $this->class = MySqlUuidLiteral::class;

@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use Override;
 
 class InsertQuery extends Updatable
 {
@@ -70,6 +71,7 @@ class InsertQuery extends Updatable
      * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
+    #[Override]
     public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->values)) {
@@ -101,6 +103,7 @@ class InsertQuery extends Updatable
      * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()

@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use Override;
 
 class DeleteQuery extends Updatable
 {
@@ -14,6 +15,7 @@ class DeleteQuery extends Updatable
         return new DeleteQuery();
     }
 
+    #[Override]
     public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         $whereStr = $this->getWhere();
@@ -31,6 +33,7 @@ class DeleteQuery extends Updatable
         return new SqlStatement($sql, $params);
     }
 
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()

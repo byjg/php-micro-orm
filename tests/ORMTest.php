@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMHelper;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Class1;
 use Tests\Model\Class2;
@@ -21,6 +22,7 @@ class ORMTest extends TestCase
     private Mapper $mapper3;
     private Mapper $mapper4;
 
+    #[Override]
     public function setUp(): void
     {
         ORM::clearRelationships();
@@ -31,6 +33,7 @@ class ORMTest extends TestCase
         $this->mapper4 = new Mapper(Class4::class);
     }
 
+    #[Override]
     public function tearDown(): void
     {
         ORM::clearRelationships();

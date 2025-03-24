@@ -3,10 +3,11 @@
 namespace Tests;
 
 use ByJG\MicroOrm\Literal\SqliteUuidLiteral;
-use ByJG\MicroOrm\Literal\SqlServerUuidLiteral;
+use Override;
 
-class SqliteUuidLiteralTest extends \Tests\HexUuidLiteralTest
+class SqliteUuidLiteralTest extends HexUuidLiteralTest
 {
+    #[Override]
     public function setUp(): void
     {
         $this->class = SqliteUuidLiteral::class;

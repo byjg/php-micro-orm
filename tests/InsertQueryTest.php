@@ -5,6 +5,7 @@ namespace Tests;
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\InsertQuery;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class InsertQueryTest extends TestCase
@@ -14,11 +15,13 @@ class InsertQueryTest extends TestCase
      */
     protected ?InsertQuery $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new InsertQuery();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;

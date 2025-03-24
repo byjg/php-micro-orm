@@ -7,6 +7,7 @@ use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Items;
 
@@ -30,6 +31,7 @@ class RepositoryPkListTest extends TestCase
      */
     protected $repository;
 
+    #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
@@ -50,6 +52,7 @@ class RepositoryPkListTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->itemsMapper);
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $uri = new Uri(self::URI);

@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use InvalidArgumentException;
+use Override;
 
 class InsertBulkQuery extends Updatable
 {
@@ -63,6 +64,7 @@ class InsertBulkQuery extends Updatable
      * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
+    #[Override]
     public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
@@ -119,6 +121,7 @@ class InsertBulkQuery extends Updatable
         return new SqlStatement($sql, $params);
     }
 
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertBulkQuery to a Query');

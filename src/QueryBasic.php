@@ -8,6 +8,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\Serializer\Serialize;
+use Override;
 
 class QueryBasic implements QueryBuilderInterface
 {
@@ -243,6 +244,7 @@ class QueryBasic implements QueryBuilderInterface
      * @return SqlStatement
      * @throws InvalidArgumentException
      */
+    #[Override]
     public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $this->dbDriver = $dbDriver;
@@ -272,6 +274,7 @@ class QueryBasic implements QueryBuilderInterface
         return new SqlStatement($sql, $params);
     }
 
+    #[Override]
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
     {
         $sqlStatement = $this->build($dbDriver);

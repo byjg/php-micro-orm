@@ -35,6 +35,7 @@ use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
 use DateTime;
 use Exception;
+use Override;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\ActiveRecordModel;
@@ -70,6 +71,7 @@ class RepositoryTest extends TestCase
      */
     protected $repository;
 
+    #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
@@ -107,6 +109,7 @@ class RepositoryTest extends TestCase
         ORMSubject::getInstance()->clearObservers();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $uri = new Uri(self::URI);
@@ -884,6 +887,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -896,6 +900,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -904,6 +909,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -955,6 +961,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -967,6 +974,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -975,6 +983,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1024,6 +1033,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -1034,6 +1044,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -1042,6 +1053,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1073,6 +1085,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -1086,6 +1099,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -1094,6 +1108,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1125,14 +1140,17 @@ class RepositoryTest extends TestCase
                 $this->table = $table;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData): void
             {
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;

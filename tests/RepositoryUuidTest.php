@@ -7,6 +7,7 @@ use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\UsersWithUuidKey;
 
@@ -25,6 +26,7 @@ class RepositoryUuidTest extends TestCase
      */
     protected $repository;
 
+    #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
@@ -36,6 +38,7 @@ class RepositoryUuidTest extends TestCase
         $this->repository = new Repository($this->dbDriver, UsersWithUuidKey::class);
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $uri = new Uri(self::URI);

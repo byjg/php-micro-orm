@@ -7,6 +7,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use Override;
 
 class UpdateQuery extends Updatable
 {
@@ -75,6 +76,7 @@ class UpdateQuery extends Updatable
      * @return SqlStatement
      * @throws InvalidArgumentException
      */
+    #[Override]
     public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->set)) {
@@ -122,6 +124,8 @@ class UpdateQuery extends Updatable
         $sql = ORMHelper::processLiteral($sql, $params);
         return new SqlStatement($sql, $params);
     }
+
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()

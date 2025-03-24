@@ -8,6 +8,7 @@ use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\UpdateQuery;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class UpdateQueryTest extends TestCase
@@ -17,11 +18,13 @@ class UpdateQueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new UpdateQuery();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;

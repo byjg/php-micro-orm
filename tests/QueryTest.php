@@ -13,6 +13,7 @@ use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
 use ByJG\MicroOrm\UpdateQuery;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\ModelWithAttributes;
 
@@ -23,11 +24,13 @@ class QueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new Query();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;

@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Updatable;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class DeleteQueryTest extends TestCase
@@ -15,11 +16,13 @@ class DeleteQueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new DeleteQuery();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;

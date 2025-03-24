@@ -35,6 +35,6 @@ class ORMHelper
             }
         }
 
-        return $sql;
+        return $sql ?? "";
     }
 }
