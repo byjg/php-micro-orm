@@ -153,13 +153,18 @@ class RepositoryTest extends TestCase
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withSelectFunction(function ($value, $instance) {
+                if (empty($value)) {
+                    return null;
+                }
                 return '[' . strtoupper($value) . '] - ' . $instance["createdate"];
-            }
-            )
+            })
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(function ($value, $instance) {
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
                 $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
@@ -361,6 +366,9 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
                 $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
@@ -558,6 +566,9 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withUpdateFunction(MapperClosure::readOnly())
             ->withSelectFunction(function ($value, $instance) {
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
                 $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })

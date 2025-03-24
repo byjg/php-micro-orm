@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm\PropertyHandler;
 
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\Serializer\PropertyHandler\PropertyHandlerInterface;
 use Override;
@@ -9,17 +10,25 @@ use Override;
 class MapFromDbToInstanceHandler implements PropertyHandlerInterface
 {
 
+    protected ?FieldMapping $fieldMap = null;
     public function __construct(private Mapper $mapper)
     {
     }
 
     #[Override]
     /**
+     * Note:
+     * This implementation is dependent on how ObjectCopy works.
+     * First it will call mapName and then transformValue
+     * If the order changes, this implementation must be changed.
+     *
      * @param string $property In this context is the field name
      */
     public function mapName(string $property): string
     {
-        return $this->mapper->getPropertyName($property);
+        $propertyName = $this->mapper->getPropertyName($property);
+        $this->fieldMap = $this->mapper->getFieldMap($propertyName);
+        return $propertyName;
     }
 
     /**
@@ -33,11 +42,6 @@ class MapFromDbToInstanceHandler implements PropertyHandlerInterface
     #[Override]
     public function transformValue(string $propertyName, string $targetName, mixed $value, mixed $instance = null): mixed
     {
-        $fieldMap = $this->mapper->getFieldMap($this->mapper->getPropertyName($propertyName));
-        if (empty($fieldMap)) {
-            $fieldMap = $this->mapper->getFieldMap($targetName);
-        }
-
-        return $fieldMap?->getSelectFunctionValue($value, $instance) ?? $value;
+        return $this->fieldMap?->getSelectFunctionValue($value, $instance) ?? $value;
     }
 }
