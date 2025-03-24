@@ -169,6 +169,7 @@ $result = $repository->getByQuery($query);
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
 * [Update Constraints](docs/update-constraints.md)
+* [Building SQL Queries](docs/query-build.md)
 
 ## Install
 
