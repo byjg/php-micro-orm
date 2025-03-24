@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\DeleteQuery;
@@ -25,8 +26,6 @@ use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\MicroOrm\SqlObject;
-use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
@@ -306,14 +305,14 @@ class RepositoryTest extends TestCase
             ]
         );
 
-        $sqlObject = $insertQuery->build();
+        $sqlStatement = $insertQuery->build();
 
         $this->assertEquals(
-            new SqlObject("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"], SqlObjectEnum::INSERT),
-            $sqlObject
+            new SqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"]),
+            $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->repository->getDbDriverWrite()->execute($sqlStatement);
 
         $users2 = $this->repository->get(4);
 
@@ -529,13 +528,13 @@ class RepositoryTest extends TestCase
             $this->userMapper,
         );
 
-        $sqlObject = $updateQuery->build();
+        $sqlStatement = $updateQuery->build();
         $this->assertEquals(
-            new SqlObject("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1], SqlObjectEnum::UPDATE),
-            $sqlObject
+            new SqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1]),
+            $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->repository->getDbDriverWrite()->execute($sqlStatement);
 
         $users2 = $this->repository->get(1);
 

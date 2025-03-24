@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class Recursive
@@ -50,7 +51,7 @@ class Recursive
         return $this;
     }
 
-    public function build(DbDriverInterface $dbDriver = null): SqlObject
+    public function build(DbDriverInterface $dbDriver = null): SqlStatement
     {
         $this->dbDriver = $dbDriver;
 
@@ -59,7 +60,7 @@ class Recursive
         $sql .= " UNION ALL ";
         $sql .= $this->getRecursion();
         $sql .= ") ";
-        return new SqlObject($sql);
+        return new SqlStatement($sql);
     }
 
     protected function getBase(): string

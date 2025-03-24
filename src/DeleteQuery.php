@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 
@@ -13,7 +14,7 @@ class DeleteQuery extends Updatable
         return new DeleteQuery();
     }
 
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {
@@ -27,7 +28,7 @@ class DeleteQuery extends Updatable
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlObject($sql, $params, SqlObjectEnum::DELETE);
+        return new SqlStatement($sql, $params);
     }
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface

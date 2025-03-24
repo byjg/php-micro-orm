@@ -2,9 +2,10 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\InsertSelectQuery;
 use ByJG\MicroOrm\QueryBasic;
-use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class InsertSelectQueryTest extends TestCase
@@ -36,9 +37,9 @@ class InsertSelectQueryTest extends TestCase
         $query->field('fldC');
         $this->object->fromQuery($query);
 
-        $sqlObject = $this->object->build();
+        $sqlStatement = $this->object->build();
 
-        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2', $sqlObject->getSql());
+        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2', $sqlStatement->getSql());
     }
 
     public function testInsertSelectParam()
@@ -54,13 +55,13 @@ class InsertSelectQueryTest extends TestCase
         $query->where('fldA = :valueA', ['valueA' => 1]);
         $this->object->fromQuery($query);
 
-        $sqlObject = $this->object->build();
+        $sqlStatement = $this->object->build();
 
-        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2 WHERE fldA = :valueA', $sqlObject->getSql());
-        $this->assertEquals(['valueA' => 1], $sqlObject->getParameters());
+        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2 WHERE fldA = :valueA', $sqlStatement->getSql());
+        $this->assertEquals(['valueA' => 1], $sqlStatement->getParams());
     }
 
-    public function testInsertSqlObject()
+    public function testInsertSqlStatement()
     {
         $this->object->table('test');
         $this->object->fields(['fld1', 'fld2', 'fld3']);
@@ -73,11 +74,11 @@ class InsertSelectQueryTest extends TestCase
         $query->where('fldA = :valueA', ['valueA' => 1]);
         $fromObject = $query->build();
 
-        $this->object->fromSqlObject($fromObject);
-        $sqlObject = $this->object->build();
+        $this->object->fromSqlStatement($fromObject);
+        $sqlStatement = $this->object->build();
 
-        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2 WHERE fldA = :valueA', $sqlObject->getSql());
-        $this->assertEquals(['valueA' => 1], $sqlObject->getParameters());
+        $this->assertEquals('INSERT INTO test ( fld1, fld2, fld3 ) SELECT  fldA, fldB, fldC FROM table2 WHERE fldA = :valueA', $sqlStatement->getSql());
+        $this->assertEquals(['valueA' => 1], $sqlStatement->getParams());
     }
 
     public function testWithoutQuery()
@@ -85,19 +86,19 @@ class InsertSelectQueryTest extends TestCase
         $this->object->table('test');
         $this->object->fields(['fld1', 'fld2', 'fld3']);
 
-        $this->expectException(\ByJG\MicroOrm\Exception\OrmInvalidFieldsException::class);
+        $this->expectException(OrmInvalidFieldsException::class);
         $this->expectExceptionMessage('You must specify the query for insert');
         $this->object->build();
     }
 
-    public function testWithBothQueryandSqlObject()
+    public function testWithBothQueryandSqlStatement()
     {
         $this->object->table('test');
         $this->object->fields(['fld1', 'fld2', 'fld3']);
         $this->object->fromQuery(new QueryBasic());
-        $this->object->fromSqlObject(new SqlObject("SELECT * FROM table2"));
+        $this->object->fromSqlStatement(new SqlStatement("SELECT * FROM table2"));
 
-        $this->expectException(\ByJG\MicroOrm\Exception\OrmInvalidFieldsException::class);
+        $this->expectException(OrmInvalidFieldsException::class);
         $this->expectExceptionMessage('You must specify only one query for insert');
         $this->object->build();
     }

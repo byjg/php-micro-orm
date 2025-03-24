@@ -6,7 +6,6 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
-use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -196,11 +195,11 @@ class Repository
      */
     public function deleteByQuery(DeleteQuery $updatable): bool
     {
-        $sqlObject = $updatable->build();
+        $sqlStatement = $updatable->build();
 
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->getDbDriverWrite()->execute($sqlStatement);
 
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $sqlObject->getParameters());
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $sqlStatement->getParams());
 
         return true;
     }
@@ -260,15 +259,13 @@ class Repository
     public function getScalar(QueryBuilderInterface $query): mixed
     {
         $sqlBuild = $query->build($this->getDbDriver());
-
-        $params = $sqlBuild->getParameters();
-        $sql = $sqlBuild->getSql();
-        return $this->getDbDriver()->getScalar($sql, $params);
+        return $this->getDbDriver()->getScalar($sqlBuild);
     }
 
     /**
      * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
+     * @param CacheQueryResult|null $cache
      * @return array
      */
     public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
@@ -276,13 +273,12 @@ class Repository
         $mapper = array_merge([$this->mapper], $mapper);
         $sqlBuild = $query->build($this->getDbDriver());
 
-        $params = $sqlBuild->getParameters();
-        $sql = new SqlStatement($sqlBuild->getSql());
         if (!empty($cache)) {
-            $sql->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
+
         $result = [];
-        $iterator = $sql->getIterator($this->getDbDriver(), $params);
+        $iterator = $this->getDbDriver()->getIterator($sqlBuild);
 
         foreach ($iterator as $row) {
             $collection = [];
@@ -305,8 +301,8 @@ class Repository
      */
     public function getByQueryRaw(QueryBuilderInterface $query): array
     {
-        $sqlObject = $query->build($this->getDbDriver());
-        $iterator = $this->getDbDriver()->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
+        $sqlStatement = $query->build($this->getDbDriver());
+        $iterator = $this->getDbDriver()->getIterator($sqlStatement);
         return $iterator->toArray();
     }
 
@@ -455,9 +451,9 @@ class Repository
      */
     protected function insertWithAutoinc(InsertQuery $updatable): int
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlObject->getSql(), $sqlObject->getParameters());
+        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlStatement);
     }
 
     /**
@@ -468,8 +464,8 @@ class Repository
      */
     protected function insertWithKeyGen(InsertQuery $updatable): void
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $this->getDbDriverWrite()->execute($sqlStatement);
     }
 
     /**
@@ -479,9 +475,9 @@ class Repository
      */
     protected function update(UpdateQuery $updatable): void
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
 
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->getDbDriverWrite()->execute($sqlStatement);
     }
 
     public function setBeforeUpdate(Closure $closure): void

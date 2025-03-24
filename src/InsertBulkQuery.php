@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
@@ -13,8 +14,6 @@ class InsertBulkQuery extends Updatable
     protected array $fields = [];
 
     protected ?QueryBuilderInterface $query = null;
-
-    protected ?SqlObject $sqlObject = null;
 
     protected bool $safe = false;
 
@@ -61,10 +60,10 @@ class InsertBulkQuery extends Updatable
 
     /**
      * @param DbFunctionsInterface|null $dbHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -117,7 +116,7 @@ class InsertBulkQuery extends Updatable
         );
 
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params);
+        return new SqlStatement($sql, $params);
     }
 
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface

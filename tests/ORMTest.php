@@ -145,9 +145,9 @@ class ORMTest extends TestCase
         $query = ORM::getQueryInstance('table1');
         $query->where('field1 = :value', ['value' => new Literal(10)]);
 
-        $sqlObject = $query->build();
-        $sql = $sqlObject->getSql();
-        $params = $sqlObject->getParameters();
+        $sqlStatement = $query->build();
+        $sql = $sqlStatement->getSql();
+        $params = $sqlStatement->getParams();
 
         $sql = ORMHelper::processLiteral($sql, $params);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 10", $sql);
@@ -159,9 +159,9 @@ class ORMTest extends TestCase
         $query->where('field1 = :value', ['value' => new Literal("'testando'")]);
         $query->where('field2 = :value2', ['value2' => new Literal("'Joana D''Arc'")]);
 
-        $sqlObject = $query->build();
-        $sql = $sqlObject->getSql();
-        $params = $sqlObject->getParameters();
+        $sqlStatement = $query->build();
+        $sql = $sqlStatement->getSql();
+        $params = $sqlStatement->getParams();
 
         $sql = ORMHelper::processLiteral($sql, $params);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 'testando' AND field2 = 'Joana D''Arc'", $sql);

@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
@@ -71,10 +72,10 @@ class UpdateQuery extends Updatable
 
     /**
      * @param DbFunctionsInterface|null $dbHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');
@@ -119,7 +120,7 @@ class UpdateQuery extends Updatable
         $params = array_merge($params, $whereStr[1]);
 
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params, SqlObjectEnum::UPDATE);
+        return new SqlStatement($sql, $params);
     }
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
