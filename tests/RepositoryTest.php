@@ -9,11 +9,14 @@ use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
+use ByJG\MicroOrm\Constraint\AllowOnlyNewValuesConstraint;
+use ByJG\MicroOrm\Constraint\ClosureConstraint;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
+use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
@@ -1142,7 +1145,7 @@ class RepositoryTest extends TestCase
         $this->repository->addObserver($class);
     }
 
-    public function testConstraintDifferentValues()
+    public function testConstraintAllow()
     {
         // This update has an observer, and you change the `test` variable
         $query = $this->infoMapper->getQuery()
@@ -1152,17 +1155,13 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        // Define Constraint
-        $updateConstraint = UpdateConstraint::instance()
-            ->withAllowOnlyNewValuesForFields('value');
-
         // Set Zero
         $result[0]->setValue(2);
-        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+        $newInstance = $infoRepository->save($result[0], new AllowOnlyNewValuesConstraint('value'));
         $this->assertEquals(2, $newInstance->getValue());
     }
 
-    public function testConstraintSameValues()
+    public function testConstraintNotAllow()
     {
         $this->expectException(AllowOnlyNewValuesConstraintException::class);
         $this->expectExceptionMessage("You are not updating the property 'value'");
@@ -1175,15 +1174,48 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        // Define Constraint
-        $updateConstraint = UpdateConstraint::instance()
-            ->withAllowOnlyNewValuesForFields('value');
+        // Set Zero
+        $result[0]->setValue(3.5);
+        $newInstance = $infoRepository->save($result[0], new AllowOnlyNewValuesConstraint('value'));
+    }
+
+    public function testConstraintCustomAllow()
+    {
+        // This update has an observer, and you change the `test` variable
+        $query = $this->infoMapper->getQuery()
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Set Zero
+        $result[0]->setValue(2);
+        $newInstance = $infoRepository->save($result[0], new ClosureConstraint(function ($oldInstance, $newInstance) {
+            return $newInstance->getValue() != 3.5;
+        }));
+        $this->assertEquals(2, $newInstance->getValue());
+    }
+
+    public function testConstraintCustomNotAllow()
+    {
+        $this->expectException(UpdateConstraintException::class);
+        $this->expectExceptionMessage("The Update Constraint validation failed");
+
+        // This update has an observer, and you change the `test` variable
+        $query = $this->infoMapper->getQuery()
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
 
         // Set Zero
         $result[0]->setValue(3.5);
-        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+        $newInstance = $infoRepository->save($result[0], new ClosureConstraint(function ($oldInstance, $newInstance) {
+            return $newInstance->getValue() != 3.5;
+        }));
     }
-
     public function testQueryBasic()
     {
         $query = $this->infoMapper->getQueryBasic()

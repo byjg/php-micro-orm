@@ -14,6 +14,7 @@ use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
@@ -309,16 +310,18 @@ class Repository
     }
 
     /**
-     * @param mixed $instance
-     * @param UpdateConstraint|null $updateConstraint
-     * @return mixed
+     * Save an instance to the database
+     *
+     * @param mixed $instance The instance to save
+     * @param UpdateConstraintInterface|UpdateConstraintInterface[]|null $updateConstraints One or more constraints to apply
+     * @return mixed The saved instance
      * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
      */
-    public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
+    public function save(mixed $instance, UpdateConstraintInterface|array|null $updateConstraints = null): mixed
     {
         // Get all fields
         $array = Serialize::from($instance)
@@ -389,15 +392,24 @@ class Repository
             if (count($pkList) == 1 && !empty($keyReturned)) {
                 $array[$pkList[0]] = $keyReturned;
             }
-        } else {
-            if (!empty($updateConstraint)) {
-                $updateConstraint->check($oldInstance, $this->getMapper()->getEntity($array));
-            }
-            $this->update($updatable);
         }
 
         $array = array_merge(Serialize::from($instance)->toArray(), $array);
         ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($mapper));
+
+        if (!$isInsert) {
+            if (!empty($updateConstraints)) {
+                // Convert single constraint to array for uniform processing
+                $constraints = is_array($updateConstraints) ? $updateConstraints : [$updateConstraints];
+
+                // Apply all constraints
+                foreach ($constraints as $constraint) {
+                    $constraint->check($oldInstance, $instance);
+                }
+            }
+            $this->update($updatable);
+        }
+
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),
