@@ -17,7 +17,7 @@ class ORM
 
     private static array $incompleteRelationships = [];
 
-    public static function addMapper(Mapper $mainMapper)
+    public static function addMapper(Mapper $mainMapper): void
     {
         static::$mapper[$mainMapper->getTable()] = $mainMapper;
     }
@@ -54,7 +54,7 @@ class ORM
     public static function getRelationship(string ...$tables): array
     {
         // First time we try to fix the incomplete relationships
-        foreach (static::$incompleteRelationships as $key => $relationship) {
+        foreach (static::$incompleteRelationships as $relationship) {
             if (isset(static::$mapper[$relationship["parent"]])) {
                 continue;
             }

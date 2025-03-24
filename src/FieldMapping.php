@@ -100,7 +100,7 @@ class FieldMapping
     public function dontSyncWithDb(): static
     {
         $this->syncWithDb = false;
-        $this->withUpdateFunction(MapperClosure::readOnly());
+        $this->withUpdateFunction(MapperFunctions::READ_ONLY);
         return $this;
     }
 

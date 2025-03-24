@@ -174,4 +174,12 @@ class HexUuidLiteralTest extends TestCase
 
         $this->assertNull(HexUuidLiteral::create(null));
     }
+
+    public function testCreateWithInvalidUuidBinary2()
+    {
+        $this->assertEquals('123E4567-E89B-12D3-A456-426614174000', HexUuidLiteral::getFormattedUuid(hex2bin('123E4567E89B12D3A456426614174000')));
+        $this->assertEquals('123E4567-E89B-12D3-A456-426614174000', (new HexUuidLiteral(hex2bin('123E4567E89B12D3A456426614174000')))->formatUuid());
+        $this->assertEquals('123E4567-E89B-12D3-A456-426614174000', HexUuidLiteral::create(hex2bin('123E4567E89B12D3A456426614174000'))->formatUuid());
+        $this->assertEquals('not-uuid', HexUuidLiteral::create("not-uuid"));
+    }
 }

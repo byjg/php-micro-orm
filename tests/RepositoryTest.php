@@ -23,14 +23,13 @@ use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\MapperClosure;
+use ByJG\MicroOrm\MapperFunctions;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
-use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
 use DateTime;
@@ -370,7 +369,7 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperClosure::readOnly())
+            ->withUpdateFunction(MapperFunctions::READ_ONLY)
             ->withSelectFunction(function ($value, $instance) {
                 if (empty($instance["createdate"])) {
                     return null;
@@ -570,7 +569,7 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperClosure::readOnly())
+            ->withUpdateFunction(MapperFunctions::READ_ONLY)
             ->withSelectFunction(function ($value, $instance) {
                 if (empty($instance["createdate"])) {
                     return null;

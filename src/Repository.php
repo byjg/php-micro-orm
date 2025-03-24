@@ -107,7 +107,7 @@ class Repository
         return $this->getMapper()->getEntity($values);
     }
 
-    public function queryInstance(object $model = null, string ...$tales): Query
+    public function queryInstance(object $model = null): Query
     {
         $query = Query::getInstance()
             ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
@@ -211,7 +211,10 @@ class Repository
      * @param string|IteratorFilter $filter
      * @param array $params
      * @param bool $forUpdate
+     * @param int $page
+     * @param int|null $limit
      * @return array
+     * @throws InvalidArgumentException
      */
     public function getByFilter(string|IteratorFilter $filter = "", array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
     {
@@ -240,6 +243,7 @@ class Repository
      * @param array|string|int|LiteralInterface $arrValues
      * @param string $field
      * @return array
+     * @throws InvalidArgumentException
      */
     public function filterIn(array|string|int|LiteralInterface $arrValues, string $field = ""): array
     {
@@ -250,7 +254,7 @@ class Repository
         }
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->addRelation($field, Relation::IN, $arrValues);
+        $iteratorFilter->and($field, Relation::IN, $arrValues);
 
         return $this->getByFilter($iteratorFilter);
     }
@@ -394,6 +398,9 @@ class Repository
             }
         }
 
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
         $array = array_merge(Serialize::from($instance)->toArray(), $array);
         ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($mapper));
 
@@ -452,7 +459,7 @@ class Repository
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoinc(InsertQuery $updatable): int
+    protected function insertWithAutoInc(InsertQuery $updatable): int
     {
         $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();

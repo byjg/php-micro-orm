@@ -41,6 +41,7 @@ class Mapper
      * @param string $entity
      * @param string|null $table
      * @param string|array|null $primaryKey
+     * @param string|null $tableAlias
      * @throws OrmModelInvalidException
      * @throws ReflectionException
      */
@@ -201,6 +202,9 @@ class Mapper
         $class = $this->entity;
         $instance = new $class();
 
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
         $fieldValues = array_merge(Serialize::from($instance)->toArray(), $fieldValues);
         ObjectCopy::copy($fieldValues, $instance, new MapFromDbToInstanceHandler($this));
 
@@ -336,6 +340,7 @@ class Mapper
 
     /**
      * @param DbDriverInterface $dbDriver
+     * @param object $instance
      * @return mixed|null
      */
     public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed
