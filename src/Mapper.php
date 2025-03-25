@@ -8,7 +8,9 @@ use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\Serializer\ObjectCopy;
+use ByJG\Serializer\Serialize;
 use Closure;
 use ReflectionAttribute;
 use ReflectionClass;
@@ -28,6 +30,8 @@ class Mapper
      * @var FieldMapping[]
      */
     private array $fieldMap = [];
+
+    private array $fieldToProperty = [];
     private bool $preserveCaseName = false;
     private ?string $tableAlias = null;
 
@@ -37,6 +41,7 @@ class Mapper
      * @param string $entity
      * @param string|null $table
      * @param string|array|null $primaryKey
+     * @param string|null $tableAlias
      * @throws OrmModelInvalidException
      * @throws ReflectionException
      */
@@ -150,6 +155,8 @@ class Mapper
             ->withFieldName($fieldName)
             ->withFieldAlias($fieldAlias)
         ;
+        $this->fieldToProperty[$fieldName] = $propertyName;
+        $this->fieldToProperty[$fieldAlias] = $propertyName;
 
         if ($fieldName === 'deleted_at') {
             $this->softDelete = true;
@@ -195,27 +202,11 @@ class Mapper
         $class = $this->entity;
         $instance = new $class();
 
-        if (empty($fieldValues)) {
-            return $instance;
-        }
-
-        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            if (!empty($fieldMap->getFieldAlias()) && isset($fieldValues[$fieldMap->getFieldAlias()])) {
-                $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
-            }
-            if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
-                $fieldValues[$property] = $fieldValues[$fieldMap->getFieldName()];
-                unset($fieldValues[$fieldMap->getFieldName()]);
-            }
-        }
-        ObjectCopy::copy($fieldValues, $instance);
-
-        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
-        }
-        if (count($this->getFieldMap()) > 0) {
-            ObjectCopy::copy($fieldValues, $instance);
-        }
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
+        $fieldValues = array_merge(Serialize::from($instance)->toArray(), $fieldValues);
+        ObjectCopy::copy($fieldValues, $instance, new MapFromDbToInstanceHandler($this));
 
         return $instance;
     }
@@ -328,6 +319,11 @@ class Mapper
         return $this->fieldMap[$property];
     }
 
+    public function getPropertyName(string $fieldName): string
+    {
+        return $this->fieldToProperty[$fieldName] ?? $fieldName;
+    }
+
     /**
      * @param string|null $fieldName
      * @return string|null
@@ -344,6 +340,7 @@ class Mapper
 
     /**
      * @param DbDriverInterface $dbDriver
+     * @param object $instance
      * @return mixed|null
      */
     public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed

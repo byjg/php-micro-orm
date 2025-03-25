@@ -6,33 +6,35 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
+use ByJG\MicroOrm\Constraint\CustomConstraint;
+use ByJG\MicroOrm\Constraint\RequireChangedValuesConstraint;
 use ByJG\MicroOrm\DeleteQuery;
-use ByJG\MicroOrm\Exception\AllowOnlyNewValuesConstraintException;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
+use ByJG\MicroOrm\Exception\RequireChangedValuesConstraintException;
+use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\MapperClosure;
+use ByJG\MicroOrm\MapperFunctions;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\MicroOrm\SqlObject;
-use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Union;
-use ByJG\MicroOrm\UpdateConstraint;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
 use DateTime;
 use Exception;
+use Override;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\ActiveRecordModel;
@@ -68,6 +70,7 @@ class RepositoryTest extends TestCase
      */
     protected $repository;
 
+    #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
@@ -78,7 +81,7 @@ class RepositoryTest extends TestCase
             createdate datetime);'
         );
         $insertBulk = InsertBulkQuery::getInstance('users', ['name', 'createdate']);
-        $insertBulk->values(['name' => 'John Doe', 'createdate' => '2017-01-02']);
+        $insertBulk->values(['name' => 'John Doe', 'createdate' => '2015-05-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
         $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
         $insertBulk->buildAndExecute($this->dbDriver);
@@ -105,6 +108,7 @@ class RepositoryTest extends TestCase
         ORMSubject::getInstance()->clearObservers();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $uri = new Uri(self::URI);
@@ -117,7 +121,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
 
         $users = $this->repository->get("2");
         $this->assertEquals(2, $users->getId());
@@ -127,7 +131,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(new Literal(1));
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
     }
 
     public function testGetByFilter()
@@ -136,7 +140,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $users);
         $this->assertEquals(1, $users[0]->getId());
         $this->assertEquals('John Doe', $users[0]->getName());
-        $this->assertEquals('2017-01-02', $users[0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
         $filter->and('id', Relation::EQUAL, 2);
@@ -154,23 +158,28 @@ class RepositoryTest extends TestCase
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withSelectFunction(function ($value, $instance) {
-                return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
-            }
-            )
+                if (empty($value)) {
+                    return null;
+                }
+                return '[' . strtoupper($value) . '] - ' . $instance["createdate"];
+            })
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreatedate());
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
 
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
-        $this->assertEquals('[JOHN DOE] - 2017-01-02', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
-        $this->assertEquals(2017, $users->getYear());
+        $this->assertEquals('[JOHN DOE] - 2015-05-02', $users->getName());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals(2015, $users->getYear());
 
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
@@ -306,14 +315,14 @@ class RepositoryTest extends TestCase
             ]
         );
 
-        $sqlObject = $insertQuery->build();
+        $sqlStatement = $insertQuery->build();
 
         $this->assertEquals(
-            new SqlObject("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"], SqlObjectEnum::INSERT),
-            $sqlObject
+            new SqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"]),
+            $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->repository->getDbDriverWrite()->execute($sqlStatement);
 
         $users2 = $this->repository->get(4);
 
@@ -360,9 +369,12 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperClosure::readOnly())
+            ->withUpdateFunction(MapperFunctions::READ_ONLY)
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreateDate());
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
@@ -515,7 +527,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2017-01-02', $users2->getCreatedate());
+        $this->assertEquals('2015-05-02', $users2->getCreatedate());
     }
 
     public function testUpdateObject()
@@ -529,13 +541,13 @@ class RepositoryTest extends TestCase
             $this->userMapper,
         );
 
-        $sqlObject = $updateQuery->build();
+        $sqlStatement = $updateQuery->build();
         $this->assertEquals(
-            new SqlObject("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1], SqlObjectEnum::UPDATE),
-            $sqlObject
+            new SqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1]),
+            $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->repository->getDbDriverWrite()->execute($sqlStatement);
 
         $users2 = $this->repository->get(1);
 
@@ -557,9 +569,12 @@ class RepositoryTest extends TestCase
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperClosure::readOnly())
+            ->withUpdateFunction(MapperFunctions::READ_ONLY)
             ->withSelectFunction(function ($value, $instance) {
-                $date = new DateTime($instance->getCreateDate());
+                if (empty($instance["createdate"])) {
+                    return null;
+                }
+                $date = new DateTime($instance["createdate"]);
                 return intval($date->format('Y'));
             })
         );
@@ -624,7 +639,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2017-01-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02', $users->getCreatedate());
 
         $users = $this->repository->get(2);
         $this->assertEmpty($users);
@@ -755,11 +770,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0][0]->getId());
         $this->assertEquals('John Doe', $result[0][0]->getName());
-        $this->assertEquals('2017-01-02', $result[0][0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[0][0]->getCreatedate());
 
         $this->assertEquals(1, $result[1][0]->getId());
         $this->assertEquals('John Doe', $result[1][0]->getName());
-        $this->assertEquals('2017-01-02', $result[1][0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[1][0]->getCreatedate());
 
         // - ------------------
 
@@ -805,7 +820,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
-        $this->assertEquals('2017-01-02', $result[0]->getCreatedate());
+        $this->assertEquals('2015-05-02', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
@@ -871,6 +886,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -883,6 +899,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -891,6 +908,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -942,6 +960,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -954,6 +973,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -962,6 +982,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1011,6 +1032,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -1021,6 +1043,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -1029,6 +1052,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1060,6 +1084,7 @@ class RepositoryTest extends TestCase
                 $this->parentRepository = $parentRepository;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
                 $this->parent->test = true;
@@ -1073,6 +1098,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
@@ -1081,6 +1107,7 @@ class RepositoryTest extends TestCase
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1112,14 +1139,17 @@ class RepositoryTest extends TestCase
                 $this->table = $table;
             }
 
+            #[Override]
             public function process(ObserverData $observerData): void
             {
             }
 
+            #[Override]
             public function onError(Throwable $exception, ObserverData $observerData): void
             {
             }
 
+            #[Override]
             public function getObservedTable(): string
             {
                 return $this->table;
@@ -1132,7 +1162,7 @@ class RepositoryTest extends TestCase
         $this->repository->addObserver($class);
     }
 
-    public function testConstraintDifferentValues()
+    public function testConstraintAllow()
     {
         // This update has an observer, and you change the `test` variable
         $query = $this->infoMapper->getQuery()
@@ -1142,19 +1172,15 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        // Define Constraint
-        $updateConstraint = UpdateConstraint::instance()
-            ->withAllowOnlyNewValuesForFields('value');
-
         // Set Zero
         $result[0]->setValue(2);
-        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+        $newInstance = $infoRepository->save($result[0], new RequireChangedValuesConstraint('value'));
         $this->assertEquals(2, $newInstance->getValue());
     }
 
-    public function testConstraintSameValues()
+    public function testConstraintNotAllow()
     {
-        $this->expectException(AllowOnlyNewValuesConstraintException::class);
+        $this->expectException(RequireChangedValuesConstraintException::class);
         $this->expectExceptionMessage("You are not updating the property 'value'");
 
         // This update has an observer, and you change the `test` variable
@@ -1165,15 +1191,48 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
-        // Define Constraint
-        $updateConstraint = UpdateConstraint::instance()
-            ->withAllowOnlyNewValuesForFields('value');
+        // Set Zero
+        $result[0]->setValue(3.5);
+        $newInstance = $infoRepository->save($result[0], new RequireChangedValuesConstraint('value'));
+    }
+
+    public function testConstraintCustomAllow()
+    {
+        // This update has an observer, and you change the `test` variable
+        $query = $this->infoMapper->getQuery()
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
+
+        // Set Zero
+        $result[0]->setValue(2);
+        $newInstance = $infoRepository->save($result[0], new CustomConstraint(function ($oldInstance, $newInstance) {
+            return $newInstance->getValue() != 3.5;
+        }));
+        $this->assertEquals(2, $newInstance->getValue());
+    }
+
+    public function testConstraintCustomNotAllow()
+    {
+        $this->expectException(UpdateConstraintException::class);
+        $this->expectExceptionMessage("The Update Constraint validation failed");
+
+        // This update has an observer, and you change the `test` variable
+        $query = $this->infoMapper->getQuery()
+            ->where('iduser = :id', ['id' => 3])
+            ->orderBy(['property']);
+
+        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $result = $infoRepository->getByQuery($query);
 
         // Set Zero
         $result[0]->setValue(3.5);
-        $newInstance = $infoRepository->save($result[0], $updateConstraint);
+        $newInstance = $infoRepository->save($result[0], new CustomConstraint(function ($oldInstance, $newInstance) {
+            return $newInstance->getValue() != 3.5;
+        }));
     }
-
     public function testQueryBasic()
     {
         $query = $this->infoMapper->getQueryBasic()

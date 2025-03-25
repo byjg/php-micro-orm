@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 # Using Mapper Object
 
 The Mapper object is the main object that you will use to interact with the database and your model.

@@ -1,3 +1,7 @@
+---
+sidebar_position: 15
+---
+
 # Tables without auto increments fields
 
 Some tables don't have auto-increment fields, for example, when you have a table with UUID binary. 

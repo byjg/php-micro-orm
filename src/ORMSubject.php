@@ -47,12 +47,12 @@ class ORMSubject
         $this->observers[$observerProcessor->getObservedTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
     }
 
-    public function notify($entitySource, $event, $data, $oldData = null): void
+    public function notify(string $entitySource, string $event, mixed $data, mixed $oldData = null): void
     {
         if (!isset($this->observers[$entitySource])) {
             return;
         }
-        foreach ((array)$this->observers[$entitySource] as $observer) {
+        foreach ($this->observers[$entitySource] as $observer) {
             $observer->log("Observer: notifying " . $observer->getMapper()->getTable() . ", changes in $entitySource");
 
             $observerData = new ObserverData($entitySource, $event, $data, $oldData, $observer->getRepository());

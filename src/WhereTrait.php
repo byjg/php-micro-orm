@@ -29,6 +29,7 @@ trait WhereTrait
         return $this;
     }
 
+    /** @psalm-suppress UndefinedThisPropertyFetch,RedundantCondition This is a Trait, and $this->join is defined elsewhere */
     protected function getWhere(): ?array
     {
         $where = $this->where;
@@ -41,7 +42,6 @@ trait WhereTrait
                 $where[] = ["filter" => "{$from}.deleted_at is null", "params" => []];
             }
 
-            /** @psalm-suppress RedundantCondition This is a Trait, and $this->join is defined elsewhere */
             if (isset($this->join)) {
                 foreach ($this->join as $item) {
                     if ($item['table'] instanceof QueryBasic) {

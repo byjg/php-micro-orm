@@ -9,12 +9,13 @@ and open the template in the editor.
          bootstrap="./vendor/autoload.php"
          colors="true"
          testdox="true"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
-         convertDeprecationsToExceptions="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
+         displayDetailsOnTestsThatTriggerErrors="true"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         displayDetailsOnPhpunitDeprecations="true"
          stopOnFailure="false"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd">
 
   <php>
     <ini name="display_errors" value="On"/>
@@ -22,11 +23,11 @@ and open the template in the editor.
     <ini name="error_reporting" value="E_ALL"/>
   </php>
 
-  <coverage>
+    <source>
     <include>
-      <directory>./src</directory>
+        <directory>./src/</directory>
     </include>
-  </coverage>
+    </source>
 
   <testsuites>
     <testsuite name="Test Suite">

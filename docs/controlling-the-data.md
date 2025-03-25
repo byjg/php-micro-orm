@@ -1,3 +1,7 @@
+---
+sidebar_position: 13
+---
+
 # Controlling the data
 
 You can control the data queried or updated by the micro-orm using the Mapper object.

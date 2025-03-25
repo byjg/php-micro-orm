@@ -1,3 +1,7 @@
+---
+sidebar_position: 7
+---
+
 # Active Record
 
 Active Record is the M in MVC - the model - which is the layer of the system responsible
@@ -16,7 +20,7 @@ e.g.:
 
 ```php
 <?php
-[TableAttribute('my_table')]
+#[TableAttribute(tableName: 'my_table')]
 class MyClass
 {
     // Add the ActiveRecord trait to enable the Active Record
@@ -84,6 +88,17 @@ foreach ($myClassList as $myClass) {
 }
 ```
 
+### Get all records
+
+```php
+<?php
+// Get all records (paginated, default is page 0, limit 50)
+$myClassList = MyClass::all();
+
+// Get page 2 with 20 records per page
+$myClassList = MyClass::all(2, 20);
+```
+
 ### Delete a record
 
 ```php
@@ -110,6 +125,33 @@ $myClass->refresh();
 ### Update a model from another model or array
 
 ```php
+<?php
+// Get a record
+$myClass = MyClass::get(1);
+
+// Update from array
+$myClass->fill(['someProperty' => 789]);
+
+// Update from another model
+$anotherModel = MyClass::new(['someProperty' => 789]);
+$myClass->fill($anotherModel);
+
+// Save changes
+$myClass->save();
+```
+
+### Convert to array
+
+```php
+<?php
+$myClass = MyClass::get(1);
+
+// Convert to array (excluding null values)
+$array = $myClass->toArray();
+
+// Convert to array (including null values)
+$array = $myClass->toArray(true);
+```
 
 ### Using the `Query` class
 
@@ -120,4 +162,35 @@ $query = MyClass::joinWith('other_table');
 // ...
 // Execute the query
 $myClassList = MyClass::query($query);
+```
+
+### Get table name
+
+```php
+<?php
+$tableName = MyClass::tableName();
+```
+
+### Custom mapper configuration
+
+By default, the Active Record uses the class attributes to discover the mapper configuration.
+You can override this behavior by overriding the `discoverClass` method.
+
+```php
+<?php
+class MyClass
+{
+    use ActiveRecord;
+    
+    // Override the default mapper discovery
+    protected static function discoverClass(): string|Mapper
+    {
+        // Return a custom mapper
+        return new Mapper(
+            self::class,
+            'custom_table',
+            ['id']
+        );
+    }
+}
 ```

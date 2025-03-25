@@ -1,3 +1,7 @@
+---
+sidebar_position: 9
+---
+
 # The Literal Object
 
 When you are querying or update the database, the parameters you pass are parsed to avoid SQL Injection.
