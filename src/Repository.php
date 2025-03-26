@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -202,7 +203,7 @@ class Repository
 
         $this->getDbDriverWrite()->execute($sqlStatement);
 
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $sqlStatement->getParams());
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ObserverEvent::Delete, null, $sqlStatement->getParams());
 
         return true;
     }
@@ -420,7 +421,7 @@ class Repository
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),
-            $isInsert ? ORMSubject::EVENT_INSERT : ORMSubject::EVENT_UPDATE,
+            $isInsert ? ObserverEvent::Insert : ObserverEvent::Update,
             $instance, $oldInstance
         );
 

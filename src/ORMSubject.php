@@ -2,15 +2,13 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use Throwable;
 
 class ORMSubject
 {
-    const EVENT_INSERT = 'insert';
-    const EVENT_UPDATE = 'update';
-    const EVENT_DELETE = 'delete';
     // Define a singleton instance
     private static ?ORMSubject $instance = null;
 
@@ -47,7 +45,7 @@ class ORMSubject
         $this->observers[$observerProcessor->getObservedTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
     }
 
-    public function notify(string $entitySource, string $event, mixed $data, mixed $oldData = null): void
+    public function notify(string $entitySource, ObserverEvent $event, mixed $data, mixed $oldData = null): void
     {
         if (!isset($this->observers[$entitySource])) {
             return;

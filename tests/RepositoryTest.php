@@ -12,6 +12,7 @@ use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\Constraint\CustomConstraint;
 use ByJG\MicroOrm\Constraint\RequireChangedValuesConstraint;
 use ByJG\MicroOrm\DeleteQuery;
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
@@ -891,7 +892,7 @@ class RepositoryTest extends TestCase
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
-                $this->parent->assertEquals(ORMSubject::EVENT_UPDATE, $observerData->getEvent());
+                $this->parent->assertEquals(ObserverEvent::Update, $observerData->getEvent());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
                 $this->parent->assertEquals(0, $observerData->getData()->getValue());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
@@ -965,7 +966,7 @@ class RepositoryTest extends TestCase
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
-                $this->parent->assertEquals(ORMSubject::EVENT_UPDATE, $observerData->getEvent());
+                $this->parent->assertEquals(ObserverEvent::Update, $observerData->getEvent());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
                 $this->parent->assertEquals(0, $observerData->getData()->getValue());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
@@ -1037,7 +1038,7 @@ class RepositoryTest extends TestCase
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
-                $this->parent->assertEquals(ORMSubject::EVENT_DELETE, $observerData->getEvent());
+                $this->parent->assertEquals(ObserverEvent::Delete, $observerData->getEvent());
                 $this->parent->assertNull($observerData->getData());
                 $this->parent->assertEquals(["pkid" => 3], $observerData->getOldData());
                 $this->parent->assertEquals($this->parentRepository, $observerData->getRepository());
@@ -1089,7 +1090,7 @@ class RepositoryTest extends TestCase
             {
                 $this->parent->test = true;
                 $this->parent->assertEquals('info', $observerData->getTable());
-                $this->parent->assertEquals(ORMSubject::EVENT_INSERT, $observerData->getEvent());
+                $this->parent->assertEquals(ObserverEvent::Insert, $observerData->getEvent());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
                 $this->parent->assertEquals(4, $observerData->getData()->getId());
                 $this->parent->assertEquals(1, $observerData->getData()->getIdUser());
@@ -1102,7 +1103,7 @@ class RepositoryTest extends TestCase
             public function onError(Throwable $exception, ObserverData $observerData) : void
             {
                 $this->parent->onError = true;
-                $this->parent->assertEquals(null, $exception);
+                $this->parent->assertNull($exception);
                 $this->parent->assertInstanceOf(Info::class, $observerData->getOldData());
                 $this->parent->assertInstanceOf(Info::class, $observerData->getData());
             }
