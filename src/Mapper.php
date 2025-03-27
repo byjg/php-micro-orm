@@ -7,11 +7,11 @@ use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
-use Closure;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
@@ -25,6 +25,8 @@ class Mapper
     private array $primaryKeyModel;
     private mixed $primaryKeySeedFunction = null;
     private bool $softDelete = false;
+    private mixed $beforeInsert = null;
+    private mixed $beforeUpdate = null;
 
     /**
      * @var FieldMapping[]
@@ -88,6 +90,12 @@ class Mapper
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
+        if (!empty($tableAttribute->getBeforeInsert())) {
+            $this->withBeforeInsert($tableAttribute->getBeforeInsert());
+        }
+        if (!empty($tableAttribute->getBeforeUpdate())) {
+            $this->withBeforeUpdate($tableAttribute->getBeforeUpdate());
+        }
         ORM::addMapper($this);
 
         $this->primaryKey = [];
@@ -121,6 +129,18 @@ class Mapper
     public function withPreserveCaseName(): static
     {
         $this->preserveCaseName = true;
+        return $this;
+    }
+
+    public function withBeforeInsert(EntityProcessorInterface|string $processor): static
+    {
+        $this->beforeInsert = $processor;
+        return $this;
+    }
+
+    public function withBeforeUpdate(EntityProcessorInterface|string $processor): static
+    {
+        $this->beforeUpdate = $processor;
         return $this;
     }
 
@@ -170,28 +190,6 @@ class Mapper
         return $this;
     }
 
-    /**
-     * @param string $property
-     * @param string $fieldName
-     * @param Closure|null $updateFunction
-     * @param Closure|null $selectFunction
-     * @return $this
-     * @deprecated Use addFieldMapping instead
-     */
-    public function addFieldMap(string $property, string $fieldName, Closure $updateFunction = null, Closure $selectFunction = null): static
-    {
-        $fieldMapping = FieldMapping::create($property)
-            ->withFieldName($fieldName);
-
-        if (!is_null($updateFunction)) {
-            $fieldMapping->withUpdateFunction($updateFunction);
-        }
-        if (!is_null($selectFunction)) {
-            $fieldMapping->withSelectFunction($selectFunction);
-        }
-
-        return $this->addFieldMapping($fieldMapping);
-    }
 
     /**
      * @param array $fieldValues
@@ -355,5 +353,21 @@ class Mapper
     public function isSoftDeleteEnabled(): bool
     {
         return $this->softDelete;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBeforeInsert(): mixed
+    {
+        return $this->beforeInsert;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBeforeUpdate(): mixed
+    {
+        return $this->beforeUpdate;
     }
 }

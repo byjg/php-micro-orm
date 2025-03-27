@@ -60,6 +60,7 @@ class Repository
      * @param string|Mapper $mapperOrEntity
      * @throws OrmModelInvalidException
      * @throws ReflectionException
+     * @throws InvalidArgumentException
      */
     public function __construct(DbDriverInterface $dbDataset, string|Mapper $mapperOrEntity)
     {
@@ -69,6 +70,14 @@ class Repository
             $mapperOrEntity = new Mapper($mapperOrEntity);
         }
         $this->mapper = $mapperOrEntity;
+
+        // Set beforeInsert and beforeUpdate from mapper if available
+        if (!empty($this->mapper->getBeforeInsert())) {
+            $this->setBeforeInsert($this->mapper->getBeforeInsert());
+        }
+        if (!empty($this->mapper->getBeforeUpdate())) {
+            $this->setBeforeUpdate($this->mapper->getBeforeUpdate());
+        }
     }
 
     public function addDbDriverForWrite(DbDriverInterface $dbDriver): void
