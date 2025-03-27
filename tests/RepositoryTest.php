@@ -22,6 +22,7 @@ use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Literal\Literal;
@@ -42,6 +43,8 @@ use PHPUnit\Framework\TestCase;
 use Tests\Model\ActiveRecordModel;
 use Tests\Model\Info;
 use Tests\Model\ModelWithAttributes;
+use Tests\Model\TestInsertProcessor;
+use Tests\Model\TestUpdateProcessor;
 use Tests\Model\Users;
 use Tests\Model\UsersMap;
 use Tests\Model\UsersWithAttribute;
@@ -275,14 +278,18 @@ class RepositoryTest extends TestCase
 
     public function testInsert_beforeInsert()
     {
+        $this->repository->setBeforeInsert(new class implements EntityProcessorInterface {
+            #[Override]
+            public function process(array $instance): array
+            {
+                $instance['name'] .= "-add";
+                $instance['createdate'] .= "2017-12-21";
+                return $instance;
+            }
+        });
+
         $users = new Users();
         $users->setName('Bla');
-
-        $this->repository->setBeforeInsert(function ($instance) {
-            $instance['name'] .= "-add";
-            $instance['createdate'] .= "2017-12-21";
-            return $instance;
-        });
 
         $this->assertEquals(null, $users->getId());
         $this->repository->save($users);
@@ -520,10 +527,14 @@ class RepositoryTest extends TestCase
 
         $users->setName('New Name');
 
-        $this->repository->setBeforeUpdate(function ($instance) {
-            $instance['name'] .= "-upd";
-            $instance['createdate'] = "2017-12-21";
-            return $instance;
+        $this->repository->setBeforeUpdate(new class implements EntityProcessorInterface {
+            #[Override]
+            public function process(array $instance): array
+            {
+                $instance['name'] .= "-upd";
+                $instance['createdate'] = "2017-12-21";
+                return $instance;
+            }
         });
 
         $this->repository->save($users);
@@ -1758,5 +1769,44 @@ class RepositoryTest extends TestCase
         ORM::defaultDbDriver($this->dbDriver);
         $model = ActiveRecordModel::get(1);
         $this->assertNotNull($model);
+    }
+
+    public function testInsert_beforeInsert_Interface()
+    {
+        $users = new Users();
+        $users->setName('User');
+
+        $this->repository->setBeforeInsert(new TestInsertProcessor());
+
+        $this->assertEquals(null, $users->getId());
+        $this->repository->save($users);
+        $this->assertEquals(4, $users->getId());
+
+        $users2 = $this->repository->get(4);
+
+        $this->assertEquals(4, $users2->getId());
+        $this->assertEquals('User-processed', $users2->getName());
+        $this->assertEquals('2023-01-15', $users2->getCreatedate());
+    }
+
+    public function testUpdate_beforeUpdate_Interface()
+    {
+        $users = $this->repository->get(1);
+
+        $users->setName('Updated');
+
+        $this->repository->setBeforeUpdate(new TestUpdateProcessor());
+
+        $this->repository->save($users);
+
+        $users2 = $this->repository->get(1);
+        $this->assertEquals(1, $users2->getId());
+        $this->assertEquals('Updated-updated', $users2->getName());
+        $this->assertEquals('2023-02-20', $users2->getCreatedate());
+
+        $users2 = $this->repository->get(2);
+        $this->assertEquals(2, $users2->getId());
+        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('2017-01-04', $users2->getCreatedate());
     }
 }

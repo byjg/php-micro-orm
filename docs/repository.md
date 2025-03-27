@@ -269,26 +269,68 @@ $repository->deleteByQuery($deleteQuery);
 
 ### setBeforeInsert
 
-Set a function to be called before inserting a record.
+Set a processor to be called before inserting a record. You can use either a closure or an implementation of
+`EntityProcessorInterface`.
 
 ```php
+// Using a closure
 $repository->setBeforeInsert(function($instance) {
     // Modify the instance before inserting
     $instance->createdAt = date('Y-m-d H:i:s');
     return $instance;
 });
+
+// Using EntityProcessorInterface (recommended)
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use Override;
+
+class BeforeInsertProcessor implements EntityProcessorInterface
+{
+    #[Override]
+    public function process(mixed $instance): mixed
+    {
+        // Modify the instance before inserting
+        if (is_array($instance) && !isset($instance['created_at'])) {
+            $instance['created_at'] = date('Y-m-d H:i:s');
+        }
+        return $instance;
+    }
+}
+
+$repository->setBeforeInsert(new BeforeInsertProcessor());
 ```
 
 ### setBeforeUpdate
 
-Set a function to be called before updating a record.
+Set a processor to be called before updating a record. You can use either a closure or an implementation of
+`EntityProcessorInterface`.
 
 ```php
+// Using a closure
 $repository->setBeforeUpdate(function($instance) {
     // Modify the instance before updating
     $instance->updatedAt = date('Y-m-d H:i:s');
     return $instance;
 });
+
+// Using EntityProcessorInterface (recommended)
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use Override;
+
+class BeforeUpdateProcessor implements EntityProcessorInterface
+{
+    #[Override]
+    public function process(mixed $instance): mixed
+    {
+        // Modify the instance before updating
+        if (is_array($instance) && !isset($instance['updated_at'])) {
+            $instance['updated_at'] = date('Y-m-d H:i:s');
+        }
+        return $instance;
+    }
+}
+
+$repository->setBeforeUpdate(new BeforeUpdateProcessor());
 ```
 
 ## Observers

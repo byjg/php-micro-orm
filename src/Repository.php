@@ -13,6 +13,7 @@ use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
@@ -22,7 +23,6 @@ use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
-use Closure;
 use ReflectionException;
 use stdClass;
 
@@ -45,14 +45,14 @@ class Repository
     protected ?DbDriverInterface $dbDriverWrite = null;
 
     /**
-     * @var Closure|null
+     * @var EntityProcessorInterface|null
      */
-    protected ?Closure $beforeUpdate = null;
+    protected EntityProcessorInterface|null $beforeUpdate = null;
 
     /**
-     * @var Closure|null
+     * @var EntityProcessorInterface|null
      */
-    protected ?Closure $beforeInsert = null;
+    protected EntityProcessorInterface|null $beforeInsert = null;
 
     /**
      * Repository constructor.
@@ -69,12 +69,6 @@ class Repository
             $mapperOrEntity = new Mapper($mapperOrEntity);
         }
         $this->mapper = $mapperOrEntity;
-        $this->beforeInsert = function ($instance) {
-            return $instance;
-        };
-        $this->beforeUpdate = function ($instance) {
-            return $instance;
-        };
     }
 
     public function addDbDriverForWrite(DbDriverInterface $dbDriver): void
@@ -362,8 +356,9 @@ class Repository
 
         // Execute Before Statements
         if ($isInsert) {
-            $closure = $this->beforeInsert;
-            $array = $closure($array);
+            if (!empty($this->beforeInsert)) {
+                $array = $this->beforeInsert->process($array);
+            }
             foreach ($this->getMapper()->getFieldMap() as $fieldMap) {
                 $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
                 if ($fieldValue !== false) {
@@ -372,8 +367,9 @@ class Repository
             }
             $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
         } else {
-            $closure = $this->beforeUpdate;
-            $array = $closure($array);
+            if (!empty($this->beforeUpdate)) {
+                $array = $this->beforeUpdate->process($array);
+            }
             $updatable = UpdateQuery::getInstance($array, $this->mapper);
         }
 
@@ -491,13 +487,47 @@ class Repository
         $this->getDbDriverWrite()->execute($sqlStatement);
     }
 
-    public function setBeforeUpdate(Closure $closure): void
+    /**
+     * Sets a processor to be executed before updating an entity
+     *
+     * @param EntityProcessorInterface|string $processor The processor to execute
+     * @return void
+     */
+    public function setBeforeUpdate(EntityProcessorInterface|string $processor): void
     {
-        $this->beforeUpdate = $closure;
+        if (is_string($processor)) {
+            if (!class_exists($processor)) {
+                throw new InvalidArgumentException("The class '$processor' does not exist");
+            }
+
+            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+                throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
+            }
+
+            $processor = new $processor();
+        }
+        $this->beforeUpdate = $processor;
     }
 
-    public function setBeforeInsert(Closure $closure): void
+    /**
+     * Sets a processor to be executed before inserting an entity
+     *
+     * @param EntityProcessorInterface|string $processor The processor to execute
+     * @return void
+     */
+    public function setBeforeInsert(EntityProcessorInterface|string $processor): void
     {
-        $this->beforeInsert = $closure;
+        if (is_string($processor)) {
+            if (!class_exists($processor)) {
+                throw new InvalidArgumentException("The class '$processor' does not exist");
+            }
+
+            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+                throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
+            }
+
+            $processor = new $processor();
+        }
+        $this->beforeInsert = $processor;
     }
 }

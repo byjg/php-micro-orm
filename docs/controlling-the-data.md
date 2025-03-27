@@ -124,8 +124,9 @@ $fieldMap = \ByJG\MicroOrm\FieldMapping::create('name')
 
 ## Generic function to be processed before any insert or update
 
-You can also set closure to be applied before insert or update at the record level and not only in the field level.
-In this case set in the Repository:
+You can process entities before insert or update operations at the record level using two different approaches:
+
+### 1. Using Closures (Legacy Approach)
 
 ```php
 <?php
@@ -150,5 +151,56 @@ $repository->setBeforeUpdate(function ($instance) {
 });
 ```
 
-The return of the function will be the instance that will be used to insert or update the record.
+### 2. Using EntityProcessorInterface (Recommended Approach)
+
+A more structured approach is to implement the `EntityProcessorInterface`:
+
+```php
+<?php
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use Override;
+
+// Create a processor class
+class MyEntityProcessor implements EntityProcessorInterface
+{
+    #[Override]
+    public function process(mixed $instance): mixed
+    {
+        // Process the entity before insert/update
+        if (is_array($instance) && isset($instance['created_at'])) {
+            $instance['created_at'] = date('Y-m-d H:i:s');
+        }
+        return $instance;
+    }
+}
+
+// Use the processor class
+$repository->setBeforeInsert(new MyEntityProcessor());
+
+// You can also create specialized processors
+class BeforeInsertProcessor implements EntityProcessorInterface 
+{
+    #[Override]
+    public function process(mixed $instance): mixed
+    {
+        // Process only before insert
+        return $instance;
+    }
+}
+
+class BeforeUpdateProcessor implements EntityProcessorInterface
+{
+    #[Override]
+    public function process(mixed $instance): mixed
+    {
+        // Process only before update
+        return $instance;
+    }
+}
+
+$repository->setBeforeInsert(new BeforeInsertProcessor());
+$repository->setBeforeUpdate(new BeforeUpdateProcessor());
+```
+
+The return of the process method will be the instance that will be used to insert or update the record.
 
