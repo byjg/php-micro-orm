@@ -4,41 +4,35 @@ namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
 use ByJG\MicroOrm\FieldMapping;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use InvalidArgumentException;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class FieldAttribute
 {
-    private ?string $fieldName;
-    private mixed $updateFunction;
-    private mixed $selectFunction;
-    private mixed $insertFunction;
-    private ?string $fieldAlias;
-    private ?bool $syncWithDb;
-    private ?bool $primaryKey;
     private ?string $propertyName;
-    private ?string $parentTable;
 
+    /**
+     * @param bool|null $primaryKey
+     * @param string|null $fieldName
+     * @param string|null $fieldAlias
+     * @param bool|null $syncWithDb
+     * @param MapperFunctionInterface|string|null $updateFunction
+     * @param MapperFunctionInterface|string|null $selectFunction
+     * @param MapperFunctionInterface|string|null $insertFunction
+     * @param string|null $parentTable
+     */
     public function __construct(
-        bool $primaryKey = null,
-        string $fieldName = null,
-        string $fieldAlias = null,
-        bool $syncWithDb = null,
-        callable $updateFunction = null,
-        callable $selectFunction = null,
-        callable $insertFunction = null,
-        string   $parentTable = null
+        private ?bool                               $primaryKey = null,
+        private ?string                             $fieldName = null,
+        private ?string                             $fieldAlias = null,
+        private ?bool                               $syncWithDb = null,
+        private MapperFunctionInterface|string|null $updateFunction = null,
+        private MapperFunctionInterface|string|null $selectFunction = null,
+        private MapperFunctionInterface|string|null $insertFunction = null,
+        private ?string                             $parentTable = null
     )
     {
-        $this->primaryKey = $primaryKey;
-        $this->fieldName = $fieldName;
-        $this->fieldAlias = $fieldAlias;
-        $this->insertFunction = $insertFunction;
-        $this->updateFunction = $updateFunction;
-        $this->selectFunction = $selectFunction;
-        $this->syncWithDb = $syncWithDb;
-        $this->parentTable = $parentTable;
-
         if ($this->syncWithDb === false && !is_null($this->updateFunction)) {
             throw new InvalidArgumentException("You cannot have an updateFunction when syncWithDb is false");
         }

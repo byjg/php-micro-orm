@@ -5,6 +5,7 @@ namespace Tests;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
@@ -21,10 +22,10 @@ use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\MapperFunctions;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMSubject;
@@ -158,22 +159,31 @@ class RepositoryTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
-            ->withSelectFunction(function ($value, $instance) {
-                if (empty($value)) {
-                    return null;
+            ->withSelectFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($value)) {
+                        return null;
+                    }
+                    return '[' . strtoupper($value) . '] - ' . $instance["createdate"];
                 }
-                return '[' . strtoupper($value) . '] - ' . $instance["createdate"];
             })
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withSelectFunction(function ($value, $instance) {
-                if (empty($instance["createdate"])) {
-                    return null;
+            ->withSelectFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($instance["createdate"])) {
+                        return null;
+                    }
+                    $date = new DateTime($instance["createdate"]);
+                    return intval($date->format('Y'));
                 }
-                $date = new DateTime($instance["createdate"]);
-                return intval($date->format('Y'));
             })
+            ->dontSyncWithDb()
         );
 
         $users = $this->repository->get(1);
@@ -364,20 +374,31 @@ class RepositoryTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
-            ->withUpdateFunction(function ($value, $instance) {
-                return 'Sr. ' . $value . ' - ' . $instance->getCreatedate();
+            ->withUpdateFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($value)) {
+                        return null;
+                    }
+                    return '[' . strtoupper($value) . '] - ' . $instance->getCreatedate();
+                }
             })
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperFunctions::READ_ONLY)
-            ->withSelectFunction(function ($value, $instance) {
-                if (empty($instance["createdate"])) {
-                    return null;
+            ->withSelectFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($instance["createdate"])) {
+                        return null;
+                    }
+                    $date = new DateTime($instance["createdate"]);
+                    return intval($date->format('Y'));
                 }
-                $date = new DateTime($instance["createdate"]);
-                return intval($date->format('Y'));
             })
+            ->dontSyncWithDb()
         );
 
         $users = new UsersMap();
@@ -389,12 +410,12 @@ class RepositoryTest extends TestCase
         $this->repository->save($users);
         $this->assertEquals(4, $users->getId());
 
-        $users2 = $this->repository->get(4);
+        $users2 = $this->repository->get($users->getId());
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('2015-08-09', $users2->getCreatedate());
         $this->assertEquals(2015, $users2->getYear());
-        $this->assertEquals('Sr. John Doe - 2015-08-09', $users2->getName());
+        $this->assertEquals('[JOHN DOE] - 2015-08-09', $users2->getName());
     }
 
     public function testUpdate()
@@ -564,37 +585,48 @@ class RepositoryTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
-            ->withUpdateFunction(function ($value, $instance) {
-                return 'Sr. ' . $value;
+            ->withUpdateFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($value)) {
+                        return null;
+                    }
+                    return '[' . strtoupper($value) . ']';
+                }
             })
         );
 
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
-            ->withUpdateFunction(MapperFunctions::READ_ONLY)
-            ->withSelectFunction(function ($value, $instance) {
-                if (empty($instance["createdate"])) {
-                    return null;
+            ->withSelectFunction(new class implements MapperFunctionInterface {
+                #[Override]
+                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                {
+                    if (empty($instance["createdate"])) {
+                        return null;
+                    }
+                    $date = new DateTime($instance["createdate"]);
+                    return intval($date->format('Y'));
                 }
-                $date = new DateTime($instance["createdate"]);
-                return intval($date->format('Y'));
             })
+            ->dontSyncWithDb()
         );
 
         $users = $this->repository->get(1);
 
-        $users->setName('New Name');
+        $users->setName('John Doe Updated');
         $users->setCreatedate('2016-01-09');
         $this->repository->save($users);
 
         $users2 = $this->repository->get(1);
         $this->assertEquals(1, $users2->getId());
-        $this->assertEquals('Sr. New Name', $users2->getName());
+        $this->assertEquals('[JOHN DOE UPDATED]', $users2->getName());
         $this->assertEquals('2016-01-09', $users2->getCreatedate());
         $this->assertEquals(2016, $users2->getYear());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
-        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('Jane Doe', $users2->getName()); // Not updated
         $this->assertEquals('2017-01-04', $users2->getCreatedate());
         $this->assertEquals(2017, $users2->getYear());
     }
