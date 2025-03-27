@@ -14,6 +14,7 @@ Key Features:
 * Can be used with any DTO, Entity, Model or whatever class with public properties or with getter and setter
 * The repository support a variety of datasources: MySql, Sqlite, Postgres, MySQL, Oracle (see byjg/anydataset)
 * A class Mapper is used for mapping the Entity and the repository
+* Powerful mapper functions for automatic data transformation between models and database
 * Small and simple to use
 
 ## Architecture
@@ -155,6 +156,7 @@ $result = $repository->getByQuery($query);
 * [Using the Mapper Object](docs/using-mapper-object.md)
 * [The Model Attributes](docs/model.md)
 * [The Repository Class](docs/repository.md)
+* [Common Traits for Timestamp Fields](docs/common-traits.md)
 
 ## Advanced Topics
 
@@ -165,6 +167,7 @@ $result = $repository->getByQuery($query);
 * [Caching the Results](docs/cache.md)
 * [Observing the Database](docs/observers.md)
 * [Controlling the data queried/updated](docs/controlling-the-data.md)
+* [Mapper Functions](docs/mapper-functions.md)
 * [Using FieldAlias](docs/using-fieldalias.md)
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
