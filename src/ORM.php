@@ -174,10 +174,11 @@ class ORM
         }
     }
 
-    public static function clearRelationships(): void
+    public static function resetMemory(): void
     {
         static::$relationships = [];
         static::$incompleteRelationships = [];
+        static::$dbDriver = null; // Reset the default DB driver
         foreach (static::$mapper as $mapper) {
             // Reset the ActiveRecord DbDriver
             if (method_exists($mapper->getEntity(), 'reset')) {

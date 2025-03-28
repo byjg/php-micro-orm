@@ -12,7 +12,7 @@ Object Relational Mapping system.
 
 ## How to use Active Record
 
-- Create a model and add the annotations to the class and properties. (see [Model](model.md))
+- Create a model and add the annotations to the class and properties. (see [Model](model-attribute.md))
 - Add the `ActiveRecord` trait to your model.
 - Initialize the Active Record with the `initialize` static method (need to do only once)
 

@@ -287,10 +287,10 @@ use Override;
 class BeforeInsertProcessor implements EntityProcessorInterface
 {
     #[Override]
-    public function process(mixed $instance): mixed
+    public function process(array $instance): array
     {
         // Modify the instance before inserting
-        if (is_array($instance) && !isset($instance['created_at'])) {
+        if (!isset($instance['created_at'])) {
             $instance['created_at'] = date('Y-m-d H:i:s');
         }
         return $instance;
@@ -320,10 +320,10 @@ use Override;
 class BeforeUpdateProcessor implements EntityProcessorInterface
 {
     #[Override]
-    public function process(mixed $instance): mixed
+    public function process(array $instance): array
     {
         // Modify the instance before updating
-        if (is_array($instance) && !isset($instance['updated_at'])) {
+        if (!isset($instance['updated_at'])) {
             $instance['updated_at'] = date('Y-m-d H:i:s');
         }
         return $instance;

@@ -18,13 +18,13 @@ The attributes are:
 class MyModel
 {
     #[FieldAttribute(primaryKey: true)]
-    public ?int $id;
+    public ?int $id = null;
 
     #[FieldAttribute()]
-    public ?string $name;
+    public ?string $name = null;
 
     #[FieldAttribute(fieldName: 'company_id')]
-    public ?int $companyId;
+    public ?int $companyId = null;
     
     #[FieldAttribute(fieldName: 'created_at')]
     protected ?string $createdAt;
@@ -56,9 +56,13 @@ class MyModel
 
 In this example, we have a class `MyModel` with five properties: `id`, `name`, `companyId`, `createdAt`, and `updatedAt`.
 
-The `id` property is marked as a primary key. The `name` property is a simple field. 
-The `companyId` property is a field with a different name in the database `company_id`.
-The same for `createdAt` and `updatedAt`. These properties are fields with a different name in the database `created_at` and `updated_at`.
+* The `id` property is marked as a primary key. The `name` property is a simple field.
+* The `companyId` property is a field with a different name in the database `company_id`.
+* The same for `createdAt` and `updatedAt`. These properties are fields with a different name in the database
+  `created_at` and `updated_at`.
+
+Note: Specically for the `createdAt` and `updatedAt` properties, we have a getter and setter.
+See [common traits](common-traits.md) for more information.
 
 The `TableAttribute` is used to define the table name in the database.
 
@@ -82,11 +86,13 @@ The `FieldAttribute` can be used in the following properties:
 
 The `TableAttribute` has the following parameters:
 
-| Field                      | Description                                                                             | Required |
-|----------------------------|-----------------------------------------------------------------------------------------|:--------:|
-| **tableName**              | The name of the table in the database.                                                  |   Yes    |
-| **primaryKeySeedFunction** | A function that returns the seed for the primary key. The function must return a value. |    No    |
-| **tableAlias**             | The alias of the table in the database.                                                 |    No    |
+| Field                      | Description                                                                                                                                    | Required |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|:--------:|
+| **tableName**              | The name of the table in the database.                                                                                                         |   Yes    |
+| **primaryKeySeedFunction** | A function that returns the seed for the primary key. The function must return a value.                                                        |    No    |
+| **tableAlias**             | The alias of the table in the database.                                                                                                        |    No    |
+| **beforeInsert**           | A processor that is called before inserting a record into the database. Can be a string class name or an instance of EntityProcessorInterface. |    No    |
+| **beforeUpdate**           | A processor that is called before updating a record in the database. Can be a string class name or an instance of EntityProcessorInterface.    |    No    |
 
 ## Field Attributes parameters
 
@@ -114,23 +120,68 @@ MicroOrm provides specialized table attributes for tables with UUID primary keys
 * `TableMySqlUuidPKAttribute` - Specific implementation for MySQL databases with UUID primary keys
 * `TableSqliteUuidPKAttribute` - Specific implementation for SQLite databases with UUID primary keys
 
-These attributes automatically configure the primary key generation for UUID fields.
+These attributes automatically configure the primary key generation for UUID fields. They handle the creation of binary
+UUID values in a format appropriate for the specific database engine.
 
-Example:
+### Using UUID attributes
+
+Here's an example of how to use the UUID attributes:
 
 ```php
-#[TableMySqlUuidPKAttribute(tableName: 'my_table')]
+#[TableSqliteUuidPKAttribute(tableName: 'my_table')]
 class MyModelWithUuid
 {
     #[FieldUuidAttribute(primaryKey: true)]
-    public ?string $id;
+    public ?string $id = null;
 
     #[FieldAttribute()]
-    public ?string $name;
+    public ?string $name = null;
 }
 ```
 
-The `FieldUuidAttribute` can be used to mark a field as a UUID primary key. It works in conjunction with the UUID table
-attributes to automatically generate UUID values.
+In this example:
+
+- `TableSqliteUuidPKAttribute` sets up the model to work with SQLite's UUID handling
+- `FieldUuidAttribute` marks the `$id` field as a UUID primary key
+- The library will automatically generate UUID values for new records
+
+### Field UUID Attribute
+
+The `FieldUuidAttribute` is a specialized field attribute designed for UUID fields. It internally configures the
+appropriate mapper functions for handling binary UUID values:
+
+- For reading from the database: Uses `SelectBinaryUuidMapper` to convert binary UUID to string format
+- For writing to the database: Uses `UpdateBinaryUuidMapper` to convert string UUID to binary format
+
+### Database Schema Requirements
+
+To use UUID primary keys, you need to define your table with a binary field for the UUID. For example:
+
+```sql
+-- SQLite example
+CREATE TABLE my_table
+(
+    id   BINARY(16) PRIMARY KEY,
+    name VARCHAR(45)
+);
+
+-- MySQL example
+CREATE TABLE my_table
+(
+    id   BINARY(16) PRIMARY KEY,
+    name VARCHAR(45)
+);
+```
+
+### UUID Literals
+
+The library provides specialized literal classes for handling UUID values in different database engines:
+
+- `HexUuidLiteral` - Base class for UUID literals
+- `MySqlUuidLiteral` - MySQL-specific UUID literal
+- `SqliteUuidLiteral` - SQLite-specific UUID literal
+- `PostgresUuidLiteral` - PostgreSQL-specific UUID literal
+
+These literals help ensure the UUID values are properly formatted for each database engine.
 
 

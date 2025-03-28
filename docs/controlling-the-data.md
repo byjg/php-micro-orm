@@ -164,10 +164,10 @@ use Override;
 class MyEntityProcessor implements EntityProcessorInterface
 {
     #[Override]
-    public function process(mixed $instance): mixed
+    public function process(array $instance): array
     {
         // Process the entity before insert/update
-        if (is_array($instance) && isset($instance['created_at'])) {
+        if (isset($instance['created_at'])) {
             $instance['created_at'] = date('Y-m-d H:i:s');
         }
         return $instance;
@@ -181,7 +181,7 @@ $repository->setBeforeInsert(new MyEntityProcessor());
 class BeforeInsertProcessor implements EntityProcessorInterface 
 {
     #[Override]
-    public function process(mixed $instance): mixed
+    public function process(array $instance): array
     {
         // Process only before insert
         return $instance;
@@ -191,7 +191,7 @@ class BeforeInsertProcessor implements EntityProcessorInterface
 class BeforeUpdateProcessor implements EntityProcessorInterface
 {
     #[Override]
-    public function process(mixed $instance): mixed
+    public function process(array $instance): array
     {
         // Process only before update
         return $instance;
@@ -203,4 +203,39 @@ $repository->setBeforeUpdate(new BeforeUpdateProcessor());
 ```
 
 The return of the process method will be the instance that will be used to insert or update the record.
+
+### 3. Using TableAttribute (Class-Level Approach)
+
+You can also define processors at the class level using the `TableAttribute`:
+
+```php
+<?php
+use ByJG\MicroOrm\Attributes\TableAttribute;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+
+// Define a processor class
+class MyModelProcessor implements EntityProcessorInterface
+{
+    #[Override]
+    public function process(array $instance): array
+    {
+        // Process the entity before insert/update
+        return $instance;
+    }
+}
+
+// Apply processors in the TableAttribute
+#[TableAttribute(
+    tableName: 'mytable',
+    beforeInsert: MyModelProcessor::class,  // Can be a class name string
+    beforeUpdate: new MyModelProcessor()    // Or an instance
+)]
+class MyModel
+{
+    // Model properties and methods
+}
+```
+
+This approach allows you to associate processors directly with your model class, making the relationship more explicit
+and self-contained.
 

@@ -25,7 +25,7 @@ class ORMTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        ORM::clearRelationships();
+        ORM::resetMemory();
         $this->mapper1 = new Mapper(Class1::class, 'table1', 'id');
         $this->mapper2 = new Mapper(Class2::class, 'table2', 'id');
         $this->mapper2->addFieldMapping(FieldMapping::create('idTable1')->withFieldName('id_table1')->withParentTable('table1'));
@@ -36,7 +36,7 @@ class ORMTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        ORM::clearRelationships();
+        ORM::resetMemory();
     }
 
     public function testSanityCheck()

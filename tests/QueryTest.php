@@ -34,7 +34,7 @@ class QueryTest extends TestCase
     protected function tearDown(): void
     {
         $this->object = null;
-        ORM::clearRelationships();
+        ORM::resetMemory();
     }
 
     public function testQueryBasic()

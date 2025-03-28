@@ -51,10 +51,12 @@ These are the key components:
                                             `─────────'
 ```
 
-* Model is a get/set class to retrieve or save the data into the database
-* Mapper will create the definitions to map the Model into the Database.
-* Query will use the Mapper to prepare the query to the database based on DbDriverInterface
-* DbDriverIntarce is the implementation to the Database connection.
+* Model can be any class with public properties or with getter and setter. It is used to retrieve or save the data into
+  the database
+* Mapper defines the relationship between the Model properties and the database fields
+* Query defines what to retrieve from/update in the database. It uses the Mapper to prepare the query to the database
+  converting the Model properties to database fields.
+* DbDriverInterface is the implementation to the Database connection.
 * Repository put all this together
 
 
@@ -90,13 +92,13 @@ Let's look at an example:
 class MyModel
 {
     #[FieldAttribute(primaryKey: true)]
-    public ?int $id;
+    public ?int $id = null;
 
     #[FieldAttribute()]
-    public ?string $name;
+    public ?string $name = null;
 
     #[FieldAttribute(fieldName: 'company_id')
-    public ?int $companyId;
+    public ?int $companyId = null;
 }
 ```
 
@@ -154,7 +156,7 @@ $result = $repository->getByQuery($query);
 * [Querying the Database](docs/querying-the-database.md)
 * [Updating the database](docs/updating-the-database.md)
 * [Using the Mapper Object](docs/using-mapper-object.md)
-* [The Model Attributes](docs/model.md)
+* [The Model Attributes](docs/model-attribute.md)
 * [The Repository Class](docs/repository.md)
 * [Common Traits for Timestamp Fields](docs/common-traits.md)
 
@@ -173,6 +175,7 @@ $result = $repository->getByQuery($query);
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
 * [Update Constraints](docs/update-constraints.md)
 * [Building SQL Queries](docs/query-build.md)
+* [UUID Support](docs/uuid-support.md)
 
 ## Install
 

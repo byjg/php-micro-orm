@@ -118,7 +118,7 @@ class RepositoryTest extends TestCase
     {
         $uri = new Uri(self::URI);
         unlink($uri->getPath());
-        ORM::clearRelationships();
+        ORM::resetMemory();
     }
 
     public function testGet()

@@ -3,6 +3,7 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\ORM;
 use ByJG\Util\Uri;
@@ -38,7 +39,7 @@ class ActiveRecordProcessorsTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        ORM::defaultDbDriver(null);
+        ORM::resetMemory(); // This also clears the default DB driver
         $uri = new Uri(self::URI);
         unlink($uri->getPath());
     }
@@ -69,5 +70,17 @@ class ActiveRecordProcessorsTest extends TestCase
         // Verify processor was applied
         $this->assertEquals('Updated User-updated', $updatedModel->name);
         $this->assertEquals('2023-02-20', $updatedModel->createdate);
+    }
+
+    public function testInitializeActiveRecordDefaultDbDriverError()
+    {
+        // Clear ORM state completely
+        ORM::resetMemory(); // This method also clears the default DB driver
+        // Reset ActiveRecordWithProcessors static properties
+        ActiveRecordWithProcessors::reset();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("You must initialize the ORM with a DbDriverInterface");
+        ActiveRecordWithProcessors::initialize();
     }
 } 
