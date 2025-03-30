@@ -3,10 +3,12 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use Override;
 
 class InsertQuery extends Updatable
 {
@@ -66,10 +68,11 @@ class InsertQuery extends Updatable
 
     /**
      * @param DbFunctionsInterface|null $dbHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    #[Override]
+    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->values)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -93,13 +96,14 @@ class InsertQuery extends Updatable
 
         $params = $this->values;
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params, SqlObjectEnum::INSERT);
+        return new SqlStatement($sql, $params);
     }
 
     /**
      * @throws InvalidArgumentException
      * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
+    #[Override]
     public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
     {
         $query = Query::getInstance()

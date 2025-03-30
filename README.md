@@ -14,6 +14,7 @@ Key Features:
 * Can be used with any DTO, Entity, Model or whatever class with public properties or with getter and setter
 * The repository support a variety of datasources: MySql, Sqlite, Postgres, MySQL, Oracle (see byjg/anydataset)
 * A class Mapper is used for mapping the Entity and the repository
+* Powerful mapper functions for automatic data transformation between models and database
 * Small and simple to use
 
 ## Architecture
@@ -50,10 +51,12 @@ These are the key components:
                                             `─────────'
 ```
 
-* Model is a get/set class to retrieve or save the data into the database
-* Mapper will create the definitions to map the Model into the Database.
-* Query will use the Mapper to prepare the query to the database based on DbDriverInterface
-* DbDriverIntarce is the implementation to the Database connection.
+* Model can be any class with public properties or with getter and setter. It is used to retrieve or save the data into
+  the database
+* Mapper defines the relationship between the Model properties and the database fields
+* Query defines what to retrieve from/update in the database. It uses the Mapper to prepare the query to the database
+  converting the Model properties to database fields.
+* DbDriverInterface is the implementation to the Database connection.
 * Repository put all this together
 
 
@@ -89,20 +92,21 @@ Let's look at an example:
 class MyModel
 {
     #[FieldAttribute(primaryKey: true)]
-    public ?int $id;
+    public ?int $id = null;
 
     #[FieldAttribute()]
-    public ?string $name;
+    public ?string $name = null;
 
     #[FieldAttribute(fieldName: 'company_id')
-    public ?int $companyId;
+    public ?int $companyId = null;
 }
 ```
 
 In this example, we have a class `MyModel` with three properties: `id`, `name`, and `companyId`.
 
-The `id` property is marked as a primary key. The `name` property is a simple field.
-The `companyId` property is a field with a different name in the database `company_id`.
+* The `id` property is marked as a primary key.
+* The `name` property is a simple field.
+* The `companyId` property is a field with a different name in the database `company_id`.
 
 The `TableAttribute` is used to define the table name in the database.
 
@@ -111,8 +115,7 @@ The `TableAttribute` is used to define the table name in the database.
 After defining the Model, you can connect the Model with the repository.
 
 ```php
-$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
-
+$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
 $repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
 ```
 
@@ -153,6 +156,9 @@ $result = $repository->getByQuery($query);
 * [Querying the Database](docs/querying-the-database.md)
 * [Updating the database](docs/updating-the-database.md)
 * [Using the Mapper Object](docs/using-mapper-object.md)
+* [The Model Attributes](docs/model-attribute.md)
+* [The Repository Class](docs/repository.md)
+* [Common Traits for Timestamp Fields](docs/common-traits.md)
 
 ## Advanced Topics
 
@@ -163,9 +169,13 @@ $result = $repository->getByQuery($query);
 * [Caching the Results](docs/cache.md)
 * [Observing the Database](docs/observers.md)
 * [Controlling the data queried/updated](docs/controlling-the-data.md)
+* [Mapper Functions](docs/mapper-functions.md)
 * [Using FieldAlias](docs/using-fieldalias.md)
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
+* [Update Constraints](docs/update-constraints.md)
+* [Building SQL Queries](docs/query-build.md)
+* [UUID Support](docs/uuid-support.md)
 
 ## Install
 

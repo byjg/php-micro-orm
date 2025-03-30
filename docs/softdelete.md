@@ -1,3 +1,7 @@
+---
+sidebar_position: 10
+---
+
 # Soft Deletes
 
 Soft deletes are a way to "delete" a record without actually removing it from the database.
@@ -18,13 +22,14 @@ There is some ways to define the field `deleted_at`:
 
 ```php
 <?php
-use ByJG\MicroOrm\Mapper\FieldAttribute;
+use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
+use ByJG\MicroOrm\Trait\DeletedAt;
 
 #[TableAttribute(tableName: 'my_table')]
 class MyModel
 {
-    use ByJG\MicroOrm\Mapper\DeletedAt;
+    use DeletedAt;
 
     #[FieldAttribute(fieldName: 'id', primaryKey: true)]
     public ?int $id;
@@ -38,7 +43,7 @@ class MyModel
 
 ```php
 <?php
-use ByJG\MicroOrm\Mapper\FieldAttribute;
+use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 
 #[TableAttribute(tableName: 'my_table')]

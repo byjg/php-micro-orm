@@ -3,7 +3,9 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use Override;
 
 class Query extends QueryBasic
 {
@@ -15,6 +17,7 @@ class Query extends QueryBasic
     protected ?int $top = null;
     protected bool $forUpdate = false;
 
+    #[Override]
     public static function getInstance(): Query
     {
         return new Query();
@@ -101,14 +104,15 @@ class Query extends QueryBasic
 
     /**
      * @param DbDriverInterface|null $dbDriver
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(?DbDriverInterface $dbDriver = null): SqlObject
+    #[Override]
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $buildResult = parent::build($dbDriver);
         $sql = $buildResult->getSql();
-        $params = $buildResult->getParameters();
+        $params = $buildResult->getParams();
 
         $sql .= $this->addGroupBy();
 
@@ -124,7 +128,7 @@ class Query extends QueryBasic
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlObject($sql, $params);
+        return new SqlStatement($sql, $params);
     }
 
     protected function addOrderBy(): string

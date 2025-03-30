@@ -2,6 +2,8 @@
 
 namespace ByJG\MicroOrm\Literal;
 
+use Override;
+
 class Literal implements LiteralInterface
 {
     protected mixed $literalValue;
@@ -19,6 +21,7 @@ class Literal implements LiteralInterface
     /**
      * @return mixed
      */
+    #[Override]
     public function getLiteralValue(): mixed
     {
         return $this->literalValue;
@@ -27,6 +30,7 @@ class Literal implements LiteralInterface
     /**
      * @param mixed $literalValue
      */
+    #[Override]
     public function setLiteralValue(mixed $literalValue): void
     {
         $this->literalValue = $literalValue;
