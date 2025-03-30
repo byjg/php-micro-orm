@@ -12,30 +12,27 @@ The Model can be:
 
 * a simple class with public properties
 * a class with getter and setter
+* a mix of both
 
-### Requirements for the properties in the Model class:
+### Determining the Property Name:
 
-* If the property has a type, then must be nullable and the default value must be set (null preferred or any other
-  value).
+Micro ORM determines the property name based on the following rules:
 
-```php
-// Typed property
-public ?int $id = null;
-```
+I'll convert that information into a table for you.
 
-* If there is no type, then does not need to have default value.
+| Property Visibility  | Property Name Determination                                        |
+|----------------------|--------------------------------------------------------------------|
+| Public               | Property name is used directly                                     |
+| Protected or Private | Property name is determined based on the getter/setter method name |
 
-```php
-// Untyped property
-public $id;
-```
-
-* If the property is protected or private, you must have a getter and setter for this property.
+Example:
 
 ```php
-// Protected property
-protected ?int $id = null;
-public function getId(): ?int
+public ?int $name = null;  // Property name is 'name' 
+
+protected ?int $id = null; // Property name is 'id'
+
+public function getId(): ?int   // Getter and setter are necessary.
 {
     return $this->id;
 }
@@ -45,22 +42,31 @@ public function setId(?int $id): void
 }
 ```
 
-* The properties name is not related to the getter and setter, but the name of the property.
+### Requirements for the properties in the Model class:
 
-```php
-// In the example above, the property is 'id' and the getter is 'getId' and the setter is 'setId'
-```
+| Property Characteristic    | Requirement                                              | Example                                                                                                                  |
+|----------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Property with type         | Must be nullable with default value set (null preferred) | `public ?int $id = null;`                                                                                                |
+| Property without type      | No need to set default value                             | `public $id;`                                                                                                            |
+| Protected/Private property | Must have getter and setter public methods               | `protected ?int $id = null;`<br>`public function getId(): ?int {...};`<br>`public function setId(?int $id): void {...};` |
 
-## Relate the Model with the database
+## Property Mapping Strategy with the Database
 
-The model doesn't need to have the same name as the database fields.
+| Strategy            | Description                                                                                     | Example                                                                                                 |
+|---------------------|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| **Direct Matching** | The ORM matches entity property names to their corresponding database field names               | A property named `userid` would map to a database column named `userid`                                 |
+| **Field Mapping**   | The ORM matches entity property names to their corresponding field mapping database field names | A property named `userId` would map to a database column named `user_id` if stated in the field mapping |
 
-It can be done in two ways:
+## Field Mapping Methods
 
-* Using the [Mapper](using-mapper-object.md) class and [Controlling the data](controlling-the-data.md)
-* Using [Attributes](model-attribute.md).
+| Method                                 | Description                               |
+|----------------------------------------|-------------------------------------------|
+| [Mapper](using-mapper-object.md) class | Define mappings using the Mapper class    |
+| [Attributes](model-attribute.md)       | Define mappings using PHP 8.0+ attributes |
 
-### When to use each one?
+_See also: [Controlling the data](controlling-the-data.md) for advanced mapping_
+
+### When to use each Mapper or Attribute?
 
 The `Mapper` class is more flexible and can be used in any PHP version. Use cases:
 
@@ -115,7 +121,8 @@ CREATE TABLE `mytable`
 
 In this example, we have a class `MyModel` with three properties: `id`, `name`, and `companyId`.
 
-* The `id` property is marked as a primary key. The `name` property is a simple field.
+* The `id` property is marked as a primary key.
+* The `name` property is a direct match with the database field - No mapping is needed.
 * The `companyId` property is a field with a different name in the database `company_id`.
 * The `TableAttribute` is used to define the table name in the database.
 
@@ -124,7 +131,7 @@ In this example, we have a class `MyModel` with three properties: `id`, `name`, 
 After defining the Model, you can connect the Model with the repository.
 
 ```php
-$dbDriver = Factory::getDbRelationalInstance('mysql://user:password@server/schema');
+$dbDriver = Factory::getDbInstance('mysql://user:password@server/schema');
 $repository = new Repository($dbDriver, MyModel::class);
 ```
 

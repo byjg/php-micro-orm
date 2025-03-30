@@ -56,7 +56,8 @@ class MyModel
 
 In this example, we have a class `MyModel` with five properties: `id`, `name`, `companyId`, `createdAt`, and `updatedAt`.
 
-* The `id` property is marked as a primary key. The `name` property is a simple field.
+* The `id` property is marked as a primary key.
+* The `name` property is a simple field.
 * The `companyId` property is a field with a different name in the database `company_id`.
 * The same for `createdAt` and `updatedAt`. These properties are fields with a different name in the database
   `created_at` and `updated_at`.
@@ -68,19 +69,8 @@ The `TableAttribute` is used to define the table name in the database.
 
 ## Where to use FieldAttribute
 
-The `FieldAttribute` can be used in the following properties:
+Please read [Getting Started with Model Attributes for more information](getting-started-model.md).
 
-* Public properties
-* Protected properties
-* Private properties
-
-**Do not use the `FieldAttribute` in any _method_, _getter_ or _setter_.**
-
-## Rules for the properties
-
-* If the property has a type, then must be nullable. If the property is not nullable, you must set a default value.
-* You can use mixed or not typed properties.
-* If the property is protected or private, you must have a getter and setter for this property.
 
 ## Table Attributes parameters
 

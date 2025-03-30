@@ -104,8 +104,9 @@ class MyModel
 
 In this example, we have a class `MyModel` with three properties: `id`, `name`, and `companyId`.
 
-The `id` property is marked as a primary key. The `name` property is a simple field.
-The `companyId` property is a field with a different name in the database `company_id`.
+* The `id` property is marked as a primary key.
+* The `name` property is a simple field.
+* The `companyId` property is a field with a different name in the database `company_id`.
 
 The `TableAttribute` is used to define the table name in the database.
 
@@ -114,8 +115,7 @@ The `TableAttribute` is used to define the table name in the database.
 After defining the Model, you can connect the Model with the repository.
 
 ```php
-$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
-
+$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
 $repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
 ```
 

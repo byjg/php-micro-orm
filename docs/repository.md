@@ -9,28 +9,33 @@ The Repository class is the class that connects the model with the database.
 To achieve this, you need to create an instance of the Repository class and pass the database driver and the model class.
 
 ```php
-$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
+$dbDriver = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
 
 $repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
 ```
 
 ## Read and Write Separation
 
-You can use separate database connections for read and write operations, which is useful for database replication
-scenarios:
+When you create a repository, it uses the same database connection for both read and write operations.
+
+However, in some cases, you may want to use separate database connections for read and write operations. This is useful
+for database replication scenarios where you have a master database for writing and one or more read-only replicas for
+reading.
+
+To configure separate database connections, you can use the `addDbDriverForWrite` method:
 
 ```php
 // Main connection used for reading
-$dbDriverRead = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@readserver/schema');
+$dbDriverRead = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@readserver/schema');
 
 // Separate connection for write operations
-$dbDriverWrite = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@writeserver/schema');
+$dbDriverWrite = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@writeserver/schema');
 
 $repository = new \ByJG\MicroOrm\Repository($dbDriverRead, MyModel::class);
 $repository->addDbDriverForWrite($dbDriverWrite);
 ```
 
-You can also create a read-only repository:
+Alternatively, you can use the `setRepositoryReadOnly` method to make the repository read-only:
 
 ```php
 $repository->setRepositoryReadOnly();
