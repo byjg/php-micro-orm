@@ -4,6 +4,7 @@ namespace Tests;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Literal\Literal;
@@ -11,9 +12,8 @@ use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
-use ByJG\MicroOrm\SqlObject;
-use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\UpdateQuery;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\ModelWithAttributes;
 
@@ -24,22 +24,24 @@ class QueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new Query();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;
-        ORM::clearRelationships();
+        ORM::resetMemory();
     }
 
     public function testQueryBasic()
     {
         $this->object->table('test');
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test'),
+            new SqlStatement('SELECT  * FROM test'),
             $this->object->build()
         );
 
@@ -49,7 +51,7 @@ class QueryTest extends TestCase
             ->fields(['fld2', 'fld3']);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test'),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test'),
             $this->object->build()
         );
 
@@ -57,7 +59,7 @@ class QueryTest extends TestCase
             ->orderBy(['fld1']);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1'),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test ORDER BY fld1'),
             $this->object->build()
         );
 
@@ -65,7 +67,7 @@ class QueryTest extends TestCase
             ->groupBy(['fld1', 'fld2', 'fld3']);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1'),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test GROUP BY fld1, fld2, fld3 ORDER BY fld1'),
             $this->object->build()
         );
 
@@ -73,7 +75,7 @@ class QueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10 ]),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste GROUP BY fld1, fld2, fld3 ORDER BY fld1', ['teste' => 10]),
             $this->object->build()
         );
 
@@ -81,7 +83,7 @@ class QueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10 ]),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 GROUP BY fld1, fld2, fld3 ORDER BY fld1', ['teste' => 10]),
             $this->object->build()
         );
 
@@ -89,7 +91,7 @@ class QueryTest extends TestCase
             ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 ORDER BY fld1', ['teste' => 10, 'teste2' => 40]),
             $this->object->build()
         );
 
@@ -97,7 +99,7 @@ class QueryTest extends TestCase
             ->having('count(fld1) > 1');
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', ['teste' => 10, 'teste2' => 40]),
             $this->object->build()
         );
 
@@ -105,7 +107,7 @@ class QueryTest extends TestCase
         $iteratorFilter->and('fld4', Relation::EQUAL, 40);
         $this->object->where($iteratorFilter);
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 AND  fld4 = :fld4  GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', [ 'teste' => 10, 'teste2' => 40, 'fld4' => 40 ]),
+            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 AND  fld4 = :fld4  GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', ['teste' => 10, 'teste2' => 40, 'fld4' => 40]),
             $this->object->build()
         );
     }
@@ -123,7 +125,7 @@ class QueryTest extends TestCase
 
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE  fld1 = :fld1  and  fld2 = :fld2  or  fld1 = :fld10 ', [ 'fld1' => 10, 'fld2' => '20', 'fld10' => '30' ]),
+            new SqlStatement('SELECT  * FROM test WHERE  fld1 = :fld1  and  fld2 = :fld2  or  fld1 = :fld10 ', ['fld1' => 10, 'fld2' => '20', 'fld10' => '30']),
             $this->object->build()
         );
     }
@@ -152,7 +154,7 @@ class QueryTest extends TestCase
         $expectedSql = 'WITH RECURSIVE table6() AS (SELECT  UNION ALL SELECT  FROM table6 WHERE ) SELECT  fld1, fld2, fld3 FROM test INNER JOIN table2 ON table2.id = test.id LEFT JOIN table3 ON table3.id = test.id RIGHT JOIN table4 ON table4.id = test.id CROSS JOIN table5 as table5.id = test.id WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 ORDER BY fld1';
 
         $this->assertEquals(
-            new SqlObject($expectedSql, [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlStatement($expectedSql, ['teste' => 10, 'teste2' => 40]),
             $query->build()
         );
 
@@ -160,7 +162,7 @@ class QueryTest extends TestCase
         /** @psalm-suppress InvalidLiteralArgument */
         $expectedSql2 = substr($expectedSql, 0, strpos($expectedSql, ' GROUP'));
         $this->assertEquals(
-            new SqlObject($expectedSql2, [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlStatement($expectedSql2, ['teste' => 10, 'teste2' => 40]),
             $queryBasic->build()
         );
     }
@@ -174,7 +176,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE field = ABC', []),
+            new SqlStatement('SELECT  * FROM test WHERE field = ABC', []),
             $result
         );
     }
@@ -189,7 +191,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE field = ABC AND other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM test WHERE field = ABC AND other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -199,7 +201,7 @@ class QueryTest extends TestCase
         $this->object->table('test', "t");
         $this->object->where("1 = 1");
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test as t WHERE 1 = 1', []),
+            new SqlStatement('SELECT  * FROM test as t WHERE 1 = 1', []),
             $this->object->build()
         );
     }
@@ -215,7 +217,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo INNER JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo INNER JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -231,7 +233,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo INNER JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo INNER JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -247,7 +249,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo LEFT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo LEFT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -263,7 +265,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo LEFT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo LEFT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -279,7 +281,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo RIGHT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo RIGHT JOIN bar ON foo.id = bar.id WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -295,7 +297,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo RIGHT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo RIGHT JOIN bar as b ON foo.id = b.id WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -311,7 +313,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo CROSS JOIN bar WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo CROSS JOIN bar WHERE foo.field = ABC AND bar.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -327,7 +329,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM foo CROSS JOIN bar as b WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
+            new SqlStatement('SELECT  * FROM foo CROSS JOIN bar as b WHERE foo.field = ABC AND b.other = :other', ['other' => 'test']),
             $result
         );
     }
@@ -352,7 +354,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq WHERE sq.date < :date', ['date' => '2020-06-01']),
+            new SqlStatement('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq WHERE sq.date < :date', ['date' => '2020-06-01']),
             $result
         );
 
@@ -410,7 +412,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest WHERE date > :test GROUP BY id) as sq WHERE sq.date < :date', [
+            new SqlStatement('SELECT  * FROM (SELECT  id, max(date) as date FROM subtest WHERE date > :test GROUP BY id) as sq WHERE sq.date < :date', [
                     'test' => '2020-06-01',
                     'date' => '2020-06-28',
                 ]),
@@ -439,7 +441,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test INNER JOIN (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq ON test.id = sq.id WHERE test.date < :date', ['date' => '2020-06-28']),
+            new SqlStatement('SELECT  * FROM test INNER JOIN (SELECT  id, max(date) as date FROM subtest GROUP BY id) as sq ON test.id = sq.id WHERE test.date < :date', ['date' => '2020-06-28']),
             $result
         );
 
@@ -528,7 +530,7 @@ class QueryTest extends TestCase
         $result = $query->build();
 
         $this->assertEquals(
-            new SqlObject('SELECT  test.id, test.name, test.date, (SELECT  max(date) as date FROM subtest) as subdate FROM test WHERE test.date < :date', ['date' => '2020-06-28']),
+            new SqlStatement('SELECT  test.id, test.name, test.date, (SELECT  max(date) as date FROM subtest) as subdate FROM test WHERE test.date < :date', ['date' => '2020-06-28']),
             $result
         );
 
@@ -541,7 +543,7 @@ class QueryTest extends TestCase
             ->table('info')
             ->where('iduser = :id', ['id' => 3])
             ->orderBy(['property']);
-        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
+        $this->assertEquals(new SqlStatement("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
 
         // Test with soft delete
         new Mapper(ModelWithAttributes::class);
@@ -549,11 +551,11 @@ class QueryTest extends TestCase
             ->table('info')
             ->where('iduser = :id', ['id' => 3])
             ->orderBy(['property']);
-        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id AND info.deleted_at is null ORDER BY property", ["id" => 3]), $query->build());
+        $this->assertEquals(new SqlStatement("SELECT  * FROM info WHERE iduser = :id AND info.deleted_at is null ORDER BY property", ["id" => 3]), $query->build());
 
         // Test Unsafe
         $query->unsafe();
-        $this->assertEquals(new SqlObject("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
+        $this->assertEquals(new SqlStatement("SELECT  * FROM info WHERE iduser = :id ORDER BY property", ["id" => 3]), $query->build());
     }
 
     public function testSoftDeleteUpdate()
@@ -563,7 +565,7 @@ class QueryTest extends TestCase
             ->table('info')
             ->set('property', 'value')
             ->where('iduser = :id', ['id' => 3]);
-        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+        $this->assertEquals(new SqlStatement("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3]), $query->build());
 
         // Test with soft delete
         new Mapper(ModelWithAttributes::class);
@@ -571,11 +573,11 @@ class QueryTest extends TestCase
             ->table('info')
             ->set('property', 'value')
             ->where('iduser = :id', ['id' => 3]);
-        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id AND info.deleted_at is null", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+        $this->assertEquals(new SqlStatement("UPDATE info SET property = :property  WHERE iduser = :id AND info.deleted_at is null", ["property" => "value", "id" => 3]), $query->build());
 
         // Test Unsafe
         $query->unsafe();
-        $this->assertEquals(new SqlObject("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3], type: SqlObjectEnum::UPDATE), $query->build());
+        $this->assertEquals(new SqlStatement("UPDATE info SET property = :property  WHERE iduser = :id", ["property" => "value", "id" => 3]), $query->build());
     }
 
     public function testSoftDeleteDelete()
@@ -584,17 +586,17 @@ class QueryTest extends TestCase
         $query = DeleteQuery::getInstance()
             ->table('info')
             ->where('iduser = :id', ['id' => 3]);
-        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+        $this->assertEquals(new SqlStatement("DELETE FROM info WHERE iduser = :id", ["id" => 3]), $query->build());
 
         // Test with soft delete
         new Mapper(ModelWithAttributes::class);
         $query = DeleteQuery::getInstance()
             ->table('info')
             ->where('iduser = :id', ['id' => 3]);
-        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id AND info.deleted_at is null", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+        $this->assertEquals(new SqlStatement("DELETE FROM info WHERE iduser = :id AND info.deleted_at is null", ["id" => 3]), $query->build());
 
         // Test Unsafe
         $query->unsafe();
-        $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+        $this->assertEquals(new SqlStatement("DELETE FROM info WHERE iduser = :id", ["id" => 3]), $query->build());
     }
 }

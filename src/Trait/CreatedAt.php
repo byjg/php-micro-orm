@@ -3,14 +3,15 @@
 namespace ByJG\MicroOrm\Trait;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
-use ByJG\MicroOrm\MapperFunctions;
+use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
+use ByJG\MicroOrm\MapperFunctions\ReadOnlyMapper;
 
 trait CreatedAt
 {
     /**
      * @var string|null
      */
-    #[FieldAttribute(fieldName: "created_at", updateFunction: MapperFunctions::READ_ONLY, insertFunction: MapperFunctions::NOW_UTC)]
+    #[FieldAttribute(fieldName: "created_at", updateFunction: ReadOnlyMapper::class, insertFunction: NowUtcMapper::class)]
     protected ?string $createdAt = null;
 
     public function getCreatedAt(): ?string

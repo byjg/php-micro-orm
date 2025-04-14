@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Querying the database
 
 Once you have the model and the repository, you can query the database using the repository.
