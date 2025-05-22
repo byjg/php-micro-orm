@@ -20,6 +20,7 @@ class QueryBasic implements QueryBuilderInterface
     protected array $join = [];
     protected DbDriverInterface|null $dbDriver = null;
     protected ?Recursive $recursive = null;
+    protected bool $distinct = false;
 
     public static function getInstance(): QueryBasic
     {
@@ -173,6 +174,17 @@ class QueryBasic implements QueryBuilderInterface
     }
 
     /**
+     * Add DISTINCT keyword to the query
+     *
+     * @return $this
+     */
+    public function distinct(): static
+    {
+        $this->distinct = true;
+        return $this;
+    }
+
+    /**
      * @throws InvalidArgumentException
      */
     protected function getFields(): array
@@ -238,7 +250,7 @@ class QueryBasic implements QueryBuilderInterface
         }
         return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
     }   
-    
+
     /**
      * @param DbDriverInterface|null $dbDriver
      * @return SqlStatement
@@ -260,9 +272,10 @@ class QueryBasic implements QueryBuilderInterface
         $params = array_merge($params, $paramsTable);
 
         $sql .= "SELECT " .
+            ($this->distinct ? "DISTINCT " : "") .
             $fieldList .
             "FROM " . $tableList;
-        
+
         $whereStr = $this->getWhere();
         if (!is_null($whereStr)) {
             $sql .= ' WHERE ' . $whereStr[0];
