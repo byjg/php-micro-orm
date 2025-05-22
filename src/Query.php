@@ -30,7 +30,7 @@ class Query extends QueryBasic
     public function groupBy(array $fields): static
     {
         $this->groupBy = array_merge($this->groupBy, $fields);
-    
+
         return $this;
     }
 
@@ -64,7 +64,7 @@ class Query extends QueryBasic
     public function forUpdate(): static
     {
         $this->forUpdate = true;
-        
+
         return $this;
     }
 
@@ -236,6 +236,10 @@ class Query extends QueryBasic
 
         if (!is_null($this->recursive)) {
             $queryBasic->withRecursive($this->recursive);
+        }
+
+        if ($this->distinct) {
+            $queryBasic->distinct();
         }
 
         return $queryBasic;
