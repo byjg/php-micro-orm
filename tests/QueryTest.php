@@ -609,7 +609,7 @@ class QueryTest extends TestCase
             ->fields(['fld1', 'fld2']);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2 FROM test'),
+            new SqlStatement('SELECT  fld1, fld2 FROM test'),
             $queryBasic->build()
         );
 
@@ -620,7 +620,7 @@ class QueryTest extends TestCase
             ->distinct();
 
         $this->assertEquals(
-            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            new SqlStatement('SELECT DISTINCT  fld1, fld2 FROM test'),
             $queryBasic->build()
         );
     }
@@ -633,7 +633,7 @@ class QueryTest extends TestCase
             ->fields(['fld1', 'fld2']);
 
         $this->assertEquals(
-            new SqlObject('SELECT  fld1, fld2 FROM test'),
+            new SqlStatement('SELECT  fld1, fld2 FROM test'),
             $query->build()
         );
 
@@ -644,14 +644,14 @@ class QueryTest extends TestCase
             ->distinct();
 
         $this->assertEquals(
-            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            new SqlStatement('SELECT DISTINCT  fld1, fld2 FROM test'),
             $query->build()
         );
 
         // Test getQueryBasic preserves distinct
         $queryBasic = $query->getQueryBasic();
         $this->assertEquals(
-            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            new SqlStatement('SELECT DISTINCT  fld1, fld2 FROM test'),
             $queryBasic->build()
         );
     }
