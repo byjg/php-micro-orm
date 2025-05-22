@@ -1,3 +1,7 @@
+---
+sidebar_position: 4
+---
+
 # Using Mapper Object
 
 The Mapper object is the main object that you will use to interact with the database and your model.
@@ -44,7 +48,7 @@ Then you need to create the dataset object and the repository:
 
 ```php
 <?php
-$dataset = \ByJG\AnyDataset\Db\Factory::getDbRelationalInstance('mysql://user:password@server/schema');
+$dataset = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
 
 $repository = new \ByJG\MicroOrm\Repository($dataset, $mapper);
 ```

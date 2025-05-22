@@ -17,7 +17,7 @@ class ORM
 
     private static array $incompleteRelationships = [];
 
-    public static function addMapper(Mapper $mainMapper)
+    public static function addMapper(Mapper $mainMapper): void
     {
         static::$mapper[$mainMapper->getTable()] = $mainMapper;
     }
@@ -54,7 +54,7 @@ class ORM
     public static function getRelationship(string ...$tables): array
     {
         // First time we try to fix the incomplete relationships
-        foreach (static::$incompleteRelationships as $key => $relationship) {
+        foreach (static::$incompleteRelationships as $relationship) {
             if (isset(static::$mapper[$relationship["parent"]])) {
                 continue;
             }
@@ -174,10 +174,11 @@ class ORM
         }
     }
 
-    public static function clearRelationships(): void
+    public static function resetMemory(): void
     {
         static::$relationships = [];
         static::$incompleteRelationships = [];
+        static::$dbDriver = null; // Reset the default DB driver
         foreach (static::$mapper as $mapper) {
             // Reset the ActiveRecord DbDriver
             if (method_exists($mapper->getEntity(), 'reset')) {

@@ -2,9 +2,9 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Recursive;
-use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class RecursiveTest extends TestCase
@@ -26,7 +26,7 @@ class RecursiveTest extends TestCase
 
         $expected = $expected . "SELECT  start, end FROM test";
         $this->assertEquals(
-            new SqlObject($expected),
+            new SqlStatement($expected),
             $query->build()
         );
     

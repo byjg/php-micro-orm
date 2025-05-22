@@ -7,6 +7,8 @@ use ByJG\MicroOrm\Exception\TransactionException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\TransactionManager;
+use InvalidArgumentException;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
 
@@ -17,11 +19,13 @@ class TransactionManagerTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     public function setUp(): void
     {
         $this->object = new TransactionManager();
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $this->object->destroy();
@@ -42,7 +46,7 @@ class TransactionManagerTest extends TestCase
 
     public function testAddConnectionError()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
         $dbDrive1 = $this->object->addConnection("sqlite:///tmp/a.db");
@@ -65,7 +69,7 @@ class TransactionManagerTest extends TestCase
 
     public function testAddDbDriverError()
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
         $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
@@ -103,7 +107,7 @@ class TransactionManagerTest extends TestCase
             name varchar(45),
             createdate datetime);'
         );
-        $dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
+        $dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2015-05-02')");
         $dbDriver->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
         $dbDriver->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
         $userMapper = new Mapper(Users::class, 'users', 'Id');
