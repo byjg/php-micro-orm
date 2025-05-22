@@ -10,6 +10,7 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\Query;
+use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Recursive;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
@@ -596,5 +597,60 @@ class QueryTest extends TestCase
         // Test Unsafe
         $query->unsafe();
         $this->assertEquals(new SqlObject("DELETE FROM info WHERE iduser = :id", ["id" => 3], type: SqlObjectEnum::DELETE), $query->build());
+    }
+
+    public function testQueryBasicDistinct()
+    {
+        // Test without distinct
+        $queryBasic = QueryBasic::getInstance()
+            ->table('test')
+            ->fields(['fld1', 'fld2']);
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2 FROM test'),
+            $queryBasic->build()
+        );
+
+        // Test with distinct
+        $queryBasic = QueryBasic::getInstance()
+            ->table('test')
+            ->fields(['fld1', 'fld2'])
+            ->distinct();
+
+        $this->assertEquals(
+            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            $queryBasic->build()
+        );
+    }
+
+    public function testQueryDistinct()
+    {
+        // Test without distinct
+        $query = Query::getInstance()
+            ->table('test')
+            ->fields(['fld1', 'fld2']);
+
+        $this->assertEquals(
+            new SqlObject('SELECT  fld1, fld2 FROM test'),
+            $query->build()
+        );
+
+        // Test with distinct
+        $query = Query::getInstance()
+            ->table('test')
+            ->fields(['fld1', 'fld2'])
+            ->distinct();
+
+        $this->assertEquals(
+            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            $query->build()
+        );
+
+        // Test getQueryBasic preserves distinct
+        $queryBasic = $query->getQueryBasic();
+        $this->assertEquals(
+            new SqlObject('SELECT DISTINCT  fld1, fld2 FROM test'),
+            $queryBasic->build()
+        );
     }
 }
