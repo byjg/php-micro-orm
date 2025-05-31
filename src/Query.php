@@ -9,8 +9,6 @@ use Override;
 
 class Query extends QueryBasic
 {
-    protected array $groupBy = [];
-    protected array $having = [];
     protected array $orderBy = [];
     protected ?int $limitStart = null;
     protected ?int $limitEnd = null;
@@ -23,32 +21,6 @@ class Query extends QueryBasic
         return new Query();
     }
 
-    /**
-     * Example:
-     *    $query->groupBy(['name']);
-     *
-     * @param array $fields
-     * @return $this
-     */
-    public function groupBy(array $fields): static
-    {
-        $this->groupBy = array_merge($this->groupBy, $fields);
-
-        return $this;
-    }
-
-    /**
-     * Example:
-     *    $query->having('count(price) > 10');
-     *
-     * @param string $filter
-     * @return $this
-     */
-    public function having(string $filter): static
-    {
-        $this->having[] = $filter;
-        return $this;
-    }
 
     /**
      * Example:
@@ -114,10 +86,6 @@ class Query extends QueryBasic
         $sql = $buildResult->getSql();
         $params = $buildResult->getParams();
 
-        $sql .= $this->addGroupBy();
-
-        $sql .= $this->addHaving();
-
         $sql .= $this->addOrderBy();
 
         $sql = $this->addForUpdate($dbDriver, $sql);
@@ -139,21 +107,6 @@ class Query extends QueryBasic
         return ' ORDER BY ' . implode(', ', $this->orderBy);
     }
 
-    protected function addGroupBy(): string
-    {
-        if (empty($this->groupBy)) {
-            return "";
-        }
-        return ' GROUP BY ' . implode(', ', $this->groupBy);
-    }
-
-    protected function addHaving(): string
-    {
-        if (empty($this->having)) {
-            return "";
-        }
-        return ' HAVING ' . implode(' AND ', $this->having);
-    }
 
     /**
      * @param DbDriverInterface|null $dbDriver
@@ -244,6 +197,14 @@ class Query extends QueryBasic
 
         if ($this->distinct) {
             $queryBasic->distinct();
+        }
+
+        if (!empty($this->groupBy)) {
+            $queryBasic->groupBy($this->groupBy);
+        }
+
+        foreach ($this->having as $having) {
+            $queryBasic->having($having);
         }
 
         return $queryBasic;

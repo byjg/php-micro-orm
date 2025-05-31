@@ -26,12 +26,15 @@ class Union implements QueryBuilderInterface
     }
 
     /**
+     * @param Query|QueryBasic $query
+     * @return Union
      * @throws InvalidArgumentException
+     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function addQuery(QueryBasic $query): Union
+    public function addQuery(Query|QueryBasic $query): Union
     {
-        if (get_class($query) !== QueryBasic::class) {
-            throw new InvalidArgumentException("The query must be an instance of " . QueryBasic::class);
+        if (get_class($query) === Query::class) {
+            $query = $query->getQueryBasic();
         }
 
         $this->queryList[] = $query;

@@ -143,6 +143,7 @@ class QueryTest extends TestCase
             ->fields(['fld2', 'fld3'])
             ->orderBy(['fld1'])
             ->groupBy(['fld1', 'fld2', 'fld3'])
+            ->having('count(fld1) > 1')
             ->join('table2', 'table2.id = test.id')
             ->leftJoin('table3', 'table3.id = test.id')
             ->rightJoin('table4', 'table4.id = test.id')
@@ -152,7 +153,7 @@ class QueryTest extends TestCase
             ->where('fld3 = 20')
             ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
-        $expectedSql = 'WITH RECURSIVE table6() AS (SELECT  UNION ALL SELECT  FROM table6 WHERE ) SELECT  fld1, fld2, fld3 FROM test INNER JOIN table2 ON table2.id = test.id LEFT JOIN table3 ON table3.id = test.id RIGHT JOIN table4 ON table4.id = test.id CROSS JOIN table5 as table5.id = test.id WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 ORDER BY fld1';
+        $expectedSql = 'WITH RECURSIVE table6() AS (SELECT  UNION ALL SELECT  FROM table6 WHERE ) SELECT  fld1, fld2, fld3 FROM test INNER JOIN table2 ON table2.id = test.id LEFT JOIN table3 ON table3.id = test.id RIGHT JOIN table4 ON table4.id = test.id CROSS JOIN table5 as table5.id = test.id WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1';
 
         $this->assertEquals(
             new SqlStatement($expectedSql, ['teste' => 10, 'teste2' => 40]),
@@ -160,8 +161,7 @@ class QueryTest extends TestCase
         );
 
         $queryBasic = $query->getQueryBasic();
-        /** @psalm-suppress InvalidLiteralArgument */
-        $expectedSql2 = substr($expectedSql, 0, strpos($expectedSql, ' GROUP'));
+        $expectedSql2 = 'WITH RECURSIVE table6() AS (SELECT  UNION ALL SELECT  FROM table6 WHERE ) SELECT  fld1, fld2, fld3 FROM test INNER JOIN table2 ON table2.id = test.id LEFT JOIN table3 ON table3.id = test.id RIGHT JOIN table4 ON table4.id = test.id CROSS JOIN table5 as table5.id = test.id WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1';
         $this->assertEquals(
             new SqlStatement($expectedSql2, ['teste' => 10, 'teste2' => 40]),
             $queryBasic->build()

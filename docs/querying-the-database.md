@@ -119,12 +119,6 @@ Left Join another table.
 
 Right Join another table.
 
-## Query Object
-
-The Query object extends the QueryBasic object and adds more methods to query the database.
-
-### Methods
-
 #### groupBy(array $field)
 
 Group by a field or an array of fields.
@@ -134,6 +128,22 @@ e.g.:
 ```php
 ->groupBy(['field1', 'field2'])
 ```
+
+#### having(string $filter)
+
+Having clause for filtering grouped results.
+
+e.g.:
+
+```php
+->having('count(field1) > 10')
+```
+
+## Query Object
+
+The Query object extends the QueryBasic object and adds more methods to query the database.
+
+### Methods
 
 #### orderBy(array $field)
 
@@ -190,11 +200,3 @@ $union = \ByJG\MicroOrm\Union::getInstance()
     ->orderBy(['name'])
     ->limit(10, 20);
 ```
-
-
-
-
-
-
-
-

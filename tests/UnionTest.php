@@ -3,8 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Union;
 use ByJG\Util\Uri;
@@ -61,14 +59,5 @@ class UnionTest extends TestCase
 
         $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build->getSql());
         $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParams());
-    }
-
-    public function testInvalidArgument()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("The query must be an instance of " . QueryBasic::class);
-
-        $union = new Union();
-        $union->addQuery(Query::getInstance());
     }
 }
