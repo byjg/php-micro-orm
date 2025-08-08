@@ -1,8 +1,10 @@
 # The Literal Object
 
-When you are querying or update the database, the parameters you pass are parsed to avoid SQL Injection.
+When you are querying or updating the database, the parameters you pass are parsed to avoid SQL Injection.
 
-Sometimes you need to pass a literal value to the database. For example, you need to pass a function like `NOW()` or `CURRENT_TIMESTAMP` to the database.
+The main reason to use literals is when you want to use database functions (like `NOW()` or `CURRENT_TIMESTAMP`) or
+reference other fields from the table in your queries or updates. Literals allow these expressions to be passed directly
+to the database without being treated as regular string values.
 
 To pass a literal value you need to use the `Literal` object.
 
