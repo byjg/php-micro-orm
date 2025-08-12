@@ -9,6 +9,7 @@ trait WhereTrait
 {
     protected array $where = [];
     protected bool $unsafe = false;
+    private static int $whereInCounter = 0;
 
     /**
      * Example:
@@ -110,7 +111,7 @@ trait WhereTrait
         }
 
         // Generate a unique prefix for this whereIn call
-        $uniquePrefix = 'in_' . md5($field . microtime(true)) . '_';
+        $uniquePrefix = 'in_' . $field . '_' . (++self::$whereInCounter) . '_';
         
         $placeholders = [];
         $params = [];

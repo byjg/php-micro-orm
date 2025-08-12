@@ -59,7 +59,7 @@ class UpdateQuery extends Updatable
      * @param string $value
      * @return $this
      */
-    public function setLiteral(string $field, string $value): UpdateQuery
+    public function setLiteral(string $field, mixed $value): UpdateQuery
     {
         $this->set[$field] = new Literal($value);
         return $this;
