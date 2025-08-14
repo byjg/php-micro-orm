@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
@@ -49,14 +50,18 @@ class InsertSelectQuery extends Updatable
     }
 
     /**
-     * @param DbFunctionsInterface|null $dbHelper
+     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
      * @return SqlObject
      * @throws OrmInvalidFieldsException
      */
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
+        }
+
+        if ($dbDriverOrHelper instanceof DbDriverInterface) {
+            $dbDriverOrHelper = $dbDriverOrHelper->getDbHelper();
         }
 
         if (empty($this->query) && empty($this->sqlObject)) {
@@ -66,13 +71,13 @@ class InsertSelectQuery extends Updatable
         }
 
         $fieldsStr = $this->fields;
-        if (!is_null($dbHelper)) {
-            $fieldsStr = $dbHelper->delimiterField($fieldsStr);
+        if (!is_null($dbDriverOrHelper)) {
+            $fieldsStr = $dbDriverOrHelper->delimiterField($fieldsStr);
         }
 
         $tableStr = $this->table;
-        if (!is_null($dbHelper)) {
-            $tableStr = $dbHelper->delimiterTable($tableStr);
+        if (!is_null($dbDriverOrHelper)) {
+            $tableStr = $dbDriverOrHelper->delimiterTable($tableStr);
         }
 
         $sql = 'INSERT INTO '
