@@ -170,10 +170,9 @@ class UpdateQueryTest extends TestCase
 
         $sqlObject = $this->object->build();
         $this->assertEquals(
-            new SqlObject(
+            new SqlStatement(
                 'UPDATE test SET counter = counter + 1  WHERE id = :id',
-                ['id' => 10],
-                SqlObjectEnum::UPDATE
+                ['id' => 10]
             ),
             $sqlObject
         );
@@ -181,10 +180,9 @@ class UpdateQueryTest extends TestCase
         // Test with database helper
         $sqlObject = $this->object->build(new DbMysqlFunctions());
         $this->assertEquals(
-            new SqlObject(
+            new SqlStatement(
                 'UPDATE `test` SET `counter` = counter + 1  WHERE id = :id',
-                ['id' => 10],
-                SqlObjectEnum::UPDATE
+                ['id' => 10]
             ),
             $sqlObject
         );
