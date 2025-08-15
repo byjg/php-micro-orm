@@ -3,49 +3,24 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use Override;
 
 class Query extends QueryBasic
 {
-    protected array $groupBy = [];
-    protected array $having = [];
     protected array $orderBy = [];
     protected ?int $limitStart = null;
     protected ?int $limitEnd = null;
     protected ?int $top = null;
     protected bool $forUpdate = false;
 
+    #[Override]
     public static function getInstance(): Query
     {
         return new Query();
     }
 
-    /**
-     * Example:
-     *    $query->groupBy(['name']);
-     *
-     * @param array $fields
-     * @return $this
-     */
-    public function groupBy(array $fields): static
-    {
-        $this->groupBy = array_merge($this->groupBy, $fields);
-
-        return $this;
-    }
-
-    /**
-     * Example:
-     *    $query->having('count(price) > 10');
-     *
-     * @param string $filter
-     * @return $this
-     */
-    public function having(string $filter): static
-    {
-        $this->having[] = $filter;
-        return $this;
-    }
 
     /**
      * Example:
@@ -101,18 +76,15 @@ class Query extends QueryBasic
 
     /**
      * @param DbDriverInterface|null $dbDriver
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(?DbDriverInterface $dbDriver = null): SqlObject
+    #[Override]
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $buildResult = parent::build($dbDriver);
         $sql = $buildResult->getSql();
-        $params = $buildResult->getParameters();
-
-        $sql .= $this->addGroupBy();
-
-        $sql .= $this->addHaving();
+        $params = $buildResult->getParams();
 
         $sql .= $this->addOrderBy();
 
@@ -124,7 +96,7 @@ class Query extends QueryBasic
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlObject($sql, $params);
+        return new SqlStatement($sql, $params);
     }
 
     protected function addOrderBy(): string
@@ -135,21 +107,6 @@ class Query extends QueryBasic
         return ' ORDER BY ' . implode(', ', $this->orderBy);
     }
 
-    protected function addGroupBy(): string
-    {
-        if (empty($this->groupBy)) {
-            return "";
-        }
-        return ' GROUP BY ' . implode(', ', $this->groupBy);
-    }
-
-    protected function addHaving(): string
-    {
-        if (empty($this->having)) {
-            return "";
-        }
-        return ' HAVING ' . implode(' AND ', $this->having);
-    }
 
     /**
      * @param DbDriverInterface|null $dbDriver
@@ -240,6 +197,14 @@ class Query extends QueryBasic
 
         if ($this->distinct) {
             $queryBasic->distinct();
+        }
+
+        if (!empty($this->groupBy)) {
+            $queryBasic->groupBy($this->groupBy);
+        }
+
+        foreach ($this->having as $having) {
+            $queryBasic->having($having);
         }
 
         return $queryBasic;

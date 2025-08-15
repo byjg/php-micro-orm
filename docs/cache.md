@@ -1,3 +1,7 @@
+---
+sidebar_position: 11
+---
+
 # Caching the Results
 
 The `AnyDatasetDb` library has a built-in cache mechanism that can be used to cache the results of a query. 

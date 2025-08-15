@@ -8,6 +8,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\Serializer\Serialize;
+use Override;
 
 class QueryBasic implements QueryBuilderInterface
 {
@@ -20,6 +21,8 @@ class QueryBasic implements QueryBuilderInterface
     protected DbDriverInterface|null $dbDriver = null;
     protected ?Recursive $recursive = null;
     protected bool $distinct = false;
+    protected array $groupBy = [];
+    protected array $having = [];
 
     public static function getInstance(): QueryBasic
     {
@@ -184,6 +187,33 @@ class QueryBasic implements QueryBuilderInterface
     }
 
     /**
+     * Example:
+     *    $query->groupBy(['name']);
+     *
+     * @param array $fields
+     * @return $this
+     */
+    public function groupBy(array $fields): static
+    {
+        $this->groupBy = array_merge($this->groupBy, $fields);
+
+        return $this;
+    }
+
+    /**
+     * Example:
+     *    $query->having('count(price) > 10');
+     *
+     * @param string $filter
+     * @return $this
+     */
+    public function having(string $filter): static
+    {
+        $this->having[] = $filter;
+        return $this;
+    }
+
+    /**
      * @throws InvalidArgumentException
      */
     protected function getFields(): array
@@ -203,7 +233,7 @@ class QueryBasic implements QueryBuilderInterface
             } elseif ($field instanceof QueryBasic) {
                 $subQuery = $field->build($this->dbDriver);
                 $fieldList .= '(' . $subQuery->getSql() . ') as ' . $alias;
-                $params = array_merge($params, $subQuery->getParameters());
+                $params = array_merge($params, $subQuery->getParams());
             } else {
                 $fieldList .= $field . ' as ' . $alias;
             }
@@ -238,24 +268,41 @@ class QueryBasic implements QueryBuilderInterface
         $params = [];
         if ($table instanceof QueryBasic) {
             $subQuery = $table->build($this->dbDriver);
-            if (!empty($subQuery->getParameters()) && !$supportParams) {
+            if (!empty($subQuery->getParams()) && !$supportParams) {
                 throw new InvalidArgumentException("SubQuery does not support filters");
             }
             if (empty($alias) || $alias instanceof QueryBasic) {
                 throw new InvalidArgumentException("SubQuery requires you define an alias");
             }
             $table = "({$subQuery->getSql()})";
-            $params = $subQuery->getParameters();
+            $params = $subQuery->getParams();
         }
         return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
-    }   
+    }
+
+    protected function addGroupBy(): string
+    {
+        if (empty($this->groupBy)) {
+            return "";
+        }
+        return ' GROUP BY ' . implode(', ', $this->groupBy);
+    }
+
+    protected function addHaving(): string
+    {
+        if (empty($this->having)) {
+            return "";
+        }
+        return ' HAVING ' . implode(' AND ', $this->having);
+    }
 
     /**
      * @param DbDriverInterface|null $dbDriver
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(?DbDriverInterface $dbDriver = null): SqlObject
+    #[Override]
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $this->dbDriver = $dbDriver;
 
@@ -280,18 +327,22 @@ class QueryBasic implements QueryBuilderInterface
             $params = array_merge($params, $whereStr[1]);
         }
 
+        $sql .= $this->addGroupBy();
+
+        $sql .= $this->addHaving();
+
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlObject($sql, $params);
+        return new SqlStatement($sql, $params);
     }
 
+    #[Override]
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
     {
-        $sqlObject = $this->build($dbDriver);
-        $sqlStatement = new SqlStatement($sqlObject->getSql());
+        $sqlStatement = $this->build($dbDriver);
         if (!empty($cache)) {
-            $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
-        return $sqlStatement->getIterator($dbDriver, $sqlObject->getParameters());
+        return $dbDriver->getIterator($sqlStatement);
     }
 }

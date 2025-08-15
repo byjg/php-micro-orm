@@ -15,10 +15,10 @@ class InsertBulkQueryTest extends TestCase
         $insertBulk->values(['fld1' => 'D', 'fld2' => new Literal("E")]);
         $insertBulk->values(['fld1' => "G'1", 'fld2' => 'H']);
 
-        $sqlObject = $insertBulk->build();
+        $sqlStatement = $insertBulk->build();
 
-        $this->assertEquals("INSERT INTO test (fld1, fld2) VALUES ('A', 'B'), ('D', 'E'), ('G''1', 'H')", $sqlObject->getSql());
-        $this->assertEquals([], $sqlObject->getParameters());
+        $this->assertEquals("INSERT INTO test (fld1, fld2) VALUES ('A', 'B'), ('D', 'E'), ('G''1', 'H')", $sqlStatement->getSql());
+        $this->assertEquals([], $sqlStatement->getParams());
     }
 
     public function testInsertSafe()
@@ -29,9 +29,9 @@ class InsertBulkQueryTest extends TestCase
         $insertBulk->values(['fld1' => 'G', 'fld2' => 'H']);
         $insertBulk->withSafeParameters();
 
-        $sqlObject = $insertBulk->build();
+        $sqlStatement = $insertBulk->build();
 
-        $this->assertEquals('INSERT INTO test (fld1, fld2) VALUES (:p0_0, :p0_1), (:p1_0, :p1_1), (:p2_0, :p2_1)', $sqlObject->getSql());
+        $this->assertEquals('INSERT INTO test (fld1, fld2) VALUES (:p0_0, :p0_1), (:p1_0, :p1_1), (:p2_0, :p2_1)', $sqlStatement->getSql());
         $this->assertEquals([
             'p0_0' => 'A',
             'p0_1' => 'B',
@@ -39,7 +39,7 @@ class InsertBulkQueryTest extends TestCase
             'p1_1' => 'E',
             'p2_0' => 'G',
             'p2_1' => 'H',
-        ], $sqlObject->getParameters());
+        ], $sqlStatement->getParams());
     }
 
 
@@ -50,10 +50,10 @@ class InsertBulkQueryTest extends TestCase
         $insertBulk->values(['fld3' => 'F', 'fld1' => 'D', 'fld2' => 'E', 'fld4' => 'X']);
         $insertBulk->values(['fld2' => 'H', 'fld3' => 'I', 'fld1' => 'G']);
 
-        $sqlObject = $insertBulk->build();
+        $sqlStatement = $insertBulk->build();
 
-        $this->assertEquals("INSERT INTO test (fld1, fld2, fld3) VALUES ('A', 'B', 'C'), ('D', 'E', 'F'), ('G', 'H', 'I')", $sqlObject->getSql());
-        $this->assertEquals([], $sqlObject->getParameters());
+        $this->assertEquals("INSERT INTO test (fld1, fld2, fld3) VALUES ('A', 'B', 'C'), ('D', 'E', 'F'), ('G', 'H', 'I')", $sqlStatement->getSql());
+        $this->assertEquals([], $sqlStatement->getParams());
     }
 
     public function testWrongFieldsValuesCount()

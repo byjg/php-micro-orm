@@ -6,20 +6,23 @@ use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
+use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
-use Closure;
 use ReflectionException;
 use stdClass;
 
@@ -42,14 +45,14 @@ class Repository
     protected ?DbDriverInterface $dbDriverWrite = null;
 
     /**
-     * @var Closure|null
+     * @var EntityProcessorInterface|null
      */
-    protected ?Closure $beforeUpdate = null;
+    protected EntityProcessorInterface|null $beforeUpdate = null;
 
     /**
-     * @var Closure|null
+     * @var EntityProcessorInterface|null
      */
-    protected ?Closure $beforeInsert = null;
+    protected EntityProcessorInterface|null $beforeInsert = null;
 
     /**
      * Repository constructor.
@@ -57,6 +60,7 @@ class Repository
      * @param string|Mapper $mapperOrEntity
      * @throws OrmModelInvalidException
      * @throws ReflectionException
+     * @throws InvalidArgumentException
      */
     public function __construct(DbDriverInterface $dbDataset, string|Mapper $mapperOrEntity)
     {
@@ -66,12 +70,14 @@ class Repository
             $mapperOrEntity = new Mapper($mapperOrEntity);
         }
         $this->mapper = $mapperOrEntity;
-        $this->beforeInsert = function ($instance) {
-            return $instance;
-        };
-        $this->beforeUpdate = function ($instance) {
-            return $instance;
-        };
+
+        // Set beforeInsert and beforeUpdate from mapper if available
+        if (!empty($this->mapper->getBeforeInsert())) {
+            $this->setBeforeInsert($this->mapper->getBeforeInsert());
+        }
+        if (!empty($this->mapper->getBeforeUpdate())) {
+            $this->setBeforeUpdate($this->mapper->getBeforeUpdate());
+        }
     }
 
     public function addDbDriverForWrite(DbDriverInterface $dbDriver): void
@@ -105,7 +111,7 @@ class Repository
         return $this->getMapper()->getEntity($values);
     }
 
-    public function queryInstance(object $model = null, string ...$tales): Query
+    public function queryInstance(object $model = null): Query
     {
         $query = Query::getInstance()
             ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
@@ -196,11 +202,11 @@ class Repository
      */
     public function deleteByQuery(DeleteQuery $updatable): bool
     {
-        $sqlObject = $updatable->build();
+        $sqlStatement = $updatable->build();
 
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->getDbDriverWrite()->execute($sqlStatement);
 
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ORMSubject::EVENT_DELETE, null, $sqlObject->getParameters());
+        ORMSubject::getInstance()->notify($this->mapper->getTable(), ObserverEvent::Delete, null, $sqlStatement->getParams());
 
         return true;
     }
@@ -209,7 +215,10 @@ class Repository
      * @param string|IteratorFilter $filter
      * @param array $params
      * @param bool $forUpdate
+     * @param int $page
+     * @param int|null $limit
      * @return array
+     * @throws InvalidArgumentException
      */
     public function getByFilter(string|IteratorFilter $filter = "", array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
     {
@@ -238,6 +247,7 @@ class Repository
      * @param array|string|int|LiteralInterface $arrValues
      * @param string $field
      * @return array
+     * @throws InvalidArgumentException
      */
     public function filterIn(array|string|int|LiteralInterface $arrValues, string $field = ""): array
     {
@@ -248,7 +258,7 @@ class Repository
         }
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->addRelation($field, Relation::IN, $arrValues);
+        $iteratorFilter->and($field, Relation::IN, $arrValues);
 
         return $this->getByFilter($iteratorFilter);
     }
@@ -260,15 +270,13 @@ class Repository
     public function getScalar(QueryBuilderInterface $query): mixed
     {
         $sqlBuild = $query->build($this->getDbDriver());
-
-        $params = $sqlBuild->getParameters();
-        $sql = $sqlBuild->getSql();
-        return $this->getDbDriver()->getScalar($sql, $params);
+        return $this->getDbDriver()->getScalar($sqlBuild);
     }
 
     /**
      * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
+     * @param CacheQueryResult|null $cache
      * @return array
      */
     public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
@@ -276,13 +284,12 @@ class Repository
         $mapper = array_merge([$this->mapper], $mapper);
         $sqlBuild = $query->build($this->getDbDriver());
 
-        $params = $sqlBuild->getParameters();
-        $sql = new SqlStatement($sqlBuild->getSql());
         if (!empty($cache)) {
-            $sql->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
+
         $result = [];
-        $iterator = $sql->getIterator($this->getDbDriver(), $params);
+        $iterator = $this->getDbDriver()->getIterator($sqlBuild);
 
         foreach ($iterator as $row) {
             $collection = [];
@@ -305,46 +312,38 @@ class Repository
      */
     public function getByQueryRaw(QueryBuilderInterface $query): array
     {
-        $sqlObject = $query->build($this->getDbDriver());
-        $iterator = $this->getDbDriver()->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
+        $sqlStatement = $query->build($this->getDbDriver());
+        $iterator = $this->getDbDriver()->getIterator($sqlStatement);
         return $iterator->toArray();
     }
 
     /**
-     * @param mixed $instance
-     * @param UpdateConstraint|null $updateConstraint
-     * @return mixed
-     * @throws Exception\InvalidArgumentException
+     * Save an instance to the database
+     *
+     * @param mixed $instance The instance to save
+     * @param UpdateConstraintInterface|UpdateConstraintInterface[]|null $updateConstraints One or more constraints to apply
+     * @return mixed The saved instance
+     * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
-    public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
+    public function save(mixed $instance, UpdateConstraintInterface|array|null $updateConstraints = null): mixed
     {
         // Get all fields
         $array = Serialize::from($instance)
             ->withStopAtFirstLevel()
             ->toArray();
-        $fieldToProperty = [];
         $mapper = $this->getMapper();
 
         // Copy the values to the instance
         $valuesToUpdate = new stdClass();
+
         ObjectCopy::copy(
             $array,
             $valuesToUpdate,
-            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
-                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
-                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
-                $fieldToProperty[$fieldName] = $sourcePropertyName;
-                return $fieldName;
-            },
-            function ($propName, $targetName, $value) use ($mapper, $instance) {
-                $fieldMap = $mapper->getFieldMap($propName);
-                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
-            }
+            new PrepareToUpdateHandler($mapper, $instance, $this->getDbDriverWrite())
         );
         $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
 
@@ -366,18 +365,20 @@ class Repository
 
         // Execute Before Statements
         if ($isInsert) {
-            $closure = $this->beforeInsert;
-            $array = $closure($array);
-            foreach ($this->getMapper()->getFieldMap() as $mapper) {
-                $fieldValue = $mapper->getInsertFunctionValue($array[$mapper->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+            if (!empty($this->beforeInsert)) {
+                $array = $this->beforeInsert->process($array);
+            }
+            foreach ($this->getMapper()->getFieldMap() as $fieldMap) {
+                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
                 if ($fieldValue !== false) {
-                    $array[$mapper->getFieldName()] = $fieldValue;
+                    $array[$fieldMap->getFieldName()] = $fieldValue;
                 }
             }
             $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
         } else {
-            $closure = $this->beforeUpdate;
-            $array = $closure($array);
+            if (!empty($this->beforeUpdate)) {
+                $array = $this->beforeUpdate->process($array);
+            }
             $updatable = UpdateQuery::getInstance($array, $this->mapper);
         }
 
@@ -401,20 +402,31 @@ class Repository
             if (count($pkList) == 1 && !empty($keyReturned)) {
                 $array[$pkList[0]] = $keyReturned;
             }
-        } else {
-            if (!empty($updateConstraint)) {
-                $updateConstraint->check($oldInstance, $this->getMapper()->getEntity($array));
+        }
+
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
+        $array = array_merge(Serialize::from($instance)->toArray(), $array);
+        ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($mapper));
+
+        if (!$isInsert) {
+            if (!empty($updateConstraints)) {
+                // Convert single constraint to array for uniform processing
+                $constraints = is_array($updateConstraints) ? $updateConstraints : [$updateConstraints];
+
+                // Apply all constraints
+                foreach ($constraints as $constraint) {
+                    $constraint->check($oldInstance, $instance);
+                }
             }
             $this->update($updatable);
         }
 
-        ObjectCopy::copy($array, $instance, function ($sourcePropertyName) use ($fieldToProperty) {
-            return $fieldToProperty[$sourcePropertyName] ?? $sourcePropertyName;
-        });
 
         ORMSubject::getInstance()->notify(
             $this->mapper->getTable(),
-            $isInsert ? ORMSubject::EVENT_INSERT : ORMSubject::EVENT_UPDATE,
+            $isInsert ? ObserverEvent::Insert : ObserverEvent::Update,
             $instance, $oldInstance
         );
 
@@ -453,11 +465,11 @@ class Repository
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoinc(InsertQuery $updatable): int
+    protected function insertWithAutoInc(InsertQuery $updatable): int
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
         $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlObject->getSql(), $sqlObject->getParameters());
+        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlStatement);
     }
 
     /**
@@ -468,8 +480,8 @@ class Repository
      */
     protected function insertWithKeyGen(InsertQuery $updatable): void
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $this->getDbDriverWrite()->execute($sqlStatement);
     }
 
     /**
@@ -479,18 +491,52 @@ class Repository
      */
     protected function update(UpdateQuery $updatable): void
     {
-        $sqlObject = $updatable->build($this->getDbDriverWrite()->getDbHelper());
+        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
 
-        $this->getDbDriverWrite()->execute($sqlObject->getSql(), $sqlObject->getParameters());
+        $this->getDbDriverWrite()->execute($sqlStatement);
     }
 
-    public function setBeforeUpdate(Closure $closure): void
+    /**
+     * Sets a processor to be executed before updating an entity
+     *
+     * @param EntityProcessorInterface|string $processor The processor to execute
+     * @return void
+     */
+    public function setBeforeUpdate(EntityProcessorInterface|string $processor): void
     {
-        $this->beforeUpdate = $closure;
+        if (is_string($processor)) {
+            if (!class_exists($processor)) {
+                throw new InvalidArgumentException("The class '$processor' does not exist");
+            }
+
+            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+                throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
+            }
+
+            $processor = new $processor();
+        }
+        $this->beforeUpdate = $processor;
     }
 
-    public function setBeforeInsert(Closure $closure): void
+    /**
+     * Sets a processor to be executed before inserting an entity
+     *
+     * @param EntityProcessorInterface|string $processor The processor to execute
+     * @return void
+     */
+    public function setBeforeInsert(EntityProcessorInterface|string $processor): void
     {
-        $this->beforeInsert = $closure;
+        if (is_string($processor)) {
+            if (!class_exists($processor)) {
+                throw new InvalidArgumentException("The class '$processor' does not exist");
+            }
+
+            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+                throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
+            }
+
+            $processor = new $processor();
+        }
+        $this->beforeInsert = $processor;
     }
 }

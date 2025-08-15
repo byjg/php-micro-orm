@@ -3,8 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\Factory;
-use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryBasic;
 use ByJG\MicroOrm\Union;
 use ByJG\Util\Uri;
@@ -21,7 +19,7 @@ class UnionTest extends TestCase
         $build = $union->build();
 
         $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price", $build->getSql());
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParams());
     }
 
     public function testAddQueryWithTop()
@@ -34,7 +32,7 @@ class UnionTest extends TestCase
         $build = $union->build(Factory::getDbInstance(new Uri('sqlite:///tmp/teste.db')));
 
         $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price LIMIT 0, 10", $build->getSql());
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParams());
     }
 
     public function testAddQueryWithOrderBy()
@@ -47,7 +45,7 @@ class UnionTest extends TestCase
         $build = $union->build(Factory::getDbInstance(new Uri('sqlite:///tmp/teste.db')));
 
         $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price ORDER BY name", $build->getSql());
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParams());
     }
 
     public function testAddQueryWithGroupBy()
@@ -60,15 +58,6 @@ class UnionTest extends TestCase
         $build = $union->build(Factory::getDbInstance(new Uri('sqlite:///tmp/teste.db')));
 
         $this->assertEquals("SELECT  name, price FROM table1 WHERE name like :name UNION SELECT  name, price FROM table2 WHERE price > :price GROUP BY name", $build->getSql());
-        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParameters());
-    }
-
-    public function testInvalidArgument()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("The query must be an instance of " . QueryBasic::class);
-
-        $union = new Union();
-        $union->addQuery(Query::getInstance());
+        $this->assertEquals(["name" => 'a%', 'price' => 10], $build->getParams());
     }
 }

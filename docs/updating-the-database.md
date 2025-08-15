@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Updating the Database
 
 Once you have defined the model, (see [Getting Started](getting-started-model.md)) you can start to
