@@ -9,6 +9,7 @@ trait WhereTrait
 {
     protected array $where = [];
     protected bool $unsafe = false;
+    private static int $whereInCounter = 0;
 
     /**
      * Example:
@@ -70,6 +71,61 @@ trait WhereTrait
         }
 
         return [ implode(' AND ', $whereStr), $params ];
+    }
+
+    /**
+     * Add a WHERE field IS NULL condition
+     *
+     * @param string $field The field to check for NULL
+     * @return $this
+     */
+    public function whereIsNull(string $field): static
+    {
+        $this->where[] = ['filter' => "$field IS NULL", 'params' => []];
+        return $this;
+    }
+
+    /**
+     * Add a WHERE field IS NOT NULL condition
+     *
+     * @param string $field The field to check for NOT NULL
+     * @return $this
+     */
+    public function whereIsNotNull(string $field): static
+    {
+        $this->where[] = ['filter' => "$field IS NOT NULL", 'params' => []];
+        return $this;
+    }
+
+    /**
+     * Add a WHERE field IN (values) condition
+     *
+     * @param string $field The field to check
+     * @param array $values The values to check against
+     * @return $this
+     */
+    public function whereIn(string $field, array $values): static
+    {
+        if (empty($values)) {
+            return $this;
+        }
+
+        // Generate a unique prefix for this whereIn call
+        $uniquePrefix = 'in_' . $field . '_' . (++self::$whereInCounter) . '_';
+        
+        $placeholders = [];
+        $params = [];
+
+        foreach ($values as $index => $value) {
+            $placeholder = $uniquePrefix . $index;
+            $placeholders[] = ":$placeholder";
+            $params[$placeholder] = $value;
+        }
+
+        $placeholdersStr = implode(', ', $placeholders);
+        $this->where[] = ['filter' => "$field IN ($placeholdersStr)", 'params' => $params];
+
+        return $this;
     }
 
     public function unsafe()

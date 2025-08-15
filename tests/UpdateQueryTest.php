@@ -160,6 +160,33 @@ class UpdateQueryTest extends TestCase
             ),
             $sqlStatement
         );
+    }
 
+    public function testSetLiteral()
+    {
+        $this->object->table('test');
+        $this->object->setLiteral('counter', 'counter + 1');
+        $this->object->where('id = :id', ['id' => 10]);
+
+        $sqlObject = $this->object->build();
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE test SET counter = counter + 1  WHERE id = :id',
+                ['id' => 10],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
+
+        // Test with database helper
+        $sqlObject = $this->object->build(new DbMysqlFunctions());
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE `test` SET `counter` = counter + 1  WHERE id = :id',
+                ['id' => 10],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
     }
 }

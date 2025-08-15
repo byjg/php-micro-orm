@@ -49,6 +49,24 @@ $updateQuery->where('fld1 > :id', ['id' => 10]);
 This code will update the table `test` and set the fields `fld1`, `fld2`, and `fld3` to `A`, `B`, and `C`
 respectively for all records where `fld1` is greater than 10.
 
+### Using Literal Values in Updates
+
+Sometimes you need to update a field with a value that is calculated from the other fields from the table or with a
+database function. For these cases, you can use the `setLiteral()` method:
+
+```php
+<?php
+$updateQuery = new \ByJG\MicroOrm\UpdateQuery();
+$updateQuery->table('products');
+$updateQuery->setLiteral('counter', 'counter + 1');  // Increment the counter field by referencing its current value
+$updateQuery->setLiteral('last_updated', 'NOW()');   // Use a database function to set current timestamp
+$updateQuery->where('id = :id', ['id' => 10]);
+```
+
+The `setLiteral()` method allows you to use raw SQL expressions in your updates without having to manually create a
+Literal object. This is particularly useful when you need to perform calculations based on existing field values or
+apply database functions directly in your SQL query.
+
 ## Insert records with InsertQuery
 
 You can insert records using the `InsertQuery` object. See an example:

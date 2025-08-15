@@ -100,6 +100,36 @@ If you use unnamed placeholders, you need to pass an array with the values in th
 * Named placeholders are defined by a colon followed by the placeholder name;
 * Unnamed placeholders are defined by a question mark. The arguments are positional
 
+#### whereIsNull(string $field)
+
+Add a WHERE field IS NULL condition.
+
+e.g.:
+
+```php
+->whereIsNull('deleted_at')
+```
+
+#### whereIsNotNull(string $field)
+
+Add a WHERE field IS NOT NULL condition.
+
+e.g.:
+
+```php
+->whereIsNotNull('email')
+```
+
+#### whereIn(string $field, array $values)
+
+Add a WHERE field IN (values) condition.
+
+e.g.:
+
+```php
+->whereIn('status', ['active', 'pending'])
+```
+
 #### join(string $table, string $on, string $alias = null)
 
 Join another table.

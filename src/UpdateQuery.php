@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use Override;
 
@@ -50,6 +51,19 @@ class UpdateQuery extends Updatable
     public function set(string $field, int|float|bool|string|LiteralInterface|null $value): UpdateQuery
     {
         $this->set[$field] = $value;
+        return $this;
+    }
+
+    /**
+     * Set a field with a literal value that will be used directly in the SQL query
+     *
+     * @param string $field
+     * @param string $value
+     * @return $this
+     */
+    public function setLiteral(string $field, mixed $value): UpdateQuery
+    {
+        $this->set[$field] = new Literal($value);
         return $this;
     }
 
