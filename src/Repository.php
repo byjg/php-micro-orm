@@ -197,7 +197,7 @@ class Repository
      *
      * @param array<int, Updatable|QueryBuilderInterface> $queries List of queries to be executed in bulk
      * @param IsolationLevelEnum|null $isolationLevel
-     * @return void
+     * @return GenericIterator|null
      * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      * @throws Throwable

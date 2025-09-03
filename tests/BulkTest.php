@@ -140,6 +140,7 @@ class BulkTest extends TestCase
         $invalid = "invalid";
 
         // Execute bulk
+        /** @psalm-suppress InvalidArgument */
         $this->repository->bulkExecute([$insert, $invalid, $update, $delete], null);
     }
 
