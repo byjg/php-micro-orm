@@ -5,6 +5,7 @@ namespace ByJG\MicroOrm;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -22,6 +23,7 @@ use ByJG\Serializer\Serialize;
 use Closure;
 use ReflectionException;
 use stdClass;
+use Throwable;
 
 class Repository
 {
@@ -186,6 +188,43 @@ class Repository
             ->where($filterList, $filterKeys);
 
         return $this->deleteByQuery($updatable);
+    }
+
+    /**
+     * Execute multiple write queries (insert/update/delete) sequentially within a transaction.
+     * Invalid entries are ignored silently. If any execution fails, the transaction is rolled back.
+     *
+     * @param array<int, Updatable|QueryBuilderInterface> $queries List of queries to be executed in bulk
+     * @param IsolationLevelEnum|null $isolationLevel
+     * @return void
+     * @throws InvalidArgumentException
+     * @throws RepositoryReadOnlyException
+     * @throws Throwable
+     */
+    public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): void
+    {
+        if (empty($queries)) {
+            throw new InvalidArgumentException('You pass an empty array to bulk');
+        }
+
+        $dbDriver = $this->getDbDriverWrite();
+
+        $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
+        try {
+            foreach ($queries as $query) {
+                if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
+                    throw new InvalidArgumentException('Invalid query type. Expected QueryBuilderInterface or Updatable.');
+                }
+
+                // Build SQL object using the write driver/helper to ensure correct dialect
+                $sqlObject = $query->build($dbDriver);
+                $dbDriver->execute($sqlObject->getSql(), $sqlObject->getParameters());
+            }
+            $dbDriver->commitTransaction();
+        } catch (Throwable $e) {
+            $dbDriver->rollbackTransaction();
+            throw $e;
+        }
     }
 
     /**
@@ -440,7 +479,7 @@ class Repository
     protected function insert(InsertQuery $updatable, mixed $keyGen): mixed
     {
         if (empty($keyGen)) {
-            return $this->insertWithAutoInc($updatable);
+            return $this->insertWithAutoinc($updatable);
         } else {
             $this->insertWithKeyGen($updatable);
             return null;

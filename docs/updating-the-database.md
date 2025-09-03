@@ -137,3 +137,64 @@ $deleteQuery = new \ByJG\MicroOrm\DeleteQuery();
 $deleteQuery->table('test');
 $deleteQuery->where('fld1 = :value', ['value' => 'A']);
 ```
+
+## Execute multiple write queries in bulk
+
+You can execute multiple write queries (insert, update, delete) sequentially within a single transaction using
+`Repository::bulkExecute`.
+This is useful when you need to perform a set of changes atomically: either all of them succeed, or none of them are
+applied.
+
+Signature:
+
+```php
+public function Repository::bulkExecute(array $queries, ?\ByJG\AnyDataset\Db\IsolationLevelEnum $isolationLevel = null): void
+```
+
+Rules and behavior:
+
+- Accepts an array of QueryBuilderInterface or Updatable instances (e.g., InsertQuery, UpdateQuery, DeleteQuery). Each
+  item is built and executed with the repository write driver.
+- All queries are executed inside a transaction. If any query throws an exception, the transaction is rolled back and
+  the exception is rethrown.
+- Passing an empty array throws InvalidArgumentException.
+- Passing an item that is not a QueryBuilderInterface or Updatable throws InvalidArgumentException.
+- You can optionally pass a transaction isolation level using IsolationLevelEnum. The transaction allows joining an
+  existing transaction if present.
+
+Example:
+
+```php
+<?php
+use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\InsertQuery;
+use ByJG\MicroOrm\UpdateQuery;
+use ByJG\MicroOrm\DeleteQuery;
+use ByJG\AnyDataset\Db\Factory;
+
+$db = Factory::getDbInstance('sqlite:///tmp/example.db');
+$repository = new Repository($db, MyModel::class);
+
+$insert = InsertQuery::getInstance('users', [
+    'name' => 'Alice',
+    'createdate' => '2020-01-01'
+]);
+
+$update = UpdateQuery::getInstance()
+    ->table('users')
+    ->set('name', 'Bob')
+    ->where('id = :id', ['id' => 1]);
+
+$delete = DeleteQuery::getInstance()
+    ->table('users')
+    ->where('name = :name', ['name' => 'OldName']);
+
+$repository->bulkExecute([$insert, $update, $delete]);
+```
+
+Notes:
+
+- Parameter names can overlap between queries (e.g., multiple queries using :name) because each query is built and
+  executed independently.
+- If you need a specific transaction isolation level, pass it as the second argument, e.g.,
+  `IsolationLevelEnum::SERIALIZABLE`.
