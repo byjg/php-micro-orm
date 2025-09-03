@@ -10,6 +10,7 @@ use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
+use ByJG\MicroOrm\QueryRaw;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\Util\Uri;
@@ -85,7 +86,8 @@ class BulkTest extends TestCase
             ->where('name = :name', ['name' => 'JG']);
 
         // Execute bulk
-        $this->repository->bulkExecute([$insert, $update, $delete], null);
+        $it = $this->repository->bulkExecute([$insert, $update, $delete], null);
+        $this->assertEquals([], $it->toArray());
 
         // Validate results: count, specific rows
         // 3 initial + 1 insert - 1 delete = 3 rows
@@ -141,4 +143,27 @@ class BulkTest extends TestCase
         $this->repository->bulkExecute([$insert, $invalid, $update, $delete], null);
     }
 
+    public function testBulkInsertAndSelectLastInsertedId(): void
+    {
+        // initial rows are 3; next autoincrement id should be 4 after insert
+        $insert = InsertQuery::getInstance('users', [
+            'name' => 'Charlie',
+            'createdate' => '2025-01-01'
+        ]);
+
+        // Outer query selects last_insert_rowid() from the single-row subquery
+        $selectLastId = QueryRaw::getInstance($this->repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+
+        $it = $this->repository->bulkExecute([$insert, $selectLastId], null);
+        $result = $it->toArray();
+
+        $this->assertCount(1, $result);
+        // SQLite returns integer for last_insert_rowid(); expect 4 here
+        $this->assertEquals(4, (int)$result[0]['id']);
+
+        // Also ensure the inserted row exists
+        $rows = $this->repository->getByFilter('name = :name', ['name' => 'Charlie']);
+        $this->assertCount(1, $rows);
+        $this->assertEquals('Charlie', $rows[0]->getName());
+    }
 }

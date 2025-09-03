@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IsolationLevelEnum;
@@ -201,7 +202,7 @@ class Repository
      * @throws RepositoryReadOnlyException
      * @throws Throwable
      */
-    public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): void
+    public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): ?GenericIterator
     {
         if (empty($queries)) {
             throw new InvalidArgumentException('You pass an empty array to bulk');
@@ -209,6 +210,7 @@ class Repository
 
         $dbDriver = $this->getDbDriverWrite();
 
+        $it = null;
         $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
         try {
             foreach ($queries as $query) {
@@ -218,13 +220,14 @@ class Repository
 
                 // Build SQL object using the write driver/helper to ensure correct dialect
                 $sqlObject = $query->build($dbDriver);
-                $dbDriver->execute($sqlObject->getSql(), $sqlObject->getParameters());
+                $it = $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
             }
             $dbDriver->commitTransaction();
         } catch (Throwable $e) {
             $dbDriver->rollbackTransaction();
             throw $e;
         }
+        return $it;
     }
 
     /**
