@@ -362,68 +362,8 @@ class Repository
      */
     public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
     {
-        // Get all fields
-        $array = Serialize::from($instance)
-            ->withStopAtFirstLevel()
-            ->toArray();
-        $fieldToProperty = [];
-        $mapper = $this->getMapper();
-
-        // Copy the values to the instance
-        $valuesToUpdate = new stdClass();
-        ObjectCopy::copy(
-            $array,
-            $valuesToUpdate,
-            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
-                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
-                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
-                $fieldToProperty[$fieldName] = $sourcePropertyName;
-                return $fieldName;
-            },
-            function ($propName, $targetName, $value) use ($mapper, $instance) {
-                $fieldMap = $mapper->getFieldMap($propName);
-                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
-            }
-        );
-        $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
-
-        // Defines if is Insert or Update
-        $pkList = $this->getMapper()->getPrimaryKey();
-        $oldInstance = null;
-        if (count($pkList) == 1) {
-            $pk = $pkList[0];
-            if (!empty($array[$pk])) {
-                $oldInstance = $this->get($array[$pk]);
-            }
-        } else {
-            $fields = array_map(function ($item) use ($array) {
-                return $array[$item];
-            }, $pkList);
-            $oldInstance = $this->get($fields);
-        }
-        $isInsert = empty($oldInstance);
-
-        // Execute Before Statements
-        if ($isInsert) {
-            $closure = $this->beforeInsert;
-            $array = $closure($array);
-            foreach ($this->getMapper()->getFieldMap() as $mapper) {
-                $fieldValue = $mapper->getInsertFunctionValue($array[$mapper->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
-                if ($fieldValue !== false) {
-                    $array[$mapper->getFieldName()] = $fieldValue;
-                }
-            }
-            $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
-        } else {
-            $closure = $this->beforeUpdate;
-            $array = $closure($array);
-            $updatable = UpdateQuery::getInstance($array, $this->mapper);
-        }
-
-        // Check if is OK
-        if (empty($array)) {
-            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
-        }
+        // Build the updatable without executing
+        [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList] = $this->saveUpdatableInternal($instance);
 
         // Execute the Insert or Update
         if ($isInsert) {
@@ -460,6 +400,102 @@ class Repository
         return $instance;
     }
 
+    /**
+     * Build and return the updatable (InsertQuery or UpdateQuery) without executing it.
+     * This method mirrors the preparatory stage of save() and can be used to inspect or
+     * bulk-compose updates prior to execution.
+     *
+     * @param mixed $instance
+     * @return Updatable
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    public function saveUpdatable(mixed $instance): Updatable
+    {
+        [$updatable] = $this->saveUpdatableInternal($instance);
+        return $updatable;
+    }
+
+    /**
+     * Internal helper that prepares the updatable and returns additional context
+     * needed by save().
+     *
+     * @param mixed $instance
+     * @return array [Updatable $updatable, array $array, array $fieldToProperty, bool $isInsert, mixed $oldInstance, array $pkList]
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    protected function saveUpdatableInternal(mixed $instance): array
+    {
+        // Get all fields
+        $array = Serialize::from($instance)
+            ->withStopAtFirstLevel()
+            ->toArray();
+        $fieldToProperty = [];
+        $mapper = $this->getMapper();
+
+        // Copy the values to the instance
+        $valuesToUpdate = new stdClass();
+        ObjectCopy::copy(
+            $array,
+            $valuesToUpdate,
+            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
+                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
+                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
+                $fieldToProperty[$fieldName] = $sourcePropertyName;
+                return $fieldName;
+            },
+            function ($propName, $targetName, $value) use ($mapper, $instance) {
+                $fieldMap = $mapper->getFieldMap($propName);
+                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
+            }
+        );
+        $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
+
+        // Defines if is Insert or Update
+        $pkList = $this->getMapper()->getPrimaryKey();
+        $oldInstance = null;
+        if (count($pkList) == 1) {
+            $pk = $pkList[0];
+            if (!empty($array[$pk])) {
+                $oldInstance = $this->get($array[$pk]);
+            }
+        } else {
+            $fields = array_map(function ($item) use ($array) {
+                return $array[$item] ?? null;
+            }, $pkList);
+            if (!in_array(null, $fields, true)) {
+                $oldInstance = $this->get($fields);
+            }
+        }
+        $isInsert = empty($oldInstance);
+
+        // Execute Before Statements
+        if ($isInsert) {
+            $closure = $this->beforeInsert;
+            $array = $closure($array);
+            foreach ($this->getMapper()->getFieldMap() as $mapItem) {
+                $fieldValue = $mapItem->getInsertFunctionValue($array[$mapItem->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+                if ($fieldValue !== false) {
+                    $array[$mapItem->getFieldName()] = $fieldValue;
+                }
+            }
+            $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
+        } else {
+            $closure = $this->beforeUpdate;
+            $array = $closure($array);
+            $updatable = UpdateQuery::getInstance($array, $this->mapper);
+        }
+
+        // Check if is OK
+        if (empty($array)) {
+            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
+        }
+
+        return [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList];
+    }
 
     /**
      * @throws InvalidArgumentException
