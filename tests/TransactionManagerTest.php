@@ -21,6 +21,11 @@ class TransactionManagerTest extends TestCase
     public function setUp(): void
     {
         $this->object = new TransactionManager();
+
+        ConnectionUtil::getConnection("a");
+        ConnectionUtil::getConnection("b");
+        ConnectionUtil::getConnection("c");
+        ConnectionUtil::getConnection("d");
     }
 
     public function tearDown(): void
