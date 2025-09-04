@@ -210,24 +210,52 @@ class Repository
 
         $dbDriver = $this->getDbDriverWrite();
 
-        $it = null;
-        $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
-        try {
-            foreach ($queries as $query) {
-                if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
-                    throw new InvalidArgumentException('Invalid query type. Expected QueryBuilderInterface or Updatable.');
-                }
+        $bigSql = '';
+        $bigParams = [];
+        $index = 0;
 
-                // Build SQL object using the write driver/helper to ensure correct dialect
-                $sqlObject = $query->build($dbDriver);
-                $it = $dbDriver->getIterator($sqlObject->getSql(), $sqlObject->getParameters());
+        foreach ($queries as $query) {
+            if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
+                // Ignore invalid entries silently; could throw InvalidArgumentException if desired
+                continue;
             }
-            $dbDriver->commitTransaction();
-        } catch (Throwable $e) {
-            $dbDriver->rollbackTransaction();
-            throw $e;
+
+            // Build SQL object using the write driver to ensure correct helper/dialect
+            $sqlObject = $query->build($dbDriver);
+            $sql = $sqlObject->getSql();
+            $params = $sqlObject->getParameters();
+
+            // Rename parameters to avoid collisions across statements
+            if (!empty($params)) {
+                $renamedParams = [];
+                foreach ($params as $name => $value) {
+                    $newName = $name . '_b' . $index;
+                    // Replace both literal-style [[name]] and normal :name placeholders
+                    $sql = preg_replace(
+                        [
+                            "/\\[\\[$name]]/",
+                            "/:$name(\\W|$)/"
+                        ],
+                        [
+                            "[[{$newName}]]",
+                            ":{$newName}$1"
+                        ],
+                        $sql
+                    );
+                    $renamedParams[$newName] = $value;
+                }
+                $params = $renamedParams;
+            }
+
+            // Append to the big SQL string
+            $bigSql .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
+            // Merge parameters
+            $bigParams = array_merge($bigParams, $params);
+
+            $index++;
         }
-        return $it;
+
+        return $dbDriver->getIterator($bigSql, $bigParams);
     }
 
     /**
