@@ -6,14 +6,13 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\UsersWithUuidKey;
 
 class RepositoryUuidTest extends TestCase
 {
 
-    const URI='sqlite:///tmp/test.db';
+    const URI = 'mysql://root:password@127.0.0.1';
 
     /**
      * @var DbDriverInterface
@@ -28,6 +27,8 @@ class RepositoryUuidTest extends TestCase
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver->execute('create database if not exists testmicroorm;');
+        $this->dbDriver = Factory::getDbInstance(self::URI . "/testmicroorm");
 
         $this->dbDriver->execute('create table usersuuid (
             id binary(16) primary key,
@@ -38,8 +39,7 @@ class RepositoryUuidTest extends TestCase
 
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists usersuuid;');
     }
 
     public function testGet()

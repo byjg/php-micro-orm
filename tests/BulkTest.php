@@ -13,13 +13,12 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryRaw;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\UpdateQuery;
-use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
 
 class BulkTest extends TestCase
 {
-    const URI = 'sqlite:///tmp/test-bulk.db';
+    const URI = 'mysql://root:password@127.0.0.1';
 
     protected DbDriverInterface $dbDriver;
     protected Repository $repository;
@@ -27,10 +26,12 @@ class BulkTest extends TestCase
     protected function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver->execute('create database if not exists testmicroorm;');
+        $this->dbDriver = Factory::getDbInstance(self::URI . '/testmicroorm');
 
         // Create table and seed data similar to RepositoryTest
         $this->dbDriver->execute('create table users (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
         );
@@ -46,8 +47,7 @@ class BulkTest extends TestCase
 
     protected function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        @unlink($uri->getPath());
+        $this->dbDriver->execute('drop table users');
     }
 
     public function testBulkMixedQueriesWithParamCollision(): void

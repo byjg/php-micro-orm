@@ -6,14 +6,13 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Items;
 
 class RepositoryPkListTest extends TestCase
 {
 
-    const URI='sqlite:///tmp/teste.db';
+    const URI = 'mysql://root:password@127.0.0.1';
 
     /**
      * @var Mapper
@@ -33,6 +32,8 @@ class RepositoryPkListTest extends TestCase
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver->execute('create database if not exists testmicroorm;');
+        $this->dbDriver = Factory::getDbInstance(self::URI . "/testmicroorm");
 
         $this->dbDriver->execute('CREATE TABLE items (
             storeid INTEGER,
@@ -52,8 +53,7 @@ class RepositoryPkListTest extends TestCase
 
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists items;');
     }
 
     public function testGet()

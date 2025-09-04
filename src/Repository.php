@@ -214,6 +214,8 @@ class Repository
 
         $bigSqlWrites = '';
         $selectSql = null;
+        $selectParams = [];
+        $bigParams = [];
 
         foreach ($queries as $i => $query) {
             if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
@@ -224,54 +226,48 @@ class Repository
             $sqlObject = $query->build($dbDriver);
             $sql = $sqlObject->getSql();
             $params = $sqlObject->getParameters();
-
-            // Inline parameters directly into SQL to avoid multi-statement binding issues
-            if (!empty($params)) {
-                foreach ($params as $name => $value) {
-                    $replacement = 'NULL';
-                    if (!is_null($value)) {
-                        if (is_bool($value)) {
-                            $replacement = $value ? '1' : '0';
-                        } elseif (is_int($value) || is_float($value)) {
-                            $replacement = (string)$value;
-                        } else {
-                            // Strings and others: use PDO quote if available, otherwise fallback to single-quoted with basic escaping
-                            $quoted = method_exists($pdo, 'quote') ? $pdo->quote((string)$value) : ("'" . str_replace("'", "''", (string)$value) . "'");
-                            $replacement = $quoted;
-                        }
-                    }
-
-                    // Replace occurrences of the parameter (not preceded by another ':')
-                    $sql = preg_replace(
-                        [
-                            "/(?<!:):" . preg_quote($name, '/') . "\\b/",
-                        ],
-                        [
-                            $replacement,
-                        ],
-                        $sql
-                    );
-                }
-            }
-
             $isSelect = str_starts_with(strtoupper(ltrim($sql)), 'SELECT');
 
             if ($isSelect && $i === array_key_last($queries)) {
+                // Trailing SELECT: keep it separate with its own params
                 $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
-            } else {
-                $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
+                $selectParams = $params ?? [];
+                continue;
             }
+
+            // For write statements, avoid parameter name collisions by uniquifying named params
+            if (!empty($params)) {
+                $newParams = [];
+                foreach ($params as $key => $value) {
+                    // Only process named parameters (string keys)
+                    if (is_string($key)) {
+                        $uniqueKey = $key . '__b' . $i;
+                        // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
+                        $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+                        $replacement = ':' . $uniqueKey;
+                        $sql = preg_replace($pattern, $replacement, $sql);
+                        $newParams[$uniqueKey] = $value;
+                    } else {
+                        // Positional parameter or numeric key; just carry over
+                        $newParams[$key] = $value;
+                    }
+                }
+                $params = $newParams;
+            }
+
+            $bigParams = array_merge($bigParams, $params ?? []);
+            $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
         }
 
         // First execute all writes (if any) in a single batch using direct PDO exec
         if (trim($bigSqlWrites) !== '') {
             // Use direct PDO to ensure multi-statement execution across drivers like SQLite
-            $pdo->exec($bigSqlWrites);
+            $dbDriver->execute($bigSqlWrites, $bigParams);
         }
 
         // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
         if (!empty($selectSql)) {
-            return $dbDriver->getIterator($selectSql);
+            return $dbDriver->getIterator($selectSql, $selectParams);
         }
 
         return (new ArrayDataset([]))->getIterator();

@@ -3,10 +3,10 @@
 namespace Tests\Model;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
-use ByJG\MicroOrm\Attributes\TableSqliteUuidPKAttribute;
+use ByJG\MicroOrm\Attributes\TableMySqlUuidPKAttribute;
 use ByJG\MicroOrm\Literal\Literal;
 
-#[TableSqliteUuidPKAttribute(tableName: 'usersuuid')]
+#[TableMySqlUuidPKAttribute(tableName: 'usersuuid')]
 class UsersWithUuidKey
 {
     #[FieldAttribute(primaryKey: true)]

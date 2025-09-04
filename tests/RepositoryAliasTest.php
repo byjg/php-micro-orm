@@ -8,14 +8,13 @@ use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Customer;
 
 class RepositoryAliasTest extends TestCase
 {
 
-    const URI='sqlite:///tmp/teste.db';
+    const URI = 'mysql://root:password@127.0.0.1';
 
     /**
      * @var Mapper
@@ -35,9 +34,11 @@ class RepositoryAliasTest extends TestCase
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver->execute('create database if not exists testmicroorm;');
+        $this->dbDriver = Factory::getDbInstance(self::URI . "/testmicroorm");
 
         $this->dbDriver->execute('create table customers (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             customer_name varchar(45),
             customer_age int);'
         );
@@ -58,8 +59,7 @@ class RepositoryAliasTest extends TestCase
 
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists customers;');
     }
 
     public function testGet()
