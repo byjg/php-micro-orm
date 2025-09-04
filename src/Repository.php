@@ -410,12 +410,11 @@ class Repository
      * @param mixed $instance
      * @param UpdateConstraint|null $updateConstraint
      * @return mixed
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
     {
