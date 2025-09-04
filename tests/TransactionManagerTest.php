@@ -13,7 +13,6 @@ use Tests\Model\Users;
 
 class TransactionManagerTest extends TestCase
 {
-    const URI = 'mysql://root:password@127.0.0.1';
     /**
      * @var TransactionManager
      */
@@ -22,12 +21,6 @@ class TransactionManagerTest extends TestCase
     public function setUp(): void
     {
         $this->object = new TransactionManager();
-
-        $dbDriver = Factory::getDbInstance(self::URI);
-        $dbDriver->execute('create database if not exists a;');
-        $dbDriver->execute('create database if not exists b;');
-        $dbDriver->execute('create database if not exists c;');
-        $dbDriver->execute('create database if not exists d;');
     }
 
     public function tearDown(): void
@@ -35,11 +28,11 @@ class TransactionManagerTest extends TestCase
         $this->object->destroy();
         $this->object = null;
 
-        $dbDriver = Factory::getDbInstance(self::URI . "/a");
+        $dbDriver = ConnectionUtil::getConnection("a");
         $dbDriver->execute('drop table if exists users;');
         $dbDriver->execute('drop table if exists users1;');
 
-        $dbDriver = Factory::getDbInstance(self::URI . "/b");
+        $dbDriver = ConnectionUtil::getConnection("b");
         $dbDriver->execute('drop table if exists users2;');
     }
 
@@ -48,16 +41,16 @@ class TransactionManagerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = $this->object->addConnection(self::URI . "/a");
-        $dbDrive2 = $this->object->addConnection(self::URI . "/b");
-        $dbDrive3 = $this->object->addConnection(self::URI . "/a");
-        $dbDrive4 = $this->object->addConnection(self::URI . "/b");
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a"));
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b"));
+        $dbDrive3 = $this->object->addConnection(ConnectionUtil::getUri("a"));
+        $dbDrive4 = $this->object->addConnection(ConnectionUtil::getUri("b"));
     }
 
     public function testAddConnection()
     {
-        $dbDrive1 = $this->object->addConnection(self::URI . "/a");
-        $dbDrive2 = $this->object->addConnection(self::URI . "/b");
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a"));
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b"));
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
 
@@ -71,10 +64,10 @@ class TransactionManagerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = Factory::getDbInstance(self::URI . "/a");
-        $dbDrive2 = Factory::getDbInstance(self::URI . "/b");
-        $dbDrive3 = Factory::getDbInstance(self::URI . "/a");
-        $dbDrive4 = Factory::getDbInstance(self::URI . "/b");
+        $dbDrive1 = Factory::getDbInstance(ConnectionUtil::getUri("a"));
+        $dbDrive2 = Factory::getDbInstance(ConnectionUtil::getUri("b"));
+        $dbDrive3 = Factory::getDbInstance(ConnectionUtil::getUri("a"));
+        $dbDrive4 = Factory::getDbInstance(ConnectionUtil::getUri("b"));
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -84,8 +77,8 @@ class TransactionManagerTest extends TestCase
 
     public function testAddDbDriver()
     {
-        $dbDrive1 = Factory::getDbInstance(self::URI . "/a");
-        $dbDrive2 = Factory::getDbInstance(self::URI . "/b");
+        $dbDrive1 = ConnectionUtil::getConnection("a");
+        $dbDrive2 = ConnectionUtil::getConnection("b");
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -99,7 +92,7 @@ class TransactionManagerTest extends TestCase
 
     public function testAddRepository()
     {
-        $dbDriver = Factory::getDbInstance(self::URI . "/a");
+        $dbDriver = ConnectionUtil::getConnection("a");
 
         $dbDriver->execute('create table users (
             id integer primary key  auto_increment,
@@ -121,8 +114,8 @@ class TransactionManagerTest extends TestCase
 
     public function testBeginTransaction()
     {
-        $this->object->addConnection(self::URI . "/c");
-        $this->object->addConnection(self::URI . "/d");
+        $this->object->addConnection(ConnectionUtil::getUri("c"));
+        $this->object->addConnection(ConnectionUtil::getUri("d"));
 
         $this->object->beginTransaction();
         $this->object->commitTransaction();
@@ -135,8 +128,8 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("Transaction Already Started");
 
-        $this->object->addConnection(self::URI . "/a");
-        $this->object->addConnection(self::URI . "/d");
+        $this->object->addConnection(ConnectionUtil::getUri("a"));
+        $this->object->addConnection(ConnectionUtil::getUri("d"));
 
         $this->assertEquals(2, $this->object->count());
 
@@ -149,7 +142,7 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection(self::URI . "/c");
+        $this->object->addConnection(ConnectionUtil::getUri("c"));
         $this->assertEquals(1, $this->object->count());
         $this->object->rollbackTransaction();
     }
@@ -159,15 +152,15 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection(self::URI . "/d");
+        $this->object->addConnection(ConnectionUtil::getUri("d"));
         $this->assertEquals(1, $this->object->count());
         $this->object->commitTransaction();
     }
 
     public function testTransaction()
     {
-        $dbDrive1 = Factory::getDbInstance(self::URI . "/a");
-        $dbDrive2 = Factory::getDbInstance(self::URI . "/b");
+        $dbDrive1 = ConnectionUtil::getConnection("a");
+        $dbDrive2 = ConnectionUtil::getConnection("b");
 
         $dbDrive1->execute('create table users1 (
             id integer primary key  auto_increment,

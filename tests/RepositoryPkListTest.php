@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use PHPUnit\Framework\TestCase;
@@ -11,9 +10,6 @@ use Tests\Model\Items;
 
 class RepositoryPkListTest extends TestCase
 {
-
-    const URI = 'mysql://root:password@127.0.0.1';
-
     /**
      * @var Mapper
      */
@@ -31,9 +27,7 @@ class RepositoryPkListTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
-        $this->dbDriver->execute('create database if not exists testmicroorm;');
-        $this->dbDriver = Factory::getDbInstance(self::URI . "/testmicroorm");
+        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
         $this->dbDriver->execute('CREATE TABLE items (
             storeid INTEGER,

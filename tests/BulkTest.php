@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\InsertBulkQuery;
@@ -18,16 +17,12 @@ use Tests\Model\Users;
 
 class BulkTest extends TestCase
 {
-    const URI = 'mysql://root:password@127.0.0.1';
-
     protected DbDriverInterface $dbDriver;
     protected Repository $repository;
 
     protected function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
-        $this->dbDriver->execute('create database if not exists testmicroorm;');
-        $this->dbDriver = Factory::getDbInstance(self::URI . '/testmicroorm');
+        $this->dbDriver = ConnectionUtil::getConnection('testmicroorm');
 
         // Create table and seed data similar to RepositoryTest
         $this->dbDriver->execute('create table users (

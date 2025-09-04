@@ -23,6 +23,7 @@ use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
+use Exception;
 use ReflectionException;
 use stdClass;
 use Throwable;
@@ -259,18 +260,28 @@ class Repository
             $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
         }
 
-        // First execute all writes (if any) in a single batch using direct PDO exec
-        if (trim($bigSqlWrites) !== '') {
-            // Use direct PDO to ensure multi-statement execution across drivers like SQLite
-            $dbDriver->execute($bigSqlWrites, $bigParams);
-        }
+        $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
+        try {
+            // First execute all writes (if any) in a single batch using direct PDO exec
+            if (trim($bigSqlWrites) !== '') {
+                // Use direct PDO to ensure multi-statement execution across drivers like SQLite
+                $dbDriver->execute($bigSqlWrites, $bigParams);
+            }
 
-        // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
-        if (!empty($selectSql)) {
-            return $dbDriver->getIterator($selectSql, $selectParams);
-        }
+            // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
+            if (!empty($selectSql)) {
+                $it = $dbDriver->getIterator($selectSql, $selectParams);
+            } else {
+                $it = (new ArrayDataset([]))->getIterator();
+            }
 
-        return (new ArrayDataset([]))->getIterator();
+            $dbDriver->commitTransaction();
+
+            return $it;
+        } catch (Exception $ex) {
+            $dbDriver->rollbackTransaction();
+            throw $ex;
+        }
     }
 
     /**

@@ -5,7 +5,6 @@ namespace Tests;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\DeleteQuery;
@@ -44,9 +43,6 @@ use Throwable;
 
 class RepositoryTest extends TestCase
 {
-
-    const URI = 'mysql://root:password@127.0.0.1';
-
     /**
      * @var Mapper
      */
@@ -69,9 +65,7 @@ class RepositoryTest extends TestCase
 
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
-        $this->dbDriver->execute('create database if not exists testmicroorm;');
-        $this->dbDriver = Factory::getDbInstance(self::URI . "/testmicroorm");
+        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
         $this->dbDriver->execute('create table users (
             id integer primary key  auto_increment,
