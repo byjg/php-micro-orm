@@ -9,6 +9,7 @@ use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\AnyDataset\Lists\ArrayDataset;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -209,15 +210,14 @@ class Repository
         }
 
         $dbDriver = $this->getDbDriverWrite();
+        $pdo = $dbDriver->getDbConnection();
 
-        $bigSql = '';
-        $bigParams = [];
-        $index = 0;
+        $bigSqlWrites = '';
+        $selectSql = null;
 
-        foreach ($queries as $query) {
+        foreach ($queries as $i => $query) {
             if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
-                // Ignore invalid entries silently; could throw InvalidArgumentException if desired
-                continue;
+                throw new InvalidArgumentException('Invalid query type. Expected QueryBuilderInterface or Updatable.');
             }
 
             // Build SQL object using the write driver to ensure correct helper/dialect
@@ -225,37 +225,56 @@ class Repository
             $sql = $sqlObject->getSql();
             $params = $sqlObject->getParameters();
 
-            // Rename parameters to avoid collisions across statements
+            // Inline parameters directly into SQL to avoid multi-statement binding issues
             if (!empty($params)) {
-                $renamedParams = [];
                 foreach ($params as $name => $value) {
-                    $newName = $name . '_b' . $index;
-                    // Replace both literal-style [[name]] and normal :name placeholders
+                    $replacement = 'NULL';
+                    if (!is_null($value)) {
+                        if (is_bool($value)) {
+                            $replacement = $value ? '1' : '0';
+                        } elseif (is_int($value) || is_float($value)) {
+                            $replacement = (string)$value;
+                        } else {
+                            // Strings and others: use PDO quote if available, otherwise fallback to single-quoted with basic escaping
+                            $quoted = method_exists($pdo, 'quote') && $pdo ? $pdo->quote((string)$value) : ("'" . str_replace("'", "''", (string)$value) . "'");
+                            $replacement = $quoted;
+                        }
+                    }
+
+                    // Replace occurrences of the parameter (not preceded by another ':')
                     $sql = preg_replace(
                         [
-                            "/\\[\\[$name]]/",
-                            "/:$name(\\W|$)/"
+                            "/(?<!:):" . preg_quote($name, '/') . "\\b/",
                         ],
                         [
-                            "[[{$newName}]]",
-                            ":{$newName}$1"
+                            $replacement,
                         ],
                         $sql
                     );
-                    $renamedParams[$newName] = $value;
                 }
-                $params = $renamedParams;
             }
 
-            // Append to the big SQL string
-            $bigSql .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
-            // Merge parameters
-            $bigParams = array_merge($bigParams, $params);
+            $isSelect = str_starts_with(strtoupper(ltrim($sql)), 'SELECT');
 
-            $index++;
+            if ($isSelect && $i === array_key_last($queries)) {
+                $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
+            } else {
+                $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
+            }
         }
 
-        return $dbDriver->getIterator($bigSql, $bigParams);
+        // First execute all writes (if any) in a single batch using direct PDO exec
+        if (trim($bigSqlWrites) !== '') {
+            // Use direct PDO to ensure multi-statement execution across drivers like SQLite
+            $pdo->exec($bigSqlWrites);
+        }
+
+        // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
+        if (!empty($selectSql)) {
+            return $dbDriver->getIterator($selectSql);
+        }
+
+        return (new ArrayDataset([]))->getIterator();
     }
 
     /**
