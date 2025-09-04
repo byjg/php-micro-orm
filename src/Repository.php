@@ -232,7 +232,7 @@ class Repository
             if ($isSelect && $i === array_key_last($queries)) {
                 // Trailing SELECT: keep it separate with its own params
                 $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
-                $selectParams = $params ?? [];
+                $selectParams = $params;
                 continue;
             }
 
@@ -256,7 +256,7 @@ class Repository
                 $params = $newParams;
             }
 
-            $bigParams = array_merge($bigParams, $params ?? []);
+            $bigParams = array_merge($bigParams, $params);
             $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
         }
 

@@ -46,16 +46,16 @@ class TransactionManagerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a"));
-        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b"));
-        $dbDrive3 = $this->object->addConnection(ConnectionUtil::getUri("a"));
-        $dbDrive4 = $this->object->addConnection(ConnectionUtil::getUri("b"));
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
+        $dbDrive3 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive4 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
     }
 
     public function testAddConnection()
     {
-        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a"));
-        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b"));
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
 
@@ -119,8 +119,8 @@ class TransactionManagerTest extends TestCase
 
     public function testBeginTransaction()
     {
-        $this->object->addConnection(ConnectionUtil::getUri("c"));
-        $this->object->addConnection(ConnectionUtil::getUri("d"));
+        $this->object->addConnection(ConnectionUtil::getUri("c")->__toString());
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
 
         $this->object->beginTransaction();
         $this->object->commitTransaction();
@@ -133,8 +133,8 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("Transaction Already Started");
 
-        $this->object->addConnection(ConnectionUtil::getUri("a"));
-        $this->object->addConnection(ConnectionUtil::getUri("d"));
+        $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
 
         $this->assertEquals(2, $this->object->count());
 
@@ -147,7 +147,7 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection(ConnectionUtil::getUri("c"));
+        $this->object->addConnection(ConnectionUtil::getUri("c")->__toString());
         $this->assertEquals(1, $this->object->count());
         $this->object->rollbackTransaction();
     }
@@ -157,7 +157,7 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection(ConnectionUtil::getUri("d"));
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
         $this->assertEquals(1, $this->object->count());
         $this->object->commitTransaction();
     }
