@@ -236,7 +236,7 @@ class Repository
                             $replacement = (string)$value;
                         } else {
                             // Strings and others: use PDO quote if available, otherwise fallback to single-quoted with basic escaping
-                            $quoted = method_exists($pdo, 'quote') && $pdo ? $pdo->quote((string)$value) : ("'" . str_replace("'", "''", (string)$value) . "'");
+                            $quoted = method_exists($pdo, 'quote') ? $pdo->quote((string)$value) : ("'" . str_replace("'", "''", (string)$value) . "'");
                             $replacement = $quoted;
                         }
                     }
