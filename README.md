@@ -166,6 +166,7 @@ $result = $repository->getByQuery($query);
 * [Using FieldAlias](docs/using-fieldalias.md)
 * [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
 * [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
+* [QueryRaw (raw SQL)](docs/query-raw.md)
 
 ## Install
 

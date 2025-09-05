@@ -272,7 +272,7 @@ class QueryBasic implements QueryBuilderInterface
         $sql .= "SELECT " .
             ($this->distinct ? "DISTINCT " : "") .
             $fieldList .
-            "FROM " . $tableList;
+            (!empty($tableList) ? "FROM " . $tableList : "");
 
         $whereStr = $this->getWhere();
         if (!is_null($whereStr)) {

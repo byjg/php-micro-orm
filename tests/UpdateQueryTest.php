@@ -2,13 +2,18 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\Helpers\DbMysqlFunctions;
 use ByJG\AnyDataset\Db\Helpers\DbPgsqlFunctions;
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
+use ByJG\AnyDataset\Db\PdoMysql;
+use ByJG\AnyDataset\Db\PdoObj;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\SqlObject;
 use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\UpdateQuery;
+use ByJG\Util\Uri;
 use PHPUnit\Framework\TestCase;
 
 class UpdateQueryTest extends TestCase
@@ -137,6 +142,58 @@ class UpdateQueryTest extends TestCase
         $this->assertEquals(
             new SqlObject(
                 'UPDATE `test` INNER JOIN `table2` ON table2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
+    }
+
+    public function testUpdateJoinMySQlAlias()
+    {
+        $this->object->table('test');
+        $this->object->join('table2', 't2.id = test.id', 't2');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
+        $this->object->where('fld1 = :id', ['id' => 10]);
+
+        $sqlObject = $this->object->build(new DbMysqlFunctions());
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE `test` INNER JOIN `table2` AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                SqlObjectEnum::UPDATE
+            ),
+            $sqlObject
+        );
+    }
+
+    public function testUpdateJoinMySQlSubqueryAlias()
+    {
+        $query = Query::getInstance()
+            ->table('table2')
+            ->where('id = 10');
+        $this->object->table('test');
+        $this->object->join($query, 't2.id = test.id', 't2');
+        $this->object->set('fld1', 'A');
+        $this->object->set('fld2', 'B');
+        $this->object->set('fld3', 'C');
+        $this->object->where('fld1 = :id', ['id' => 10]);
+
+
+        $dbDriver = new class extends PdoMysql
+        {
+            public function __construct()
+            {
+                $this->pdoObj = new PdoObj(new Uri('mysql://root:root@localhost/test'));
+            }
+        };
+
+        $sqlObject = $this->object->build($dbDriver);
+        $this->assertEquals(
+            new SqlObject(
+                'UPDATE `test` INNER JOIN (SELECT  * FROM table2 WHERE id = 10) AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
                 ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
                 SqlObjectEnum::UPDATE
             ),

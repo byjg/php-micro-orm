@@ -2,7 +2,9 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
@@ -65,33 +67,57 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface $dbHelper = null): array
+    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
     {
+        $dbDriver = null;
+        if ($dbDriverOrHelper instanceof DbDriverInterface) {
+            $dbDriver = $dbDriverOrHelper;
+            $dbHelper = $dbDriverOrHelper->getDbHelper();
+        } else {
+            $dbHelper = $dbDriverOrHelper;
+        }
+
         if (is_null($dbHelper)) {
             if (!empty($this->joinTables)) {
                 throw new InvalidArgumentException('You must specify a DbFunctionsInterface to use join tables');
             }
             return ['sql' => '', 'position' => 'before_set'];
         }
+        foreach ($this->joinTables as $key => $joinTable) {
+            if ($this->joinTables[$key]['table'] instanceof QueryBasic) {
+                if (is_null($dbDriver)) {
+                    Throw new InvalidArgumentException('You must specify a DbDriverInterface to use Query join tables');
+                }
+                $this->joinTables[$key]['table'] = new SqlStatement($this->joinTables[$key]['table']->build($dbDriver)->getSql());
+            }
+        }
 
         return $dbHelper->getJoinTablesUpdate($this->joinTables);
     }
 
-    public function join(string $table, string $joinCondition): UpdateQuery
+    public function join(QueryBasic|string $table, string $joinCondition, ?string $alias = null): UpdateQuery
     {
-        $this->joinTables[] = ["table" => $table, "condition" => $joinCondition];
+        $this->joinTables[] = ["table" => $table, "condition" => $joinCondition, "alias" => $alias];
         return $this;
     }
 
     /**
-     * @param DbFunctionsInterface|null $dbHelper
+     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
      * @return SqlObject
      * @throws InvalidArgumentException
      */
-    public function build(DbFunctionsInterface $dbHelper = null): SqlObject
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');
+        }
+
+        $dbDriver = null;
+        if ($dbDriverOrHelper instanceof DbDriverInterface) {
+            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbDriver = $dbDriverOrHelper;
+        } else {
+            $dbHelper = $dbDriverOrHelper;
         }
         
         $fieldsStr = [];
@@ -120,7 +146,7 @@ class UpdateQuery extends Updatable
             $tableName = $dbHelper->delimiterTable($tableName);
         }
 
-        $joinTables = $this->getJoinTables($dbHelper);
+        $joinTables = $this->getJoinTables($dbDriverOrHelper);
         $joinBeforeSet = $joinTables['position'] === 'before_set' ? $joinTables['sql'] : '';
         $joinAfterSet = $joinTables['position'] === 'after_set' ? $joinTables['sql'] : '';
 

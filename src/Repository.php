@@ -3,10 +3,13 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\AnyDataset\Lists\ArrayDataset;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -20,8 +23,10 @@ use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use Closure;
+use Exception;
 use ReflectionException;
 use stdClass;
+use Throwable;
 
 class Repository
 {
@@ -189,6 +194,91 @@ class Repository
     }
 
     /**
+     * Execute multiple write queries (insert/update/delete) sequentially within a transaction.
+     * Invalid entries are ignored silently. If any execution fails, the transaction is rolled back.
+     *
+     * @param array<int, Updatable|QueryBuilderInterface> $queries List of queries to be executed in bulk
+     * @param IsolationLevelEnum|null $isolationLevel
+     * @return GenericIterator|null
+     * @throws InvalidArgumentException
+     * @throws RepositoryReadOnlyException
+     * @throws Throwable
+     */
+    public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): ?GenericIterator
+    {
+        if (empty($queries)) {
+            throw new InvalidArgumentException('You pass an empty array to bulk');
+        }
+
+        $dbDriver = $this->getDbDriverWrite();
+
+        $bigSqlWrites = '';
+        $selectSql = null;
+        $selectParams = [];
+        $bigParams = [];
+
+        foreach ($queries as $i => $query) {
+            if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
+                throw new InvalidArgumentException('Invalid query type. Expected QueryBuilderInterface or Updatable.');
+            }
+
+            // Build SQL object using the write driver to ensure correct helper/dialect
+            $sqlObject = $query->build($dbDriver);
+            $sql = $sqlObject->getSql();
+            $params = $sqlObject->getParameters();
+            $isSelect = str_starts_with(strtoupper(ltrim($sql)), 'SELECT');
+
+            if ($isSelect && $i === array_key_last($queries)) {
+                // Trailing SELECT: keep it separate with its own params
+                $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
+                $selectParams = $params;
+                continue;
+            }
+
+            // For write statements, avoid parameter name collisions by uniquifying named params
+            foreach ($params as $key => $value) {
+                // Only process named parameters (string keys)
+                if (isset($bigParams[$key])) {
+                    $uniqueKey = $key . '__b' . $i;
+                    // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
+                    $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+                    $replacement = ':' . $uniqueKey;
+                    $sql = preg_replace($pattern, $replacement, $sql);
+                    $bigParams[$uniqueKey] = $value;
+                } else {
+                    // Positional parameter or numeric key; just carry over
+                    $bigParams[$key] = $value;
+                }
+            }
+
+            $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
+        }
+
+        $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
+        try {
+            // First execute all writes (if any) in a single batch using direct PDO exec
+            if (trim($bigSqlWrites) !== '') {
+                // Use direct PDO to ensure multi-statement execution across drivers like SQLite
+                $dbDriver->execute($bigSqlWrites, $bigParams);
+            }
+
+            // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
+            if (!empty($selectSql)) {
+                $it = $dbDriver->getIterator($selectSql, $selectParams);
+            } else {
+                $it = (new ArrayDataset([]))->getIterator();
+            }
+
+            $dbDriver->commitTransaction();
+
+            return $it;
+        } catch (Exception $ex) {
+            $dbDriver->rollbackTransaction();
+            throw $ex;
+        }
+    }
+
+    /**
      * @param DeleteQuery $updatable
      * @return bool
      * @throws InvalidArgumentException
@@ -314,77 +404,16 @@ class Repository
      * @param mixed $instance
      * @param UpdateConstraint|null $updateConstraint
      * @return mixed
-     * @throws Exception\InvalidArgumentException
+     * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
-     * @throws \ByJG\Serializer\Exception\InvalidArgumentException
      */
     public function save(mixed $instance, UpdateConstraint $updateConstraint = null): mixed
     {
-        // Get all fields
-        $array = Serialize::from($instance)
-            ->withStopAtFirstLevel()
-            ->toArray();
-        $fieldToProperty = [];
-        $mapper = $this->getMapper();
-
-        // Copy the values to the instance
-        $valuesToUpdate = new stdClass();
-        ObjectCopy::copy(
-            $array,
-            $valuesToUpdate,
-            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
-                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
-                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
-                $fieldToProperty[$fieldName] = $sourcePropertyName;
-                return $fieldName;
-            },
-            function ($propName, $targetName, $value) use ($mapper, $instance) {
-                $fieldMap = $mapper->getFieldMap($propName);
-                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
-            }
-        );
-        $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
-
-        // Defines if is Insert or Update
-        $pkList = $this->getMapper()->getPrimaryKey();
-        $oldInstance = null;
-        if (count($pkList) == 1) {
-            $pk = $pkList[0];
-            if (!empty($array[$pk])) {
-                $oldInstance = $this->get($array[$pk]);
-            }
-        } else {
-            $fields = array_map(function ($item) use ($array) {
-                return $array[$item];
-            }, $pkList);
-            $oldInstance = $this->get($fields);
-        }
-        $isInsert = empty($oldInstance);
-
-        // Execute Before Statements
-        if ($isInsert) {
-            $closure = $this->beforeInsert;
-            $array = $closure($array);
-            foreach ($this->getMapper()->getFieldMap() as $mapper) {
-                $fieldValue = $mapper->getInsertFunctionValue($array[$mapper->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
-                if ($fieldValue !== false) {
-                    $array[$mapper->getFieldName()] = $fieldValue;
-                }
-            }
-            $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
-        } else {
-            $closure = $this->beforeUpdate;
-            $array = $closure($array);
-            $updatable = UpdateQuery::getInstance($array, $this->mapper);
-        }
-
-        // Check if is OK
-        if (empty($array)) {
-            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
-        }
+        // Build the updatable without executing
+        [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList] = $this->saveUpdatableInternal($instance);
 
         // Execute the Insert or Update
         if ($isInsert) {
@@ -421,6 +450,102 @@ class Repository
         return $instance;
     }
 
+    /**
+     * Build and return the updatable (InsertQuery or UpdateQuery) without executing it.
+     * This method mirrors the preparatory stage of save() and can be used to inspect or
+     * bulk-compose updates prior to execution.
+     *
+     * @param mixed $instance
+     * @return Updatable
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    public function saveUpdatable(mixed $instance): Updatable
+    {
+        [$updatable] = $this->saveUpdatableInternal($instance);
+        return $updatable;
+    }
+
+    /**
+     * Internal helper that prepares the updatable and returns additional context
+     * needed by save().
+     *
+     * @param mixed $instance
+     * @return array [Updatable $updatable, array $array, array $fieldToProperty, bool $isInsert, mixed $oldInstance, array $pkList]
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    protected function saveUpdatableInternal(mixed $instance): array
+    {
+        // Get all fields
+        $array = Serialize::from($instance)
+            ->withStopAtFirstLevel()
+            ->toArray();
+        $fieldToProperty = [];
+        $mapper = $this->getMapper();
+
+        // Copy the values to the instance
+        $valuesToUpdate = new stdClass();
+        ObjectCopy::copy(
+            $array,
+            $valuesToUpdate,
+            function ($sourcePropertyName) use ($mapper, &$fieldToProperty) {
+                $sourcePropertyName = $mapper->fixFieldName($sourcePropertyName);
+                $fieldName = $mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName;
+                $fieldToProperty[$fieldName] = $sourcePropertyName;
+                return $fieldName;
+            },
+            function ($propName, $targetName, $value) use ($mapper, $instance) {
+                $fieldMap = $mapper->getFieldMap($propName);
+                return $fieldMap?->getUpdateFunctionValue($value, $instance, $this->getDbDriverWrite()->getDbHelper()) ?? $value;
+            }
+        );
+        $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
+
+        // Defines if is Insert or Update
+        $pkList = $this->getMapper()->getPrimaryKey();
+        $oldInstance = null;
+        if (count($pkList) == 1) {
+            $pk = $pkList[0];
+            if (!empty($array[$pk])) {
+                $oldInstance = $this->get($array[$pk]);
+            }
+        } else {
+            $fields = array_map(function ($item) use ($array) {
+                return $array[$item] ?? null;
+            }, $pkList);
+            if (!in_array(null, $fields, true)) {
+                $oldInstance = $this->get($fields);
+            }
+        }
+        $isInsert = empty($oldInstance);
+
+        // Execute Before Statements
+        if ($isInsert) {
+            $closure = $this->beforeInsert;
+            $array = $closure($array);
+            foreach ($this->getMapper()->getFieldMap() as $mapItem) {
+                $fieldValue = $mapItem->getInsertFunctionValue($array[$mapItem->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+                if ($fieldValue !== false) {
+                    $array[$mapItem->getFieldName()] = $fieldValue;
+                }
+            }
+            $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);
+        } else {
+            $closure = $this->beforeUpdate;
+            $array = $closure($array);
+            $updatable = UpdateQuery::getInstance($array, $this->mapper);
+        }
+
+        // Check if is OK
+        if (empty($array)) {
+            throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
+        }
+
+        return [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList];
+    }
 
     /**
      * @throws InvalidArgumentException
@@ -440,7 +565,7 @@ class Repository
     protected function insert(InsertQuery $updatable, mixed $keyGen): mixed
     {
         if (empty($keyGen)) {
-            return $this->insertWithAutoInc($updatable);
+            return $this->insertWithAutoinc($updatable);
         } else {
             $this->insertWithKeyGen($updatable);
             return null;
