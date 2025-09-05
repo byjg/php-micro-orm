@@ -148,21 +148,28 @@ applied.
 Signature:
 
 ```php
-public function Repository::bulkExecute(array $queries, ?\ByJG\AnyDataset\Db\IsolationLevelEnum $isolationLevel = null): void
+public function Repository::bulkExecute(
+    array $queries,
+    ?\ByJG\AnyDataset\Db\IsolationLevelEnum $isolationLevel = null
+): ?\ByJG\AnyDataset\Core\GenericIterator
 ```
 
 Rules and behavior:
 
 - Accepts an array of QueryBuilderInterface or Updatable instances (e.g., InsertQuery, UpdateQuery, DeleteQuery). Each
-  item is built and executed with the repository write driver.
+  item is built with the repository write driver. Non-SELECT statements are batched and executed together; a trailing
+  SELECT (if present) is executed separately.
 - All queries are executed inside a transaction. If any query throws an exception, the transaction is rolled back and
   the exception is rethrown.
+- If the last command is a SELECT, bulkExecute returns an iterator (GenericIterator) with its results. Intermediate
+  SELECT statements are allowed but do not return iterators; their results are not yielded.
+- If there is no trailing SELECT, bulkExecute returns an empty iterator.
 - Passing an empty array throws InvalidArgumentException.
 - Passing an item that is not a QueryBuilderInterface or Updatable throws InvalidArgumentException.
 - You can optionally pass a transaction isolation level using IsolationLevelEnum. The transaction allows joining an
   existing transaction if present.
 
-Example:
+Example (writes only):
 
 ```php
 <?php
@@ -189,12 +196,34 @@ $delete = DeleteQuery::getInstance()
     ->table('users')
     ->where('name = :name', ['name' => 'OldName']);
 
-$repository->bulkExecute([$insert, $update, $delete]);
+$it = $repository->bulkExecute([$insert, $update, $delete]);
+// $it is an empty iterator because there is no trailing SELECT
+```
+
+Example (returning results when the last command is a SELECT):
+
+```php
+<?php
+use ByJG\MicroOrm\QueryRaw;
+
+$insert = InsertQuery::getInstance('users', [
+    'name' => 'Charlie',
+    'createdate' => '2025-01-01'
+]);
+
+// Example of a SELECT as the last command (driver-specific last insert id)
+$selectLastId = QueryRaw::getInstance($repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+
+$it = $repository->bulkExecute([$insert, $selectLastId]);
+foreach ($it as $row) {
+    // process results (e.g., $row['id'])
+}
 ```
 
 Notes:
 
-- Parameter names can overlap between queries (e.g., multiple queries using :name) because each query is built and
-  executed independently.
+- Parameter names can overlap between queries (e.g., multiple queries using :name). bulkExecute internally batches
+  non-SELECT statements and safely renames parameters to avoid collisions; the trailing SELECT (if present) is executed
+  separately.
 - If you need a specific transaction isolation level, pass it as the second argument, e.g.,
   `IsolationLevelEnum::SERIALIZABLE`.
