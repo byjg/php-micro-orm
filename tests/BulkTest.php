@@ -162,4 +162,26 @@ class BulkTest extends TestCase
         $this->assertCount(1, $rows);
         $this->assertEquals('Charlie', $rows[0]->getName());
     }
+
+    public function testBulkInsertNoParams(): void
+    {
+        // initial rows are 3; next autoincrement id should be 4 after insert
+        $insert = QueryRaw::getInstance("insert into users (name, createdate) values ('Charlie', '2025-01-01')");
+
+        // Outer query selects last_insert_rowid() from the single-row subquery
+        $selectLastId = QueryRaw::getInstance($this->repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+
+        $it = $this->repository->bulkExecute([$insert, $selectLastId], null);
+        $result = $it->toArray();
+
+        $this->assertCount(1, $result);
+        // SQLite returns integer for last_insert_rowid(); expect 4 here
+        $this->assertEquals(4, (int)$result[0]['id']);
+
+        // Also ensure the inserted row exists
+        $rows = $this->repository->getByFilter('name = :name', ['name' => 'Charlie']);
+        $this->assertCount(1, $rows);
+        $this->assertEquals('Charlie', $rows[0]->getName());
+    }
+
 }
