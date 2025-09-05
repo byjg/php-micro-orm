@@ -190,6 +190,10 @@ class Mapper
         return $this;
     }
 
+    public function getEntityClass(): string
+    {
+        return $this->entity;
+    }
 
     /**
      * @param array $fieldValues

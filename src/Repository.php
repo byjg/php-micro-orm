@@ -3,9 +3,11 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
@@ -273,6 +275,23 @@ class Repository
         return $this->getDbDriver()->getScalar($sqlBuild);
     }
 
+    public function getIterator(QueryBuilderInterface|SqlStatement $query, ?CacheQueryResult $cache = null): GenericIterator
+    {
+        if ($query instanceof SqlStatement) {
+            $sqlStatement = $query->build($this->getDbDriver());
+            return $this->getDbDriver()->getIterator($sqlStatement);
+        }
+
+        $sqlBuild = $query->build($this->getDbDriver());
+        if (!empty($cache)) {
+            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+        }
+        $sqlBuild = $sqlBuild->withEntityClass($this->mapper->getEntityClass());
+        $sqlBuild = $sqlBuild->withEntityTransformer(new MapFromDbToInstanceHandler($this->mapper));
+
+        return $this->getDbDriver()->getIterator($sqlBuild);
+    }
+
     /**
      * @param QueryBuilderInterface $query
      * @param Mapper[] $mapper
@@ -282,14 +301,12 @@ class Repository
     public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
     {
         $mapper = array_merge([$this->mapper], $mapper);
-        $sqlBuild = $query->build($this->getDbDriver());
-
-        if (!empty($cache)) {
-            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
-        }
+        $iterator = $this->getIterator($query, $cache);
 
         $result = [];
-        $iterator = $this->getDbDriver()->getIterator($sqlBuild);
+        if (count($mapper) === 1) {
+            return $iterator->toEntities();
+        }
 
         foreach ($iterator as $row) {
             $collection = [];
