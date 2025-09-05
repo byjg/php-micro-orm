@@ -236,22 +236,20 @@ class Repository
             }
 
             // For write statements, avoid parameter name collisions by uniquifying named params
-//            if (!empty($params)) {
-                foreach ($params as $key => $value) {
-                    // Only process named parameters (string keys)
-                    if (isset($bigParams[$key])) {
-                        $uniqueKey = $key . '__b' . $i;
-                        // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
-                        $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
-                        $replacement = ':' . $uniqueKey;
-                        $sql = preg_replace($pattern, $replacement, $sql);
-                        $bigParams[$uniqueKey] = $value;
-                    } else {
-                        // Positional parameter or numeric key; just carry over
-                        $bigParams[$key] = $value;
-                    }
+            foreach ($params as $key => $value) {
+                // Only process named parameters (string keys)
+                if (isset($bigParams[$key])) {
+                    $uniqueKey = $key . '__b' . $i;
+                    // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
+                    $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+                    $replacement = ':' . $uniqueKey;
+                    $sql = preg_replace($pattern, $replacement, $sql);
+                    $bigParams[$uniqueKey] = $value;
+                } else {
+                    // Positional parameter or numeric key; just carry over
+                    $bigParams[$key] = $value;
                 }
-//            }
+            }
 
             $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
         }
