@@ -12,6 +12,7 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryRaw;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\UpdateQuery;
+use PDOException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
 
@@ -184,4 +185,85 @@ class BulkTest extends TestCase
         $this->assertEquals('Charlie', $rows[0]->getName());
     }
 
+    public function testBulkMixedQueriesError1(): void
+    {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('NonExistant');
+
+        // Prepare queries with overlapping parameter names (:name used in multiple queries)
+        $insert = InsertQuery::getInstance('NonExistant', [
+            'name' => 'Alice',
+            'createdate' => '2020-01-01'
+        ]);
+
+        $update = UpdateQuery::getInstance()
+            ->table('users')
+            ->set('name', 'Bob')
+            ->where('id = :id', ['id' => 1]);
+
+        $delete = DeleteQuery::getInstance()
+            ->table('users')
+            ->where('name = :name', ['name' => 'JG']);
+
+        $invalid = "invalid";
+
+        // Execute bulk
+        /** @psalm-suppress InvalidArgument */
+        $this->repository->bulkExecute([$insert, $update, $delete], null);
+    }
+
+    public function testBulkMixedQueriesError2(): void
+    {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('NonExistant');
+
+
+        // Prepare queries with overlapping parameter names (:name used in multiple queries)
+        $insert = InsertQuery::getInstance('users', [
+            'name' => 'Alice',
+            'createdate' => '2020-01-01'
+        ]);
+
+        $update = UpdateQuery::getInstance()
+            ->table('NonExistant')
+            ->set('name', 'Bob')
+            ->where('id = :id', ['id' => 1]);
+
+        $delete = DeleteQuery::getInstance()
+            ->table('users')
+            ->where('name = :name', ['name' => 'JG']);
+
+        $invalid = "invalid";
+
+        // Execute bulk
+        /** @psalm-suppress InvalidArgument */
+        $this->repository->bulkExecute([$insert, $update, $delete], null);
+    }
+
+    public function testBulkMixedQueriesError3(): void
+    {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('NonExistant');
+
+        // Prepare queries with overlapping parameter names (:name used in multiple queries)
+        $insert = InsertQuery::getInstance('users', [
+            'name' => 'Alice',
+            'createdate' => '2020-01-01'
+        ]);
+
+        $update = UpdateQuery::getInstance()
+            ->table('users')
+            ->set('name', 'Bob')
+            ->where('id = :id', ['id' => 1]);
+
+        $delete = DeleteQuery::getInstance()
+            ->table('NonExistant')
+            ->where('name = :name', ['name' => 'JG']);
+
+        $invalid = "invalid";
+
+        // Execute bulk
+        /** @psalm-suppress InvalidArgument */
+        $this->repository->bulkExecute([$insert, $update, $delete], null);
+    }
 }
