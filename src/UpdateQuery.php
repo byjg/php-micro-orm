@@ -70,11 +70,10 @@ class UpdateQuery extends Updatable
     protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
+        $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
             $dbDriver = $dbDriverOrHelper;
             $dbHelper = $dbDriverOrHelper->getDbHelper();
-        } else {
-            $dbHelper = $dbDriverOrHelper;
         }
 
         if (is_null($dbHelper)) {
