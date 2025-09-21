@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm\Literal;
 
 class PostgresUuidLiteral extends HexUuidLiteral
 {
-    public function __construct(HexUuidLiteral|string $value)
+    public function __construct(Literal|string $value)
     {
         if ($value instanceof HexUuidLiteral) {
             $value = $value->formattedUuid;
