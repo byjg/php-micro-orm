@@ -58,7 +58,7 @@ class UpdateQuery extends Updatable
      * Set a field with a literal value that will be used directly in the SQL query
      *
      * @param string $field
-     * @param string $value
+     * @param mixed $value
      * @return $this
      */
     public function setLiteral(string $field, mixed $value): UpdateQuery
