@@ -11,7 +11,7 @@ class ORMHelper
      * @param array|null $params
      * @return string
      */
-    public static function processLiteral(string $sql, array &$params = null): string
+    public static function processLiteral(string $sql, ?array &$params = null): string
     {
         if (empty($params)) {
             return $sql;

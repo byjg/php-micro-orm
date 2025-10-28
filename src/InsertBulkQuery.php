@@ -65,7 +65,7 @@ class InsertBulkQuery extends Updatable
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');

@@ -51,7 +51,7 @@ class Recursive
         return $this;
     }
 
-    public function build(DbDriverInterface $dbDriver = null): SqlStatement
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
         $this->dbDriver = $dbDriver;
 

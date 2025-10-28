@@ -17,10 +17,10 @@ class TableAttribute
 
     public function __construct(
         string                          $tableName,
-        callable                        $primaryKeySeedFunction = null,
-        string                          $tableAlias = null,
-        string|EntityProcessorInterface $beforeInsert = null,
-        string|EntityProcessorInterface $beforeUpdate = null
+        ?callable                            $primaryKeySeedFunction = null,
+        ?string                              $tableAlias = null,
+        string|EntityProcessorInterface|null $beforeInsert = null,
+        string|EntityProcessorInterface|null $beforeUpdate = null
     )
     {
         $this->tableName = $tableName;

@@ -19,7 +19,7 @@ class UpdateQuery extends Updatable
     /**
      * @throws InvalidArgumentException
      */
-    public static function getInstance(array $fields = [], Mapper $mapper = null): UpdateQuery
+    public static function getInstance(array $fields = [], ?Mapper $mapper = null): UpdateQuery
     {
         $updatable = new UpdateQuery();
 
@@ -67,7 +67,7 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface $dbHelper = null): array
+    protected function getJoinTables(?DbFunctionsInterface $dbHelper = null): array
     {
         if (is_null($dbHelper)) {
             if (!empty($this->joinTables)) {
@@ -91,7 +91,7 @@ class UpdateQuery extends Updatable
      * @throws InvalidArgumentException
      */
     #[Override]
-    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');

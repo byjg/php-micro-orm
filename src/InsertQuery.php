@@ -14,7 +14,7 @@ class InsertQuery extends Updatable
 {
     protected array $values = [];
 
-    public static function getInstance(string $table = null, array $fieldsAndValues = []): self
+    public static function getInstance(?string $table = null, array $fieldsAndValues = []): self
     {
         $query = new InsertQuery();
         if (!is_null($table)) {
@@ -72,7 +72,7 @@ class InsertQuery extends Updatable
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
     {
         if (empty($this->values)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');

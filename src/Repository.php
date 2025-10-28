@@ -113,7 +113,7 @@ class Repository
         return $this->getMapper()->getEntity($values);
     }
 
-    public function queryInstance(object $model = null): Query
+    public function queryInstance(?object $model = null): Query
     {
         $query = Query::getInstance()
             ->table($this->mapper->getTable(), $this->mapper->getTableAlias())
@@ -301,13 +301,21 @@ class Repository
     public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
     {
         $mapper = array_merge([$this->mapper], $mapper);
-        $iterator = $this->getIterator($query, $cache);
 
-        $result = [];
+        // If only one mapper, use entity transformation in iterator
         if (count($mapper) === 1) {
+            $iterator = $this->getIterator($query, $cache);
             return $iterator->toEntities();
         }
 
+        // For multiple mappers, get raw data without transformation
+        $sqlBuild = $query->build($this->getDbDriver());
+        if (!empty($cache)) {
+            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+        }
+        $iterator = $this->getDbDriver()->getIterator($sqlBuild);
+
+        $result = [];
         foreach ($iterator as $row) {
             $collection = [];
             foreach ($mapper as $item) {

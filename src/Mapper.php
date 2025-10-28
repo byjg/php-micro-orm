@@ -306,7 +306,7 @@ class Mapper
      * @param string|null $property
      * @return FieldMapping[]|FieldMapping|null
      */
-    public function getFieldMap(string $property = null): array|FieldMapping|null
+    public function getFieldMap(?string $property = null): array|FieldMapping|null
     {
         if (empty($property)) {
             return $this->fieldMap;
