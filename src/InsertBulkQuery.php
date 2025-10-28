@@ -62,11 +62,11 @@ class InsertBulkQuery extends Updatable
 
     /**
      * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');

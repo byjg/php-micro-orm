@@ -2,20 +2,17 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\Helpers\DbMysqlFunctions;
 use ByJG\AnyDataset\Db\Helpers\DbPgsqlFunctions;
 use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
-use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\AnyDataset\Db\PdoMysql;
 use ByJG\AnyDataset\Db\PdoObj;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Query;
-use ByJG\MicroOrm\SqlObject;
-use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\UpdateQuery;
-use Override;
 use ByJG\Util\Uri;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class UpdateQueryTest extends TestCase
@@ -161,10 +158,9 @@ class UpdateQueryTest extends TestCase
 
         $sqlObject = $this->object->build(new DbMysqlFunctions());
         $this->assertEquals(
-            new SqlObject(
+            new SqlStatement(
                 'UPDATE `test` INNER JOIN `table2` AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
-                SqlObjectEnum::UPDATE
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
             ),
             $sqlObject
         );
@@ -193,10 +189,9 @@ class UpdateQueryTest extends TestCase
 
         $sqlObject = $this->object->build($dbDriver);
         $this->assertEquals(
-            new SqlObject(
+            new SqlStatement(
                 'UPDATE `test` INNER JOIN (SELECT  * FROM table2 WHERE id = 10) AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
-                SqlObjectEnum::UPDATE
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
             ),
             $sqlObject
         );
@@ -227,23 +222,23 @@ class UpdateQueryTest extends TestCase
         $this->object->setLiteral('counter', 'counter + 1');
         $this->object->where('id = :id', ['id' => 10]);
 
-        $sqlObject = $this->object->build();
+        $sqlStatement = $this->object->build();
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE test SET counter = counter + 1  WHERE id = :id',
                 ['id' => 10]
             ),
-            $sqlObject
+            $sqlStatement
         );
 
         // Test with database helper
-        $sqlObject = $this->object->build(new DbMysqlFunctions());
+        $sqlStatement = $this->object->build(new DbMysqlFunctions());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE `test` SET `counter` = counter + 1  WHERE id = :id',
                 ['id' => 10]
             ),
-            $sqlObject
+            $sqlStatement
         );
     }
 }

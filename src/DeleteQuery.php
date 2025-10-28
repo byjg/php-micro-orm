@@ -17,7 +17,7 @@ class DeleteQuery extends Updatable
     }
 
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {

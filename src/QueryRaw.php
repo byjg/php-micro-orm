@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 
 class QueryRaw implements Interface\QueryBuilderInterface
 {
@@ -17,9 +18,9 @@ class QueryRaw implements Interface\QueryBuilderInterface
         return new self($sql, $parameters);
     }
 
-    public function build(?DbDriverInterface $dbDriver = null): SqlObject
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
-        return new SqlObject($this->sql, $this->parameters);
+        return new SqlStatement($this->sql, $this->parameters);
     }
 
     public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator

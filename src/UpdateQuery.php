@@ -103,11 +103,11 @@ class UpdateQuery extends Updatable
 
     /**
      * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');

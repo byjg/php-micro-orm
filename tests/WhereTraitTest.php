@@ -4,7 +4,6 @@ namespace Tests;
 
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\QueryBasic;
-use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class WhereTraitTest extends TestCase

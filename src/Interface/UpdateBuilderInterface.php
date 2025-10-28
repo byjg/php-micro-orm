@@ -8,7 +8,7 @@ use ByJG\AnyDataset\Db\SqlStatement;
 
 interface UpdateBuilderInterface
 {
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject;
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement;
 
     public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null);
 
