@@ -58,7 +58,7 @@ class UpdateQuery extends Updatable
      * Set a field with a literal value that will be used directly in the SQL query
      *
      * @param string $field
-     * @param string $value
+     * @param mixed $value
      * @return $this
      */
     public function setLiteral(string $field, mixed $value): UpdateQuery
@@ -70,11 +70,10 @@ class UpdateQuery extends Updatable
     protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
+        $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
             $dbDriver = $dbDriverOrHelper;
             $dbHelper = $dbDriverOrHelper->getDbHelper();
-        } else {
-            $dbHelper = $dbDriverOrHelper;
         }
 
         if (is_null($dbHelper)) {

@@ -60,8 +60,11 @@ class InsertSelectQuery extends Updatable
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
+        $dbDriver = null;
+        $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
-            $dbDriverOrHelper = $dbDriverOrHelper->getDbHelper();
+            $dbDriver = $dbDriverOrHelper;
+            $dbHelper = $dbDriverOrHelper->getDbHelper();
         }
 
         if (empty($this->query) && empty($this->sqlObject)) {
@@ -71,13 +74,13 @@ class InsertSelectQuery extends Updatable
         }
 
         $fieldsStr = $this->fields;
-        if (!is_null($dbDriverOrHelper)) {
-            $fieldsStr = $dbDriverOrHelper->delimiterField($fieldsStr);
+        if (!is_null($dbHelper)) {
+            $fieldsStr = $dbHelper->delimiterField($fieldsStr);
         }
 
         $tableStr = $this->table;
-        if (!is_null($dbDriverOrHelper)) {
-            $tableStr = $dbDriverOrHelper->delimiterTable($tableStr);
+        if (!is_null($dbHelper)) {
+            $tableStr = $dbHelper->delimiterTable($tableStr);
         }
 
         $sql = 'INSERT INTO '
@@ -87,7 +90,7 @@ class InsertSelectQuery extends Updatable
         if (!is_null($this->sqlObject)) {
             $fromObj = $this->sqlObject;
         } else {
-            $fromObj = $this->query->build();
+            $fromObj = $this->query->build($dbDriver);
         }
 
         return new SqlObject($sql . $fromObj->getSql(), $fromObj->getParameters());
