@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\Util\Uri;
@@ -13,9 +12,6 @@ use Tests\Model\Items;
 
 class RepositoryPkListTest extends TestCase
 {
-
-    const URI='sqlite:///tmp/teste.db';
-
     /**
      * @var Mapper
      */
@@ -34,7 +30,7 @@ class RepositoryPkListTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
         $this->dbDriver->execute('CREATE TABLE items (
             storeid INTEGER,
@@ -55,8 +51,7 @@ class RepositoryPkListTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists items;');
     }
 
     public function testGet()

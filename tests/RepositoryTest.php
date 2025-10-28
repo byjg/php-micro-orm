@@ -34,7 +34,6 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
 use ByJG\MicroOrm\UpdateQuery;
-use ByJG\Util\Uri;
 use DateTime;
 use Exception;
 use Override;
@@ -52,9 +51,6 @@ use Throwable;
 
 class RepositoryTest extends TestCase
 {
-
-    const URI='sqlite:///tmp/test.db';
-
     /**
      * @var Mapper
      */
@@ -78,10 +74,10 @@ class RepositoryTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
         $this->dbDriver->execute('create table users (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
         );
@@ -94,11 +90,11 @@ class RepositoryTest extends TestCase
 
 
         $this->dbDriver->execute('create table info (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             iduser INTEGER,
-            property number(10,2),
-            created_at datetime,
-            updated_at datetime,
+            property decimal(10, 2),
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deleted_at datetime);'
         );
         $insertMultiple = InsertBulkQuery::getInstance('info', ['iduser', 'property']);
@@ -116,8 +112,8 @@ class RepositoryTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists users;');
+        $this->dbDriver->execute('drop table if exists info;');
         ORM::resetMemory();
     }
 
@@ -126,17 +122,17 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $users->getCreatedate());
 
         $users = $this->repository->get("2");
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
-        $this->assertEquals('2017-01-04', $users->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users->getCreatedate());
 
         $users = $this->repository->get(new Literal(1));
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $users->getCreatedate());
     }
 
     public function testGetByFilter()
@@ -145,7 +141,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $users);
         $this->assertEquals(1, $users[0]->getId());
         $this->assertEquals('John Doe', $users[0]->getName());
-        $this->assertEquals('2015-05-02', $users[0]->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
         $filter->and('id', Relation::EQUAL, 2);
@@ -153,7 +149,7 @@ class RepositoryTest extends TestCase
         $this->assertCount(1, $users);
         $this->assertEquals(2, $users[0]->getId());
         $this->assertEquals('Jane Doe', $users[0]->getName());
-        $this->assertEquals('2017-01-04', $users[0]->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users[0]->getCreatedate());
     }
 
     public function testGetSelectFunction()
@@ -191,14 +187,14 @@ class RepositoryTest extends TestCase
 
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
-        $this->assertEquals('[JOHN DOE] - 2015-05-02', $users->getName());
-        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals('[JOHN DOE] - 2015-05-02 00:00:00', $users->getName());
+        $this->assertEquals('2015-05-02 00:00:00', $users->getCreatedate());
         $this->assertEquals(2015, $users->getYear());
 
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
-        $this->assertEquals('[JANE DOE] - 2017-01-04', $users->getName());
-        $this->assertEquals('2017-01-04', $users->getCreatedate());
+        $this->assertEquals('[JANE DOE] - 2017-01-04 00:00:00', $users->getName());
+        $this->assertEquals('2017-01-04 00:00:00', $users->getCreatedate());
         $this->assertEquals(2017, $users->getYear());
     }
 
@@ -260,7 +256,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('Bla99991919', $users2->getName());
-        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
     }
 
     public function testInsertReadOnly()
@@ -299,7 +295,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('Bla-add', $users2->getName());
-        $this->assertEquals('2017-12-21', $users2->getCreatedate());
+        $this->assertEquals('2017-12-21 00:00:00', $users2->getCreatedate());
     }
 
     public function testInsertLiteral()
@@ -307,7 +303,7 @@ class RepositoryTest extends TestCase
         /** @var Users $users */
         $users = $this->repository->entity([
             "name" => new Literal("X'6565'"),
-            "createdate" => '2015-08-09'
+            "createdate" => '2015-08-09 12:13:14'
         ]);
 
         $this->assertEquals(null, $users->getId());
@@ -317,7 +313,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015-08-09 12:13:14', $users2->getCreatedate());
 
         $this->assertEquals($users2->getId(), $users->getId());
         $this->assertEquals($users2->getCreatedate(), $users->getCreatedate());
@@ -346,7 +342,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
     }
 
     public function testInsertKeyGen()
@@ -372,7 +368,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(50, $users2->getId());
         $this->assertEquals('Bla99991919', $users2->getName());
-        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
     }
 
     public function testInsertUpdateFunction()
@@ -420,7 +416,7 @@ class RepositoryTest extends TestCase
         $users2 = $this->repository->get($users->getId());
 
         $this->assertEquals(4, $users2->getId());
-        $this->assertEquals('2015-08-09', $users2->getCreatedate());
+        $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
         $this->assertEquals(2015, $users2->getYear());
         $this->assertEquals('[JOHN DOE] - 2015-08-09', $users2->getName());
     }
@@ -436,12 +432,12 @@ class RepositoryTest extends TestCase
         $users2 = $this->repository->get(1);
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('New Name', $users2->getName());
-        $this->assertEquals('2016-01-09', $users2->getCreatedate());
+        $this->assertEquals('2016-01-09 00:00:00', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
-        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users2->getCreatedate());
     }
 
     public function testUpdateReadOnly()
@@ -487,7 +483,7 @@ class RepositoryTest extends TestCase
 
         $users = $this->repository->get(4);
         $this->assertEquals('inserted name', $users->getName());
-        $this->assertEquals('2024-09-03', $users->getCreatedate());
+        $this->assertEquals('2024-09-03 00:00:00', $users->getCreatedate());
     }
 
     public function testInsertBuildAndExecute2()
@@ -504,7 +500,7 @@ class RepositoryTest extends TestCase
 
         $users = $this->repository->get(4);
         $this->assertEquals('inserted name', $users->getName());
-        $this->assertEquals('2024-09-03', $users->getCreatedate());
+        $this->assertEquals('2024-09-03 00:00:00', $users->getCreatedate());
     }
 
     public function testDeleteBuildAndExecute()
@@ -542,12 +538,12 @@ class RepositoryTest extends TestCase
         $users2 = $this->repository->get(1);
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('New Name-upd', $users2->getName());
-        $this->assertEquals('2017-12-21', $users2->getCreatedate());
+        $this->assertEquals('2017-12-21 00:00:00', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
-        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users2->getCreatedate());
     }
 
     public function testUpdateLiteral()
@@ -560,7 +556,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2015-05-02', $users2->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $users2->getCreatedate());
     }
 
     public function testUpdateObject()
@@ -586,7 +582,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('ee', $users2->getName());
-        $this->assertEquals('2020-01-02', $users2->getCreatedate());
+        $this->assertEquals('2020-01-02 00:00:00', $users2->getCreatedate());
     }
 
 
@@ -632,13 +628,13 @@ class RepositoryTest extends TestCase
         $users2 = $this->repository->get(1);
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('[JOHN DOE UPDATED]', $users2->getName());
-        $this->assertEquals('2016-01-09', $users2->getCreatedate());
+        $this->assertEquals('2016-01-09 00:00:00', $users2->getCreatedate());
         $this->assertEquals(2016, $users2->getYear());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
-        $this->assertEquals('Jane Doe', $users2->getName()); // Not updated
-        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+        $this->assertEquals('Jane Doe', $users2->getName());
+        $this->assertEquals('2017-01-04 00:00:00', $users2->getCreatedate());
         $this->assertEquals(2017, $users2->getYear());
     }
 
@@ -651,7 +647,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
-        $this->assertEquals('2017-01-04', $users->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users->getCreatedate());
     }
 
     public function testDeleteReadOnly()
@@ -669,7 +665,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(2);
         $this->assertEquals(2, $users->getId());
         $this->assertEquals('Jane Doe', $users->getName());
-        $this->assertEquals('2017-01-04', $users->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users->getCreatedate());
     }
 
     public function testDelete2()
@@ -683,7 +679,7 @@ class RepositoryTest extends TestCase
         $users = $this->repository->get(1);
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
-        $this->assertEquals('2015-05-02', $users->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $users->getCreatedate());
 
         $users = $this->repository->get(2);
         $this->assertEmpty($users);
@@ -721,7 +717,7 @@ class RepositoryTest extends TestCase
         $infoRepository->save($result[0]);
 
         $result = $infoRepository->getByQuery($query);
-        $this->assertSame('0', (string)$result[0]->getValue());
+        $this->assertSame('0.00', (string)$result[0]->getValue());
 
         // Set Null
         $result[0]->setValue(null);
@@ -746,7 +742,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
-        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $result[0]->getCreatedate());
     }
 
     public function testFilterInTwo()
@@ -757,11 +753,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
-        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $result[0]->getCreatedate());
 
         $this->assertEquals(3, $result[1]->getId());
         $this->assertEquals('JG', $result[1]->getName());
-        $this->assertEquals('1974-01-26', $result[1]->getCreatedate());
+        $this->assertEquals('1974-01-26 00:00:00', $result[1]->getCreatedate());
     }
 
     /**
@@ -814,11 +810,11 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0][0]->getId());
         $this->assertEquals('John Doe', $result[0][0]->getName());
-        $this->assertEquals('2015-05-02', $result[0][0]->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $result[0][0]->getCreatedate());
 
         $this->assertEquals(1, $result[1][0]->getId());
         $this->assertEquals('John Doe', $result[1][0]->getName());
-        $this->assertEquals('2015-05-02', $result[1][0]->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $result[1][0]->getCreatedate());
 
         // - ------------------
 
@@ -847,7 +843,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(2, $result[0][0]->getId());
         $this->assertEquals('Jane Doe', $result[0][0]->getName());
-        $this->assertEquals('2017-01-04', $result[0][0]->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $result[0][0]->getCreatedate());
 
         // - ------------------
 
@@ -864,7 +860,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals('John Doe', $result[0]->getName());
-        $this->assertEquals('2015-05-02', $result[0]->getCreatedate());
+        $this->assertEquals('2015-05-02 00:00:00', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
@@ -878,7 +874,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(2, $result[0]->getId());
         $this->assertEquals('Jane Doe', $result[0]->getName());
-        $this->assertEquals('2017-01-04', $result[0]->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
     }
@@ -888,7 +884,7 @@ class RepositoryTest extends TestCase
         $query = $this->repository->queryInstance()
             ->fields([
                 "name",
-                "julianday('2020-06-28') - julianday(createdate) as days"
+                "DATEDIFF('2020-06-28', createdate) AS days"
             ])
             ->limit(1, 1);
 
@@ -1337,15 +1333,17 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getPk());
         $this->assertEquals(3, $result[0]->iduser);
         $this->assertEquals(3.5, $result[0]->value);
-        $this->assertNull($result[0]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($result[0]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($result[0]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($result[0]->getCreatedAt());
+        $this->assertNotNull($result[0]->getUpdatedAt());
+        $this->assertNull($result[0]->getDeletedAt());
+        $this->assertEquals($result[0]->getCreatedAt(), $result[0]->getUpdatedAt()); 
     }
 
     public function testMappingAttributeInsert()
     {
         $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
 
+        // Sanity check
         $query = new Query();
         $query->table($this->infoMapper->getTable())
             ->where('iduser = :id', ['id' => 123])
@@ -1353,11 +1351,13 @@ class RepositoryTest extends TestCase
         $result = $infoRepository->getByQuery($query);
         $this->assertEmpty($result);
 
+        // Add a new record
         $info = new ModelWithAttributes();
         $info->iduser = 123;
         $info->value = 98.5;
         $infoRepository->save($info);
 
+        // Get the Record and assert the values
         /** @var ModelWithAttributes[] $result */
         $result = $infoRepository->getByQuery($query);
         $this->assertEquals(count($result), 1);
@@ -1369,10 +1369,12 @@ class RepositoryTest extends TestCase
         $this->assertNotNull($result[0]->getUpdatedAt());
         $this->assertNull($result[0]->getDeletedAt());
 
-        // Check if the updated_at works
+        // save the record again and assert the values
         sleep(1);
         $info->value = 99.5;
         $infoRepository->save($info);
+
+        // Get directly from the databae
         /** @var ModelWithAttributes[] $result2 */
         $result2 = $infoRepository->getByQuery($query);
         $this->assertEquals(count($result2), 1);
@@ -1399,14 +1401,19 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getPk());
         $this->assertEquals(3, $result[0]->iduser);
         $this->assertEquals(3.5, $result[0]->value);
-        $this->assertNull($result[0]->getCreatedAt());
-        $this->assertNull($result[0]->getUpdatedAt());
+        $this->assertNotNull($result[0]->getCreatedAt());
+        $this->assertNotNull($result[0]->getUpdatedAt());
         $this->assertNull($result[0]->getDeletedAt());
 
         $infoRepository->delete(3);
 
         $result = $infoRepository->getByQuery($query);
         $this->assertCount(0, $result);
+
+        $query->unsafe();
+        $result = $infoRepository->getByQuery($query);
+        $this->assertCount(1, $result);
+        $this->assertNotNull($result[0]->getDeletedAt());
     }
 
     public function testMappingAttributeSoftDeleteAndGetByFilter()
@@ -1420,8 +1427,8 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getPk());
         $this->assertEquals(3, $result[0]->iduser);
         $this->assertEquals(3.5, $result[0]->value);
-        $this->assertNull($result[0]->getCreatedAt());
-        $this->assertNull($result[0]->getUpdatedAt());
+        $this->assertNotNull($result[0]->getCreatedAt());
+        $this->assertNotNull($result[0]->getUpdatedAt());
         $this->assertNull($result[0]->getDeletedAt());
 
         $infoRepository->delete(3);
@@ -1439,8 +1446,8 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result->getPk());
         $this->assertEquals(3, $result->iduser);
         $this->assertEquals(3.5, $result->value);
-        $this->assertNull($result->getCreatedAt());
-        $this->assertNull($result->getUpdatedAt());
+        $this->assertNotNull($result->getCreatedAt());
+        $this->assertNotNull($result->getUpdatedAt());
         $this->assertNull($result->getDeletedAt());
 
         $infoRepository->delete(3);
@@ -1463,7 +1470,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(3, $result[0]->getId());
         $this->assertEquals('JG', $result[0]->getName());
-        $this->assertEquals('1974-01-26', $result[0]->getCreatedate());
+        $this->assertEquals('1974-01-26 00:00:00', $result[0]->getCreatedate());
 
     }
 
@@ -1552,9 +1559,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(3.5, $model->value);
-        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
     }
 
     public function testActiveRecordRefresh()
@@ -1575,9 +1582,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(3.5, $model->value);
-        $this->assertNull($createdAt); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($updatedAt); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($deletedAt); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($createdAt);
+        $this->assertNotNull($updatedAt);
+        $this->assertNull($deletedAt); 
 
         // Update the record OUTSIDE the Active Record
         $this->dbDriver->execute("UPDATE info SET iduser = 4, property = 44.44 WHERE id = 3");
@@ -1586,9 +1593,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(3.5, $model->value);
-        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($createdAt, $model->getCreatedAt());
+        $this->assertEquals($updatedAt, $model->getUpdatedAt());
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); 
 
         // Refresh the model
         $model->refresh();
@@ -1597,9 +1604,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(4, $model->iduser);
         $this->assertEquals(44.44, $model->value);
-        $this->assertEquals($createdAt, $model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertEquals($updatedAt, $model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertEquals($deletedAt, $model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertEquals($createdAt, $model->getCreatedAt());
+        $this->assertEquals($updatedAt, $model->getUpdatedAt());
+        $this->assertEquals($deletedAt, $model->getDeletedAt()); 
     }
 
     public function testActiveRecordRefreshError()
@@ -1622,9 +1629,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(3.5, $model->value);
-        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
 
         $model->fill([
             'iduser' => 4,
@@ -1634,9 +1641,9 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(4, $model->iduser);
         $this->assertEquals(44.44, $model->value);
-        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
     }
 
 
@@ -1650,16 +1657,16 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $model[0]->getPk());
         $this->assertEquals(1, $model[0]->iduser);
         $this->assertEquals(30.4, $model[0]->value);
-        $this->assertNull($model[0]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model[0]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model[0]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model[0]->getCreatedAt());
+        $this->assertNotNull($model[0]->getUpdatedAt());
+        $this->assertNull($model[0]->getDeletedAt()); 
 
         $this->assertEquals(2, $model[1]->getPk());
         $this->assertEquals(1, $model[1]->iduser);
         $this->assertEquals(1250.96, $model[1]->value);
-        $this->assertNull($model[1]->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model[1]->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model[1]->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model[1]->getCreatedAt());
+        $this->assertNotNull($model[1]->getUpdatedAt());
+        $this->assertNull($model[1]->getDeletedAt()); 
     }
 
     public function testActiveRecordEmptyFilter()
@@ -1697,17 +1704,17 @@ class RepositoryTest extends TestCase
         $this->assertEquals(4, $model->getPk());
         $this->assertEquals(5, $model->iduser);
         $this->assertEquals(55.8, $model->value);
-        $this->assertNotNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
 
         $model = ActiveRecordModel::get(4);
         $this->assertEquals(4, $model->getPk());
         $this->assertEquals(5, $model->iduser);
         $this->assertEquals(55.8, $model->value);
-        $this->assertNotNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
     }
 
     public function testActiveRecordUpdate()
@@ -1723,17 +1730,17 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(99.1, $model->value);
-        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
 
         $model = ActiveRecordModel::get(3);
         $this->assertEquals(3, $model->getPk());
         $this->assertEquals(3, $model->iduser);
         $this->assertEquals(99.1, $model->value);
-        $this->assertNull($model->getCreatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNotNull($model->getUpdatedAt()); // Because it was not set in the initial insert outside the ORM
-        $this->assertNull($model->getDeletedAt()); // Because it was not set in the initial insert outside the ORM
+        $this->assertNotNull($model->getCreatedAt());
+        $this->assertNotNull($model->getUpdatedAt());
+        $this->assertNull($model->getDeletedAt()); 
     }
 
     public function testActiveRecordDelete()
@@ -1786,7 +1793,7 @@ class RepositoryTest extends TestCase
 
         $this->assertEquals(4, $users2->getId());
         $this->assertEquals('User-processed', $users2->getName());
-        $this->assertEquals('2023-01-15', $users2->getCreatedate());
+        $this->assertEquals('2023-01-15 00:00:00', $users2->getCreatedate());
     }
 
     public function testUpdate_beforeUpdate_Interface()
@@ -1802,11 +1809,11 @@ class RepositoryTest extends TestCase
         $users2 = $this->repository->get(1);
         $this->assertEquals(1, $users2->getId());
         $this->assertEquals('Updated-updated', $users2->getName());
-        $this->assertEquals('2023-02-20', $users2->getCreatedate());
+        $this->assertEquals('2023-02-20 00:00:00', $users2->getCreatedate());
 
         $users2 = $this->repository->get(2);
         $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
-        $this->assertEquals('2017-01-04', $users2->getCreatedate());
+        $this->assertEquals('2017-01-04 00:00:00', $users2->getCreatedate());
     }
 }

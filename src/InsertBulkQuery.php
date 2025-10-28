@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -60,20 +61,24 @@ class InsertBulkQuery extends Updatable
     }
 
     /**
-     * @param DbFunctionsInterface|null $dbHelper
-     * @return SqlStatement
+     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
+     * @return SqlObject
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
+        if ($dbDriverOrHelper instanceof DbDriverInterface) {
+            $dbDriverOrHelper = $dbDriverOrHelper->getDbHelper();
+        }
+
         $tableStr = $this->table;
-        if (!is_null($dbHelper)) {
-            $tableStr = $dbHelper->delimiterTable($tableStr);
+        if (!is_null($dbDriverOrHelper)) {
+            $tableStr = $dbDriverOrHelper->delimiterTable($tableStr);
         }
 
         // Extract column names
@@ -97,7 +102,7 @@ class InsertBulkQuery extends Updatable
                 } else {
                     $value = str_replace("'", "''", $this->fields[$col][$i]);
                     if (!is_numeric($value)) {
-                        $value = $dbHelper?->delimiterField($value) ?? "'{$value}'";
+                        $value = $dbDriverOrHelper?->delimiterField($value) ?? "'{$value}'";
                     }
                     $params[$paramKey] = new Literal($value); // Map parameter key to value
                 }
@@ -105,8 +110,8 @@ class InsertBulkQuery extends Updatable
             $placeholders[] = '(' . implode(', ', $rowPlaceholders) . ')'; // Add row placeholders to query
         }
 
-        if (!is_null($dbHelper)) {
-            $columns = $dbHelper->delimiterField($columns);
+        if (!is_null($dbDriverOrHelper)) {
+            $columns = $dbDriverOrHelper->delimiterField($columns);
         }
 
         // Construct the final SQL query

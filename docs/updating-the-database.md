@@ -141,3 +141,93 @@ $deleteQuery = new \ByJG\MicroOrm\DeleteQuery();
 $deleteQuery->table('test');
 $deleteQuery->where('fld1 = :value', ['value' => 'A']);
 ```
+
+## Execute multiple write queries in bulk
+
+You can execute multiple write queries (insert, update, delete) sequentially within a single transaction using
+`Repository::bulkExecute`.
+This is useful when you need to perform a set of changes atomically: either all of them succeed, or none of them are
+applied.
+
+Signature:
+
+```php
+public function Repository::bulkExecute(
+    array $queries,
+    ?\ByJG\AnyDataset\Db\IsolationLevelEnum $isolationLevel = null
+): ?\ByJG\AnyDataset\Core\GenericIterator
+```
+
+Rules and behavior:
+
+- Accepts an array of QueryBuilderInterface or Updatable instances (e.g., InsertQuery, UpdateQuery, DeleteQuery). Each
+  item is built with the repository write driver. Non-SELECT statements are batched and executed together; a trailing
+  SELECT (if present) is executed separately.
+- All queries are executed inside a transaction. If any query throws an exception, the transaction is rolled back and
+  the exception is rethrown.
+- If the last command is a SELECT, bulkExecute returns an iterator (GenericIterator) with its results. Intermediate
+  SELECT statements are allowed but do not return iterators; their results are not yielded.
+- If there is no trailing SELECT, bulkExecute returns an empty iterator.
+- Passing an empty array throws InvalidArgumentException.
+- Passing an item that is not a QueryBuilderInterface or Updatable throws InvalidArgumentException.
+- You can optionally pass a transaction isolation level using IsolationLevelEnum. The transaction allows joining an
+  existing transaction if present.
+
+Example (writes only):
+
+```php
+<?php
+use ByJG\MicroOrm\Repository;
+use ByJG\MicroOrm\InsertQuery;
+use ByJG\MicroOrm\UpdateQuery;
+use ByJG\MicroOrm\DeleteQuery;
+use ByJG\AnyDataset\Db\Factory;
+
+$db = Factory::getDbInstance('sqlite:///tmp/example.db');
+$repository = new Repository($db, MyModel::class);
+
+$insert = InsertQuery::getInstance('users', [
+    'name' => 'Alice',
+    'createdate' => '2020-01-01'
+]);
+
+$update = UpdateQuery::getInstance()
+    ->table('users')
+    ->set('name', 'Bob')
+    ->where('id = :id', ['id' => 1]);
+
+$delete = DeleteQuery::getInstance()
+    ->table('users')
+    ->where('name = :name', ['name' => 'OldName']);
+
+$it = $repository->bulkExecute([$insert, $update, $delete]);
+// $it is an empty iterator because there is no trailing SELECT
+```
+
+Example (returning results when the last command is a SELECT):
+
+```php
+<?php
+use ByJG\MicroOrm\QueryRaw;
+
+$insert = InsertQuery::getInstance('users', [
+    'name' => 'Charlie',
+    'createdate' => '2025-01-01'
+]);
+
+// Example of a SELECT as the last command (driver-specific last insert id)
+$selectLastId = QueryRaw::getInstance($repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+
+$it = $repository->bulkExecute([$insert, $selectLastId]);
+foreach ($it as $row) {
+    // process results (e.g., $row['id'])
+}
+```
+
+Notes:
+
+- Parameter names can overlap between queries (e.g., multiple queries using :name). bulkExecute internally batches
+  non-SELECT statements and safely renames parameters to avoid collisions; the trailing SELECT (if present) is executed
+  separately.
+- If you need a specific transaction isolation level, pass it as the second argument, e.g.,
+  `IsolationLevelEnum::SERIALIZABLE`.

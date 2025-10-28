@@ -2,12 +2,15 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Core\AnyDataset;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\AnyDataset\Lists\ArrayDataset;
 use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
@@ -25,8 +28,11 @@ use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
+use Closure;
+use Exception;
 use ReflectionException;
 use stdClass;
+use Throwable;
 
 class Repository
 {
@@ -197,6 +203,91 @@ class Repository
     }
 
     /**
+     * Execute multiple write queries (insert/update/delete) sequentially within a transaction.
+     * Invalid entries are ignored silently. If any execution fails, the transaction is rolled back.
+     *
+     * @param array<int, Updatable|QueryBuilderInterface> $queries List of queries to be executed in bulk
+     * @param IsolationLevelEnum|null $isolationLevel
+     * @return GenericIterator|null
+     * @throws InvalidArgumentException
+     * @throws RepositoryReadOnlyException
+     * @throws Throwable
+     */
+    public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): ?GenericIterator
+    {
+        if (empty($queries)) {
+            throw new InvalidArgumentException('You pass an empty array to bulk');
+        }
+
+        $dbDriver = $this->getDbDriverWrite();
+
+        $bigSqlWrites = '';
+        $selectSql = null;
+        $selectParams = [];
+        $bigParams = [];
+
+        foreach ($queries as $i => $query) {
+            if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
+                throw new InvalidArgumentException('Invalid query type. Expected QueryBuilderInterface or Updatable.');
+            }
+
+            // Build SQL object using the write driver to ensure correct helper/dialect
+            $sqlStatement = $query->build($dbDriver);
+            $sql = $sqlStatement->getSql();
+            $params = $sqlStatement->getParams();
+            $isSelect = str_starts_with(strtoupper(ltrim($sql)), 'SELECT');
+
+            if ($isSelect && $i === array_key_last($queries)) {
+                // Trailing SELECT: keep it separate with its own params
+                $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
+                $selectParams = $params;
+                continue;
+            }
+
+            // For write statements, avoid parameter name collisions by uniquifying named params
+            foreach ($params as $key => $value) {
+                // Only process named parameters (string keys)
+                if (isset($bigParams[$key])) {
+                    $uniqueKey = $key . '__b' . $i;
+                    // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
+                    $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+                    $replacement = ':' . $uniqueKey;
+                    $sql = preg_replace($pattern, $replacement, $sql);
+                    $bigParams[$uniqueKey] = $value;
+                } else {
+                    // Positional parameter or numeric key; just carry over
+                    $bigParams[$key] = $value;
+                }
+            }
+
+            $bigSqlWrites .= rtrim($sql, "; \t\n\r\0\x0B") . ";\n";
+        }
+
+        $dbDriver->beginTransaction($isolationLevel, allowJoin: true);
+        try {
+            // First execute all writes (if any) in a single batch using direct PDO exec
+            if (trim($bigSqlWrites) !== '') {
+                // Use direct PDO to ensure multi-statement execution across drivers like SQLite
+                $dbDriver->execute($bigSqlWrites, $bigParams);
+            }
+
+            // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
+            if (!empty($selectSql)) {
+                $it = $dbDriver->getIterator($selectSql, $selectParams);
+            } else {
+                $it = (new AnyDataset())->getIterator();
+            }
+
+            $dbDriver->commitTransaction();
+
+            return $it;
+        } catch (Exception $ex) {
+            $dbDriver->rollbackTransaction();
+            throw $ex;
+        }
+    }
+
+    /**
      * @param DeleteQuery $updatable
      * @return bool
      * @throws InvalidArgumentException
@@ -356,10 +447,89 @@ class Repository
      */
     public function save(mixed $instance, UpdateConstraintInterface|array|null $updateConstraints = null): mixed
     {
+        // Build the updatable without executing
+        [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList] = $this->saveUpdatableInternal($instance);
+
+        // Execute the Insert or Update
+        if ($isInsert) {
+            $keyGen = $this->getMapper()->generateKey($this->getDbDriver(), $instance) ?? [];
+            if (!empty($keyGen) && !is_array($keyGen)) {
+                $keyGen = [$keyGen];
+            }
+            $position = 0;
+            foreach ($keyGen as $value) {
+                $array[$pkList[$position]] = $value;
+                $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
+            }
+            $keyReturned = $this->insert($updatable, $keyGen);
+            if (count($pkList) == 1 && !empty($keyReturned)) {
+                $array[$pkList[0]] = $keyReturned;
+            }
+        }
+
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
+        $array = array_merge(Serialize::from($instance)->toArray(), $array);
+        ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($this->mapper));
+
+        if (!$isInsert) {
+            if (!empty($updateConstraints)) {
+                // Convert single constraint to array for uniform processing
+                $constraints = is_array($updateConstraints) ? $updateConstraints : [$updateConstraints];
+
+                // Apply all constraints
+                foreach ($constraints as $constraint) {
+                    $constraint->check($oldInstance, $instance);
+                }
+            }
+            $this->update($updatable);
+        }
+
+
+        ORMSubject::getInstance()->notify(
+            $this->mapper->getTable(),
+            $isInsert ? ObserverEvent::Insert : ObserverEvent::Update,
+            $instance, $oldInstance
+        );
+
+        return $instance;
+    }
+
+    /**
+     * Build and return the updatable (InsertQuery or UpdateQuery) without executing it.
+     * This method mirrors the preparatory stage of save() and can be used to inspect or
+     * bulk-compose updates prior to execution.
+     *
+     * @param mixed $instance
+     * @return Updatable
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    public function saveUpdatable(mixed $instance): Updatable
+    {
+        [$updatable] = $this->saveUpdatableInternal($instance);
+        return $updatable;
+    }
+
+    /**
+     * Internal helper that prepares the updatable and returns additional context
+     * needed by save().
+     *
+     * @param mixed $instance
+     * @return array [Updatable $updatable, array $array, array $fieldToProperty, bool $isInsert, mixed $oldInstance, array $pkList]
+     * @throws InvalidArgumentException
+     * @throws OrmBeforeInvalidException
+     * @throws RepositoryReadOnlyException
+     */
+    protected function saveUpdatableInternal(mixed $instance): array
+    {
         // Get all fields
         $array = Serialize::from($instance)
             ->withStopAtFirstLevel()
             ->toArray();
+        $fieldToProperty = [];
         $mapper = $this->getMapper();
 
         // Copy the values to the instance
@@ -382,9 +552,11 @@ class Repository
             }
         } else {
             $fields = array_map(function ($item) use ($array) {
-                return $array[$item];
+                return $array[$item] ?? null;
             }, $pkList);
-            $oldInstance = $this->get($fields);
+            if (!in_array(null, $fields, true)) {
+                $oldInstance = $this->get($fields);
+            }
         }
         $isInsert = empty($oldInstance);
 
@@ -412,52 +584,8 @@ class Repository
             throw new OrmBeforeInvalidException('Invalid Before Insert Closure');
         }
 
-        // Execute the Insert or Update
-        if ($isInsert) {
-            $keyGen = $this->getMapper()->generateKey($this->getDbDriver(), $instance) ?? [];
-            if (!empty($keyGen) && !is_array($keyGen)) {
-                $keyGen = [$keyGen];
-            }
-            $position = 0;
-            foreach ($keyGen as $value) {
-                $array[$pkList[$position]] = $value;
-                $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
-            }
-            $keyReturned = $this->insert($updatable, $keyGen);
-            if (count($pkList) == 1 && !empty($keyReturned)) {
-                $array[$pkList[0]] = $keyReturned;
-            }
-        }
-
-        // The command below is to get all properties of the class.
-        // This will allow to process all properties, even if they are not in the $fieldValues array.
-        // Particularly useful for processing the selectFunction.
-        $array = array_merge(Serialize::from($instance)->toArray(), $array);
-        ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($mapper));
-
-        if (!$isInsert) {
-            if (!empty($updateConstraints)) {
-                // Convert single constraint to array for uniform processing
-                $constraints = is_array($updateConstraints) ? $updateConstraints : [$updateConstraints];
-
-                // Apply all constraints
-                foreach ($constraints as $constraint) {
-                    $constraint->check($oldInstance, $instance);
-                }
-            }
-            $this->update($updatable);
-        }
-
-
-        ORMSubject::getInstance()->notify(
-            $this->mapper->getTable(),
-            $isInsert ? ObserverEvent::Insert : ObserverEvent::Update,
-            $instance, $oldInstance
-        );
-
-        return $instance;
+        return [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList];
     }
-
 
     /**
      * @throws InvalidArgumentException
@@ -477,7 +605,7 @@ class Repository
     protected function insert(InsertQuery $updatable, mixed $keyGen): mixed
     {
         if (empty($keyGen)) {
-            return $this->insertWithAutoInc($updatable);
+            return $this->insertWithAutoinc($updatable);
         } else {
             $this->insertWithKeyGen($updatable);
             return null;

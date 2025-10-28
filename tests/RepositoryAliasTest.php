@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
@@ -15,9 +14,6 @@ use Tests\Model\Customer;
 
 class RepositoryAliasTest extends TestCase
 {
-
-    const URI='sqlite:///tmp/teste.db';
-
     /**
      * @var Mapper
      */
@@ -36,10 +32,10 @@ class RepositoryAliasTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
         $this->dbDriver->execute('create table customers (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             customer_name varchar(45),
             customer_age int);'
         );
@@ -61,8 +57,7 @@ class RepositoryAliasTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        $uri = new Uri(self::URI);
-        unlink($uri->getPath());
+        $this->dbDriver->execute('drop table if exists customers;');
     }
 
     public function testGet()

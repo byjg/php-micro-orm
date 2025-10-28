@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -16,7 +17,7 @@ class DeleteQuery extends Updatable
     }
 
     #[Override]
-    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
     {
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {

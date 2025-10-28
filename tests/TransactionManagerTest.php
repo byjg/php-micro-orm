@@ -23,6 +23,11 @@ class TransactionManagerTest extends TestCase
     public function setUp(): void
     {
         $this->object = new TransactionManager();
+
+        ConnectionUtil::getConnection("a");
+        ConnectionUtil::getConnection("b");
+        ConnectionUtil::getConnection("c");
+        ConnectionUtil::getConnection("d");
     }
 
     #[Override]
@@ -30,18 +35,13 @@ class TransactionManagerTest extends TestCase
     {
         $this->object->destroy();
         $this->object = null;
-        if (file_exists("/tmp/a.db")) {
-            unlink("/tmp/a.db");
-        }
-        if (file_exists("/tmp/b.db")) {
-            unlink("/tmp/b.db");
-        }
-        if (file_exists("/tmp/c.db")) {
-            unlink("/tmp/c.db");
-        }
-        if (file_exists("/tmp/d.db")) {
-            unlink("/tmp/d.db");
-        }
+
+        $dbDriver = ConnectionUtil::getConnection("a");
+        $dbDriver->execute('drop table if exists users;');
+        $dbDriver->execute('drop table if exists users1;');
+
+        $dbDriver = ConnectionUtil::getConnection("b");
+        $dbDriver->execute('drop table if exists users2;');
     }
 
     public function testAddConnectionError()
@@ -49,16 +49,16 @@ class TransactionManagerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = $this->object->addConnection("sqlite:///tmp/a.db");
-        $dbDrive2 = $this->object->addConnection("sqlite:///tmp/b.db");
-        $dbDrive3 = $this->object->addConnection("sqlite:///tmp/a.db");
-        $dbDrive4 = $this->object->addConnection("sqlite:///tmp/b.db");
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
+        $dbDrive3 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive4 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
     }
 
     public function testAddConnection()
     {
-        $dbDrive1 = $this->object->addConnection("sqlite:///tmp/a.db");
-        $dbDrive2 = $this->object->addConnection("sqlite:///tmp/b.db");
+        $dbDrive1 = $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $dbDrive2 = $this->object->addConnection(ConnectionUtil::getUri("b")->__toString());
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
 
@@ -72,10 +72,10 @@ class TransactionManagerTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("The connection already exists with a different instance");
 
-        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
-        $dbDrive3 = Factory::getDbInstance("sqlite:///tmp/a.db");
-        $dbDrive4 = Factory::getDbInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = Factory::getDbInstance(ConnectionUtil::getUri("a"));
+        $dbDrive2 = Factory::getDbInstance(ConnectionUtil::getUri("b"));
+        $dbDrive3 = Factory::getDbInstance(ConnectionUtil::getUri("a"));
+        $dbDrive4 = Factory::getDbInstance(ConnectionUtil::getUri("b"));
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -85,8 +85,8 @@ class TransactionManagerTest extends TestCase
 
     public function testAddDbDriver()
     {
-        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = ConnectionUtil::getConnection("a");
+        $dbDrive2 = ConnectionUtil::getConnection("b");
 
         $this->object->addDbDriver($dbDrive1);
         $this->object->addDbDriver($dbDrive2);
@@ -100,10 +100,10 @@ class TransactionManagerTest extends TestCase
 
     public function testAddRepository()
     {
-        $dbDriver = Factory::getDbInstance("sqlite:///tmp/a.db");
+        $dbDriver = ConnectionUtil::getConnection("a");
 
         $dbDriver->execute('create table users (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
         );
@@ -122,8 +122,8 @@ class TransactionManagerTest extends TestCase
 
     public function testBeginTransaction()
     {
-        $this->object->addConnection("sqlite:///tmp/c.db");
-        $this->object->addConnection("sqlite:///tmp/d.db");
+        $this->object->addConnection(ConnectionUtil::getUri("c")->__toString());
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
 
         $this->object->beginTransaction();
         $this->object->commitTransaction();
@@ -136,8 +136,8 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("Transaction Already Started");
 
-        $this->object->addConnection("sqlite:///tmp/a.db");
-        $this->object->addConnection("sqlite:///tmp/d.db");
+        $this->object->addConnection(ConnectionUtil::getUri("a")->__toString());
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
 
         $this->assertEquals(2, $this->object->count());
 
@@ -150,7 +150,7 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection("sqlite:///tmp/c.db");
+        $this->object->addConnection(ConnectionUtil::getUri("c")->__toString());
         $this->assertEquals(1, $this->object->count());
         $this->object->rollbackTransaction();
     }
@@ -160,22 +160,22 @@ class TransactionManagerTest extends TestCase
         $this->expectException(TransactionException::class);
         $this->expectExceptionMessage("There is no Active Transaction");
 
-        $this->object->addConnection("sqlite:///tmp/d.db");
+        $this->object->addConnection(ConnectionUtil::getUri("d")->__toString());
         $this->assertEquals(1, $this->object->count());
         $this->object->commitTransaction();
     }
 
     public function testTransaction()
     {
-        $dbDrive1 = Factory::getDbInstance("sqlite:///tmp/a.db");
-        $dbDrive2 = Factory::getDbInstance("sqlite:///tmp/b.db");
+        $dbDrive1 = ConnectionUtil::getConnection("a");
+        $dbDrive2 = ConnectionUtil::getConnection("b");
 
         $dbDrive1->execute('create table users1 (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             name varchar(45));'
         );
         $dbDrive2->execute('create table users2 (
-            id integer primary key  autoincrement,
+            id integer primary key  auto_increment,
             name varchar(45));'
         );
 

@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
@@ -51,15 +52,22 @@ class InsertSelectQuery extends Updatable
     }
 
     /**
-     * @param DbFunctionsInterface|null $dbHelper
-     * @return SqlStatement
+     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
+     * @return SqlObject
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(?DbFunctionsInterface $dbHelper = null): SqlStatement
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
+        }
+
+        $dbDriver = null;
+        $dbHelper = $dbDriverOrHelper;
+        if ($dbDriverOrHelper instanceof DbDriverInterface) {
+            $dbDriver = $dbDriverOrHelper;
+            $dbHelper = $dbDriverOrHelper->getDbHelper();
         }
 
         if (empty($this->query) && empty($this->sqlStatement)) {
@@ -85,7 +93,7 @@ class InsertSelectQuery extends Updatable
         if (!is_null($this->sqlStatement)) {
             $fromObj = $this->sqlStatement;
         } else {
-            $fromObj = $this->query->build();
+            $fromObj = $this->query->build($dbDriver);
         }
 
         return new SqlStatement($sql . $fromObj->getSql(), $fromObj->getParams());
