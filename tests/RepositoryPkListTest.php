@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use Override;
@@ -13,45 +12,33 @@ use Tests\Model\Items;
 class RepositoryPkListTest extends TestCase
 {
     /**
-     * @var Mapper
-     */
-    protected $itemsMapper;
-
-    /**
-     * @var DbDriverInterface
-     */
-    protected $dbDriver;
-
-    /**
      * @var Repository
      */
-    protected $repository;
+    protected Repository $repository;
 
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $this->itemsMapper = new Mapper(Items::class, 'items', ['storeid', 'itemid']);
+        $this->repository = new Repository(DatabaseExecutor::using($dbDriver), $this->itemsMapper);
 
-        $this->dbDriver->execute('CREATE TABLE items (
+        $this->repository->getExecutor()->execute('CREATE TABLE items (
             storeid INTEGER,
             itemid INTEGER,
             qty INTEGER, 
             PRIMARY KEY (storeid, itemid)
           );'
         );
-        $this->dbDriver->execute("insert into items (storeid, itemid, qty) values (1, 1, 10)");
-        $this->dbDriver->execute("insert into items (storeid, itemid, qty) values (1, 2, 15)");
-        $this->dbDriver->execute("insert into items (storeid, itemid, qty) values (2, 1, 20)");
-
-        $this->itemsMapper = new Mapper(Items::class, 'items', ['storeid', 'itemid']);
-
-        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), $this->itemsMapper);
+        $this->repository->getExecutor()->execute("insert into items (storeid, itemid, qty) values (1, 1, 10)");
+        $this->repository->getExecutor()->execute("insert into items (storeid, itemid, qty) values (1, 2, 15)");
+        $this->repository->getExecutor()->execute("insert into items (storeid, itemid, qty) values (2, 1, 20)");
     }
 
     #[Override]
     public function tearDown(): void
     {
-        $this->dbDriver->execute('drop table if exists items;');
+        $this->repository->getExecutor()->execute('drop table if exists items;');
     }
 
     public function testGet()

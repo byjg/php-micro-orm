@@ -268,12 +268,12 @@ class Repository
             // First execute all writes (if any) in a single batch using direct PDO exec
             if (trim($bigSqlWrites) !== '') {
                 // Use direct PDO to ensure multi-statement execution across drivers like SQLite
-                DatabaseExecutor::using($dbDriver)->execute($bigSqlWrites, $bigParams);
+                $this->getExecutor()->execute($bigSqlWrites, $bigParams);
             }
 
             // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
             if (!empty($selectSql)) {
-                $it = DatabaseExecutor::using($dbDriver)->getIterator(new SqlStatement($selectSql, $selectParams));
+                $it = $this->getExecutor()->getIterator(new SqlStatement($selectSql, $selectParams));
             } else {
                 $it = (new AnyDataset())->getIterator();
             }

@@ -69,9 +69,7 @@ class RepositoryTest extends TestCase
     public function setUp(): void
     {
         $dbDriver = ConnectionUtil::getConnection("testmicroorm");
-
         $executor = DatabaseExecutor::using($dbDriver);
-
         $this->userMapper = new Mapper(Users::class, 'users', 'Id');
         $this->infoMapper = new Mapper(Info::class, 'info', 'id');
         $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));

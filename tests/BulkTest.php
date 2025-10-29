@@ -3,7 +3,6 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\InsertBulkQuery;
@@ -20,16 +19,18 @@ use Tests\Model\Users;
 
 class BulkTest extends TestCase
 {
-    protected DbDriverInterface $dbDriver;
     protected Repository $repository;
 
     #[Override]
     protected function setUp(): void
     {
-        $this->dbDriver = ConnectionUtil::getConnection('testmicroorm');
+        $dbDriver = ConnectionUtil::getConnection('testmicroorm');
+
+        $mapper = new Mapper(Users::class, 'users', 'Id');
+        $this->repository = new Repository(DatabaseExecutor::using($dbDriver), $mapper);
 
         // Create table and seed data similar to RepositoryTest
-        $this->dbDriver->execute('create table users (
+        $this->repository->getExecutor()->execute('create table users (
             id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
@@ -38,16 +39,13 @@ class BulkTest extends TestCase
         $insertBulk->values(['name' => 'John Doe', 'createdate' => '2017-01-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
         $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
-        $insertBulk->buildAndExecute(DatabaseExecutor::using($this->dbDriver));
-
-        $mapper = new Mapper(Users::class, 'users', 'Id');
-        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), $mapper);
+        $insertBulk->buildAndExecute($this->repository->getExecutor());
     }
 
     #[Override]
     protected function tearDown(): void
     {
-        $this->dbDriver->execute('drop table users');
+        $this->repository->getExecutor()->execute('drop table users');
     }
 
     public function testBulkMixedQueriesWithParamCollision(): void
