@@ -19,6 +19,16 @@ Key Features:
 
 ## Architecture
 
+MicroORM implements **Martin Fowler's enterprise patterns**:
+
+- **[Repository](https://martinfowler.com/eaaCatalog/repository.html)**: Mediates between domain and data mapping layers
+- **[Data Mapper](https://martinfowler.com/eaaCatalog/dataMapper.html)**: Separates domain objects from database tables
+- **[Active Record](https://martinfowler.com/eaaCatalog/activeRecord.html)**: Wraps database rows with domain logic (
+  alternative approach)
+
+You can choose the pattern that best fits your application: use Repository + Data Mapper for complex domains, or Active
+Record for simpler CRUD-focused applications.
+
 These are the key components:
 
 ```text
@@ -36,28 +46,35 @@ These are the key components:
 │          ┌───────────────┴─────┐
 │          │        Query        │
 │          └───────────────┬─────┘
-│                          │
-│          ┌───────────────┴─────┐
-│          │  DbDriverInterface  │───────────────┐
-│          └───────────────┬─────┘               │
-│                          │                     │
-└──────────────────────────┘                .─────────.
-                                           │           │
-                                           │`─────────'│
-                                           │           │
-                                           │    DB     │
-                                           │           │
-                                           │           │
-                                            `─────────'
+│                     │    │
+│          ┌───────────────┴─────┐        ┌──────────────────────┐  
+│          │  DatabaseExecutor   │────────│   DbDriverInterface  │  
+│          └───────────────┬─────┘        └────────────┬─────────┘  
+│                          │                           │                
+└──────────────────────────┘                      .─────────.           
+                                                 │           │          
+                                                 │`─────────'│          
+                                                 │           │          
+                                                 │    DB     │          
+                                                 │           │          
+                                                 │           │          
+                                                  `─────────'           
 ```
 
-* Model can be any class with public properties or with getter and setter. It is used to retrieve or save the data into
-  the database
-* Mapper defines the relationship between the Model properties and the database fields
-* Query defines what to retrieve from/update in the database. It uses the Mapper to prepare the query to the database
-  converting the Model properties to database fields.
-* DbDriverInterface is the implementation to the Database connection.
-* Repository put all this together
+* **Model** can be any class with public properties or with getter and setter. It is used to retrieve or save the data
+  into the database
+* **Mapper** defines the relationship between the Model properties and the database fields
+* **FieldMapping** defines individual field mappings within the Mapper (field names, transformations, relationships via
+  `parentTable`)
+* **Query** defines what to retrieve from/update in the database. It uses the Mapper to prepare the query to the
+  database converting the Model properties to database fields
+* **DatabaseExecutor** (external package) wraps the DbDriver and provides transaction management, query execution, and
+  access to database helpers
+* **DbDriverInterface** (external package) is the actual database driver implementation that connects to the database
+* **Repository** orchestrates all MicroORM components and uses DatabaseExecutor to interact with the database
+
+For a detailed explanation of the architecture and when to use each layer,
+see [Architecture Layers: Infrastructure vs Domain](docs/architecture-layers.md).
 
 
 ## Getting Started
@@ -159,6 +176,8 @@ $result = $repository->getByQuery($query);
 * [The Model Attributes](docs/model-attribute.md)
 * [The Repository Class](docs/repository.md)
 * [Common Traits for Timestamp Fields](docs/common-traits.md)
+* [Architecture Layers: Infrastructure vs Domain](docs/architecture-layers.md)
+* [Comparison with Other ORMs (Eloquent, Doctrine)](docs/comparison-with-other-orms.md)
 
 ## Advanced Topics
 

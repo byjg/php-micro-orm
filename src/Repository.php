@@ -29,6 +29,8 @@ use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
+use ByJG\XmlUtil\Exception\FileException;
+use ByJG\XmlUtil\Exception\XmlUtilException;
 use Exception;
 use ReflectionException;
 use stdClass;
@@ -366,6 +368,24 @@ class Repository
         return $this->getExecutor()->getScalar($sqlBuild);
     }
 
+    /**
+     * Execute a query and return an iterator with automatic entity transformation.
+     *
+     * This is the PREFERRED method for application/business logic when working with domain entities.
+     * The iterator automatically transforms database rows into entity instances using the repository's mapper.
+     *
+     * @param QueryBuilderInterface|SqlStatement $query The query to execute
+     * @param CacheQueryResult|null $cache Optional cache configuration
+     * @return GenericIterator Iterator with entity transformation enabled
+     *
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @see Query::buildAndGetIterator() For infrastructure-level raw data access
+     * @see getByQuery() For multi-mapper queries with JOIN operations
+     */
     public function getIterator(QueryBuilderInterface|SqlStatement $query, ?CacheQueryResult $cache = null): GenericIterator
     {
         if ($query instanceof QueryBuilderInterface) {
@@ -384,10 +404,37 @@ class Repository
     }
 
     /**
-     * @param QueryBuilderInterface $query
-     * @param Mapper[] $mapper
-     * @param CacheQueryResult|null $cache
-     * @return array
+     * Execute a query and return entities, with support for complex JOIN queries using multiple mappers.
+     *
+     * This method intelligently handles both single-mapper and multi-mapper scenarios:
+     *
+     * @param QueryBuilderInterface $query The query to execute (typically with JOINs for multi-mapper)
+     * @param Mapper[] $mapper Additional mappers for JOIN queries (repository's mapper is always included first)
+     * @param CacheQueryResult|null $cache Optional cache configuration
+     * @return array For single mapper: Entity[]. For multi-mapper: Array<int, Entity[]>
+     *
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @see getIterator() For simple single-entity queries (more efficient)
+     *
+     * Example (single mapper):
+     * ```php
+     * $query = $userRepo->queryInstance()->where('status = :status', ['status' => 'active']);
+     * $users = $userRepo->getByQuery($query); // Returns User[]
+     * ```
+     *
+     * Example (multi-mapper JOIN):
+     * ```php
+     * $query = Query::getInstance()
+     *     ->table('users')
+     *     ->join('info', 'users.id = info.iduser')
+     *     ->where('users.id = :id', ['id' => 1]);
+     * $result = $userRepo->getByQuery($query, [$infoMapper]);
+     * // Returns [[$userEntity, $infoEntity], [$userEntity, $infoEntity], ...]
+     * ```
      */
     public function getByQuery(QueryBuilderInterface $query, array $mapper = [], ?CacheQueryResult $cache = null): array
     {
@@ -400,12 +447,14 @@ class Repository
         }
 
         // For multiple mappers, get raw data without transformation
+        // (Entity transformation would fail because joined rows don't match single entity structure)
         $sqlBuild = $query->build($this->getExecutor()->getDriver());
         if (!empty($cache)) {
             $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
         $iterator = $this->getExecutor()->getIterator($sqlBuild);
 
+        // Manually map each row to multiple entities
         $result = [];
         foreach ($iterator as $row) {
             $collection = [];

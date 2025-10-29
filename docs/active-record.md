@@ -4,10 +4,39 @@ sidebar_position: 5
 
 # Active Record
 
+## Pattern Overview
+
+Active Record is an implementation of **Martin
+Fowler's [Active Record pattern](https://martinfowler.com/eaaCatalog/activeRecord.html)**:
+
+> *"An object that wraps a row in a database table or view, encapsulates the database access, and adds domain logic on
+that data."*
+>
+> — Martin Fowler, Patterns of Enterprise Application Architecture
+
 Active Record is the M in MVC - the model - which is the layer of the system responsible
 for representing business data and logic. It facilitates the creation and use of
 business objects whose data requires persistent storage to a database.
-It is an implementation of the Active Record pattern, which provides an Object Relational Mapping system.
+
+**Key Characteristics:**
+
+- Each Active Record instance represents a single row in the database
+- The object carries both data and behavior
+- Provides methods like `save()`, `delete()`, `get()`, `all()`, etc.
+- Database operations are directly available on the domain object
+
+**When to use Active Record vs Repository/Data Mapper:**
+
+| Aspect             | Active Record                      | Repository + Data Mapper      |
+|--------------------|------------------------------------|-------------------------------|
+| **Complexity**     | Simple, straightforward            | More complex, more layers     |
+| **Best for**       | Simple domains, CRUD-heavy apps    | Complex domain logic, DDD     |
+| **Coupling**       | Domain objects know about database | Domain objects are pure       |
+| **Learning curve** | Lower                              | Higher                        |
+| **Testability**    | Harder (objects tied to DB)        | Easier (dependency injection) |
+
+💡 **Tip**: For simple applications or prototypes, Active Record is perfect. For complex domain logic or when following
+Domain-Driven Design principles, prefer Repository + Data Mapper.
 
 ## How to Use Active Record
 
