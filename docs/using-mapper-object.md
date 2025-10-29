@@ -23,20 +23,13 @@ The Mapper object is the main object that you will use to interact with the data
 | Approach                             | Use When                                            | Benefits                                     |
 |--------------------------------------|-----------------------------------------------------|----------------------------------------------|
 | **Attributes** (`#[FieldAttribute]`) | You control the model classes                       | Convenient, everything in one place          |
-| **Mapper Objects** v                 | Legacy code, third-party models, clean architecture | Complete decoupling, no model changes needed |
+| **Mapper Objects**                   | Legacy code, third-party models, clean architecture | Complete decoupling, no model changes needed |
 
-For the majority of cases, you can use attributes as shown in the [Getting Started](getting-started-model.md) section.
-This creates the mapper automatically.
+For the majority of cases, you can use attributes as shown in the [Getting Started](getting-started-model.md) section. This creates the mapper automatically.
 
-**Use Mapper objects directly when:**
+## Use Cases
 
-- You have legacy models you cannot or don't want to change
-- Working with third-party library classes
-- Implementing clean architecture with pure domain models
-- Need different mappings for the same model (multi-tenancy, different databases)
-- Using PHP version earlier than 8.0 (attributes not available)
-
-## Practical Example: Decoupling Legacy Code
+### Use Case 1: Legacy/Third-Party Code
 
 Let's say you have a legacy class or a third-party library class that you **cannot modify**:
 
@@ -90,7 +83,7 @@ $mapper->addFieldMapping(
 );
 ```
 
-Now you can use the legacy class with your database:
+Now use the repository for CRUD operations:
 
 ```php
 <?php
@@ -106,99 +99,18 @@ echo $user->name;  // ← Comes from 'full_name' column
 // Save data - automatically maps object properties to database columns
 $user->name = "New name";
 $repository->save($user);  // ← Updates 'full_name' column
-```
-
-### The Power of Decoupling
-
-**Without Mapper (impossible in this scenario):**
-
-```php
-// ❌ Can't do this - you don't control the Users class!
-class Users {
-    #[FieldAttribute(fieldName: 'user_id', primaryKey: true)]  // ← Can't add this
-    public $id;
-}
-```
-
-**With Mapper (works perfectly):**
-
-```php
-// ✅ Mapping happens externally - Users class remains untouched!
-$mapper = new Mapper(Users::class, 'user_accounts', 'user_id');
-$mapper->addFieldMapping(FieldMapping::create('id')->withFieldName('user_id'));
-```
-
-## Creating the Mapper Object
-
-### Basic Example
-
-For a simple case where property names match column names:
-
-```php
-<?php
-class Users
-{
-    public $id;
-    public $name;
-    public $createdate;
-}
-
-// Create the mapping
-$mapper = new \ByJG\MicroOrm\Mapper(
-    Users::class,   // The fully qualified class name
-    'users',        // The database table name
-    'id'            // The primary key field
-);
-
-// No field mappings needed if property names match column names
-```
-
-### Advanced Example with Field Mappings
-
-When property names differ from column names:
-
-```php
-<?php
-// Create mapper with custom field mappings
-$mapper = new \ByJG\MicroOrm\Mapper(
-    Users::class,
-    'users',
-    'id'
-);
-
-// Map property 'createdate' to database column 'created'
-$mapper->addFieldMapping(
-    FieldMapping::create('createdate')->withFieldName('created')
-);
-
-// Create repository
-$executor = \ByJG\AnyDataset\Db\DatabaseExecutor::using($dbDriver);
-$repository = new \ByJG\MicroOrm\Repository($executor, $mapper);
-```
-
-## Using the Repository
-
-Once you have the mapper and repository configured:
-
-```php
-<?php
-// Get a single record by ID
-$user = $repository->get(10);
-
-// Modify and save (INSERT if new, UPDATE if exists)
-$user->name = "New name";
-$repository->save($user);
 
 // Delete
 $repository->delete($user);
 ```
 
-## Advanced Use Case: Clean Architecture with Pure Domain Models
+**Key Point**: The `Users` class remains completely untouched - all mapping happens externally!
 
-One of the most powerful use cases for Mapper objects is implementing **Clean Architecture** where your domain models
-remain completely pure - no database concerns whatsoever.
+### Use Case 2: Clean Architecture with Pure Domain Models
 
-### Pure Domain Model (No Database Knowledge)
+One of the most powerful use cases for Mapper objects is implementing **Clean Architecture** where your domain models remain completely pure - no database concerns whatsoever.
+
+#### Pure Domain Model (No Database Knowledge)
 
 ```php
 <?php
@@ -236,7 +148,7 @@ class User
 }
 ```
 
-### Infrastructure Layer Mapping (Separate from Domain)
+#### Infrastructure Layer Mapping (Separate from Domain)
 
 ```php
 <?php
@@ -276,7 +188,7 @@ class UserMapper
 }
 ```
 
-### Repository in Infrastructure Layer
+#### Repository in Infrastructure Layer
 
 ```php
 <?php
@@ -306,39 +218,39 @@ class UserRepository
 }
 ```
 
-### Benefits of This Approach
+**Benefits**: Pure domain model, testable without database, flexible to schema changes, clear architectural separation.
 
-- ✅ **Pure Domain Model**: `User` class has ZERO database dependencies
-- ✅ **Testable**: Domain logic can be tested without database
-- ✅ **Flexible**: Change database without touching domain model
-- ✅ **Clean Architecture**: Clear separation between domain and infrastructure
-- ✅ **Maintainable**: Business logic and persistence logic are separate
+## Creating Mappers Reference
 
-### Comparison: Attributes vs Mapper for Clean Architecture
-
-**With Attributes (couples domain to infrastructure):**
+### Basic Mapper (Properties Match Column Names)
 
 ```php
-// ❌ Domain model knows about database
-#[TableAttribute(tableName: 'users')]
-class User {
-    #[FieldAttribute(primaryKey: true)]
-    private string $id;
-    // Domain model is polluted with ORM concerns
-}
+<?php
+// When property names match database column names
+$mapper = new \ByJG\MicroOrm\Mapper(
+    Users::class,   // Class name
+    'users',        // Table name
+    'id'            // Primary key
+);
+
+// No field mappings needed!
 ```
 
-**With Mapper (pure domain model):**
+### Mapper with Field Mappings
 
 ```php
-// ✅ Domain model is pure - no database knowledge
-class User {
-    private string $id;
-    // Just business logic, no ORM attributes
-}
+<?php
+// When property names differ from column names
+$mapper = new \ByJG\MicroOrm\Mapper(
+    Users::class,
+    'users',
+    'id'
+);
 
-// Mapping lives separately in infrastructure layer
-$mapper = new Mapper(User::class, 'users', 'id');
+// Map property to different column name
+$mapper->addFieldMapping(
+    FieldMapping::create('createdate')->withFieldName('created')
+);
 ```
 
 ## Summary
