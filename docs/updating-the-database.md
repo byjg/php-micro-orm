@@ -216,7 +216,7 @@ $insert = InsertQuery::getInstance('users', [
 ]);
 
 // Example of a SELECT as the last command (driver-specific last insert id)
-$selectLastId = QueryRaw::getInstance($repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+$selectLastId = QueryRaw::getInstance($repository->getExecutor()->getHelper()->getSqlLastInsertId());
 
 $it = $repository->bulkExecute([$insert, $selectLastId]);
 foreach ($it as $row) {

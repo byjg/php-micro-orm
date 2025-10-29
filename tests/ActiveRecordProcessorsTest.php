@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\InsertBulkQuery;
@@ -15,14 +16,16 @@ class ActiveRecordProcessorsTest extends TestCase
 {
     const URI = 'sqlite:///tmp/test.db';
 
-    protected $dbDriver;
+    protected DatabaseExecutor $executor;
 
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = Factory::getDbInstance(self::URI);
+        $dbDriver = Factory::getDbInstance(self::URI);
 
-        $this->dbDriver->execute('create table users (
+        $this->executor = DatabaseExecutor::using($dbDriver);
+
+        $this->executor->execute('create table users (
             id integer primary key autoincrement,
             name varchar(45),
             createdate datetime);'
@@ -30,9 +33,9 @@ class ActiveRecordProcessorsTest extends TestCase
         $insertBulk = InsertBulkQuery::getInstance('users', ['name', 'createdate']);
         $insertBulk->values(['name' => 'John Doe', 'createdate' => '2015-05-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
-        $insertBulk->buildAndExecute($this->dbDriver);
+        $insertBulk->buildAndExecute($this->executor);
 
-        ORM::defaultDbDriver($this->dbDriver);
+        ORM::defaultDbDriver($this->executor);
         ActiveRecordWithProcessors::reset();
     }
 
@@ -80,7 +83,7 @@ class ActiveRecordProcessorsTest extends TestCase
         ActiveRecordWithProcessors::reset();
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("You must initialize the ORM with a DbDriverInterface");
+        $this->expectExceptionMessage("You must initialize the ORM with a DatabaseExecutor");
         ActiveRecordWithProcessors::initialize();
     }
 } 

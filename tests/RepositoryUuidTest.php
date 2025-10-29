@@ -2,10 +2,10 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\UsersWithUuidKey;
@@ -31,7 +31,7 @@ class RepositoryUuidTest extends TestCase
             id binary(16) primary key,
             name varchar(45));'
         );
-        $this->repository = new Repository($this->dbDriver, UsersWithUuidKey::class);
+        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), UsersWithUuidKey::class);
     }
 
     #[Override]

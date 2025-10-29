@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -110,12 +111,12 @@ class Union implements QueryBuilderInterface
 
 
     #[Override]
-    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
+    public function buildAndGetIterator(DatabaseExecutor $executor, ?CacheQueryResult $cache = null): GenericIterator
     {
-        $sqlStatement = $this->build($dbDriver);
+        $sqlStatement = $this->build($executor->getDriver());
         if (!empty($cache)) {
             $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
-        return $dbDriver->getIterator($sqlStatement);
+        return $executor->getIterator($sqlStatement);
     }
 }

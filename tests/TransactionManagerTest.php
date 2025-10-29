@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
 use ByJG\MicroOrm\Mapper;
@@ -111,7 +112,7 @@ class TransactionManagerTest extends TestCase
         $dbDriver->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
         $dbDriver->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
         $userMapper = new Mapper(Users::class, 'users', 'Id');
-        $repository = new Repository($dbDriver, $userMapper);
+        $repository = new Repository(DatabaseExecutor::using($dbDriver), $userMapper);
 
         $this->object->addRepository($repository);
         $this->assertEquals(1, $this->object->count());

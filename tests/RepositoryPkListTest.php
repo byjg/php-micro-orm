@@ -2,10 +2,10 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Items;
@@ -45,7 +45,7 @@ class RepositoryPkListTest extends TestCase
 
         $this->itemsMapper = new Mapper(Items::class, 'items', ['storeid', 'itemid']);
 
-        $this->repository = new Repository($this->dbDriver, $this->itemsMapper);
+        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), $this->itemsMapper);
     }
 
     #[Override]

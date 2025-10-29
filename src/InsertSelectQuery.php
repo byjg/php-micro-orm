@@ -100,7 +100,7 @@ class InsertSelectQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertSelectQuery to a Query');
     }

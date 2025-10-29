@@ -2,8 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\UpdateBuilderInterface;
 use Override;
 
@@ -28,9 +27,12 @@ abstract class Updatable implements UpdateBuilderInterface
     }
 
     #[Override]
-    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null): bool
+    public function buildAndExecute(DatabaseExecutor $executor, $params = []): bool
     {
-        $sqlStatement = $this->build($dbHelper)->withParams($params);
-        return $dbDriver->execute($sqlStatement);
+        $sqlStatement = $this->build($executor->getHelper());
+        if (!empty($params)) {
+            $sqlStatement = $sqlStatement->withParams($params);
+        }
+        return $executor->execute($sqlStatement);
     }
 }

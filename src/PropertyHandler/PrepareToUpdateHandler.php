@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm\PropertyHandler;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Mapper;
 use ByJG\Serializer\PropertyHandler\PropertyHandlerInterface;
 use Override;
@@ -12,13 +12,13 @@ class PrepareToUpdateHandler implements PropertyHandlerInterface
     private Mapper $mapper;
     private array $fieldToProperty = [];
     private mixed $instance;
-    private DbDriverInterface $dbDriverWrite;
+    private DatabaseExecutor $executor;
 
-    public function __construct(Mapper $mapper, mixed $instance, DbDriverInterface $dbDriverWrite)
+    public function __construct(Mapper $mapper, mixed $instance, DatabaseExecutor $executor)
     {
         $this->mapper = $mapper;
         $this->instance = $instance;
-        $this->dbDriverWrite = $dbDriverWrite;
+        $this->executor = $executor;
     }
 
     #[Override]
@@ -32,6 +32,6 @@ class PrepareToUpdateHandler implements PropertyHandlerInterface
     public function transformValue(string $propertyName, string $targetName, mixed $value, mixed $instance = null): mixed
     {
         $fieldMap = $this->mapper->getFieldMap($propertyName);
-        return $fieldMap?->getUpdateFunctionValue($value, $this->instance, $this->dbDriverWrite->getDbHelper()) ?? $value;
+        return $fieldMap?->getUpdateFunctionValue($value, $this->instance, $this->executor->getHelper()) ?? $value;
     }
 }

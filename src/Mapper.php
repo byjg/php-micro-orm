@@ -2,12 +2,13 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\Serializer\ObjectCopy;
@@ -23,10 +24,10 @@ class Mapper
     private string $table;
     private array $primaryKey;
     private array $primaryKeyModel;
-    private mixed $primaryKeySeedFunction = null;
+    private string|UniqueIdGeneratorInterface|null $primaryKeySeedFunction = null;
     private bool $softDelete = false;
-    private mixed $beforeInsert = null;
-    private mixed $beforeUpdate = null;
+    private string|EntityProcessorInterface|null $beforeInsert = null;
+    private string|EntityProcessorInterface|null $beforeUpdate = null;
 
     /**
      * @var FieldMapping[]
@@ -120,7 +121,7 @@ class Mapper
         }
     }
 
-    public function withPrimaryKeySeedFunction(callable $primaryKeySeedFunction): static
+    public function withPrimaryKeySeedFunction(string|UniqueIdGeneratorInterface $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
@@ -341,17 +342,22 @@ class Mapper
     }
 
     /**
-     * @param DbDriverInterface $dbDriver
+     * @param DatabaseExecutor $executor
      * @param object $instance
      * @return mixed|null
      */
-    public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed
+    public function generateKey(DatabaseExecutor $executor, object $instance): mixed
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
         }
 
-        return call_user_func_array($this->primaryKeySeedFunction, [$dbDriver, $instance]);
+        $primaryKeyFunction = $this->primaryKeySeedFunction;
+        if (is_string($this->primaryKeySeedFunction)) {
+            $primaryKeyFunction = new $this->primaryKeySeedFunction();
+        }
+
+        return $primaryKeyFunction->process($executor, $instance);
     }
 
     public function isSoftDeleteEnabled(): bool

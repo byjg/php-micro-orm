@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\Repository;
@@ -14,14 +16,17 @@ class TableAttributeTest extends TestCase
 {
     const URI = 'sqlite:///tmp/test.db';
 
-    protected $dbDriver;
+    protected DbDriverInterface $dbDriver;
+
+    protected DatabaseExecutor $executor;
 
     #[Override]
     public function setUp(): void
     {
         $this->dbDriver = Factory::getDbInstance(self::URI);
+        $this->executor = DatabaseExecutor::using($this->dbDriver);
 
-        $this->dbDriver->execute('create table users (
+        $this->executor->execute('create table users (
             id integer primary key autoincrement,
             name varchar(45),
             createdate datetime);'
@@ -29,7 +34,7 @@ class TableAttributeTest extends TestCase
         $insertBulk = InsertBulkQuery::getInstance('users', ['name', 'createdate']);
         $insertBulk->values(['name' => 'John Doe', 'createdate' => '2015-05-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
-        $insertBulk->buildAndExecute($this->dbDriver);
+        $insertBulk->buildAndExecute($this->executor);
     }
 
     #[Override]
@@ -41,7 +46,7 @@ class TableAttributeTest extends TestCase
 
     public function testModelWithTableAttributeAndProcessors()
     {
-        $repository = new Repository($this->dbDriver, ModelWithProcessors::class);
+        $repository = new Repository($this->executor, ModelWithProcessors::class);
 
         // Test Insert with processor
         $model = new ModelWithProcessors();

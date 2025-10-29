@@ -102,7 +102,7 @@ class InsertBulkQuery extends Updatable
                 } else {
                     $value = str_replace("'", "''", $this->fields[$col][$i]);
                     if (!is_numeric($value)) {
-                        $value = $dbDriverOrHelper?->delimiterField($value) ?? "'{$value}'";
+                        $value = "'{$value}'";
                     }
                     $params[$paramKey] = new Literal($value); // Map parameter key to value
                 }
@@ -127,7 +127,7 @@ class InsertBulkQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertBulkQuery to a Query');
     }

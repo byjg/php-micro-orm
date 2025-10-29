@@ -2,12 +2,12 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
-use ByJG\Util\Uri;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Customer;
@@ -51,7 +51,7 @@ class RepositoryAliasTest extends TestCase
             ->withFieldAlias('custAge');
         $this->customerMapper->addFieldMapping($fieldMap);
 
-        $this->repository = new Repository($this->dbDriver, $this->customerMapper);
+        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), $this->customerMapper);
     }
 
     #[Override]

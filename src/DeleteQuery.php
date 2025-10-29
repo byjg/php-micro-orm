@@ -35,7 +35,7 @@ class DeleteQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
             ->table($this->table);

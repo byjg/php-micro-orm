@@ -10,10 +10,10 @@ use ByJG\MicroOrm\MapperFunctions\UpdateBinaryUuidMapper;
 class FieldUuidAttribute extends FieldAttribute
 {
     public function __construct(
-        bool $primaryKey = null,
-        string $fieldName = null,
-        string $fieldAlias = null,
-        bool $syncWithDb = null
+        ?bool   $primaryKey = null,
+        ?string $fieldName = null,
+        ?string $fieldAlias = null,
+        ?bool   $syncWithDb = null
     )
     {
         parent::__construct($primaryKey, $fieldName, $fieldAlias, $syncWithDb, UpdateBinaryUuidMapper::class, SelectBinaryUuidMapper::class);

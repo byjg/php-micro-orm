@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
@@ -37,10 +38,10 @@ class BulkTest extends TestCase
         $insertBulk->values(['name' => 'John Doe', 'createdate' => '2017-01-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
         $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
-        $insertBulk->buildAndExecute($this->dbDriver);
+        $insertBulk->buildAndExecute(DatabaseExecutor::using($this->dbDriver));
 
         $mapper = new Mapper(Users::class, 'users', 'Id');
-        $this->repository = new Repository($this->dbDriver, $mapper);
+        $this->repository = new Repository(DatabaseExecutor::using($this->dbDriver), $mapper);
     }
 
     #[Override]
@@ -152,7 +153,7 @@ class BulkTest extends TestCase
         ]);
 
         // Outer query selects last_insert_rowid() from the single-row subquery
-        $selectLastId = QueryRaw::getInstance($this->repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+        $selectLastId = QueryRaw::getInstance($this->repository->getExecutor()->getHelper()->getSqlLastInsertId());
 
         $it = $this->repository->bulkExecute([$insert, $selectLastId], null);
         $result = $it->toArray();
@@ -173,7 +174,7 @@ class BulkTest extends TestCase
         $insert = QueryRaw::getInstance("insert into users (name, createdate) values ('Charlie', '2025-01-01')");
 
         // Outer query selects last_insert_rowid() from the single-row subquery
-        $selectLastId = QueryRaw::getInstance($this->repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+        $selectLastId = QueryRaw::getInstance($this->repository->getExecutor()->getHelper()->getSqlLastInsertId());
 
         $it = $this->repository->bulkExecute([$insert, $selectLastId], null);
         $result = $it->toArray();

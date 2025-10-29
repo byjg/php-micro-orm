@@ -30,19 +30,19 @@ class ORMSubject
      */
     protected array $observers = [];
 
-    public function addObserver(ObserverProcessorInterface $observerProcessor, Repository $observer_in): void
+    public function addObserver(ObserverProcessorInterface $observerProcessor, Repository $repoObserverIn): void
     {
-        $observer_in->getDbDriver()->log("Observer: entity " . $observer_in->getMapper()->getTable() . ", listening for {$observerProcessor->getObservedTable()}");
+        $repoObserverIn->getExecutor()->getDriver()->log("Observer: entity " . $repoObserverIn->getMapper()->getTable() . ", listening for {$observerProcessor->getObservedTable()}");
         if (!isset($this->observers[$observerProcessor->getObservedTable()])) {
             $this->observers[$observerProcessor->getObservedTable()] = [];
         }
         /** @var ObserverProcessorInternal $observer */
         foreach ($this->observers[$observerProcessor->getObservedTable()] as $observer) {
-            if (get_class($observer->getObservedProcessor()) === get_class($observerProcessor) && get_class($observer->getRepository()) === get_class($observer_in)) {
+            if (get_class($observer->getObservedProcessor()) === get_class($observerProcessor) && get_class($observer->getRepository()) === get_class($repoObserverIn)) {
                 throw new InvalidArgumentException("Observer already exists");
             }
         }
-        $this->observers[$observerProcessor->getObservedTable()][] = new ObserverProcessorInternal($observerProcessor, $observer_in);
+        $this->observers[$observerProcessor->getObservedTable()][] = new ObserverProcessorInternal($observerProcessor, $repoObserverIn);
     }
 
     public function notify(string $entitySource, ObserverEvent $event, mixed $data, mixed $oldData = null): void

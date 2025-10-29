@@ -4,9 +4,8 @@ namespace Tests;
 
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
-use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
@@ -54,29 +53,33 @@ class RepositoryTest extends TestCase
     /**
      * @var Mapper
      */
-    protected $userMapper;
+    protected Mapper $userMapper;
 
     /**
      * @var Mapper
      */
-    protected $infoMapper;
-
-    /**
-     * @var DbDriverInterface
-     */
-    protected $dbDriver;
+    protected Mapper $infoMapper;
 
     /**
      * @var Repository
      */
-    protected $repository;
+    protected Repository $repository;
 
     #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
-        $this->dbDriver->execute('create table users (
+        $executor = DatabaseExecutor::using($dbDriver);
+
+        $this->userMapper = new Mapper(Users::class, 'users', 'Id');
+        $this->infoMapper = new Mapper(Info::class, 'info', 'id');
+        $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
+
+        $this->repository = new Repository($executor, $this->userMapper);
+        ORMSubject::getInstance()->clearObservers();
+
+        $executor->execute('create table users (
             id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
@@ -85,11 +88,9 @@ class RepositoryTest extends TestCase
         $insertBulk->values(['name' => 'John Doe', 'createdate' => '2015-05-02']);
         $insertBulk->values(['name' => 'Jane Doe', 'createdate' => '2017-01-04']);
         $insertBulk->values(['name' => 'JG', 'createdate' => '1974-01-26']);
-        $insertBulk->buildAndExecute($this->dbDriver);
-        $this->userMapper = new Mapper(Users::class, 'users', 'Id');
+        $insertBulk->buildAndExecute($executor);
 
-
-        $this->dbDriver->execute('create table info (
+        $executor->execute('create table info (
             id integer primary key  auto_increment,
             iduser INTEGER,
             property decimal(10, 2),
@@ -101,19 +102,15 @@ class RepositoryTest extends TestCase
         $insertMultiple->values(['iduser' => 1, 'property' => 30.4]);
         $insertMultiple->values(['iduser' => 1, 'property' => 1250.96]);
         $insertMultiple->values(['iduser' => 3, 'property' => 3.5]);
-        $insertMultiple->buildAndExecute($this->dbDriver);
-        $this->infoMapper = new Mapper(Info::class, 'info', 'id');
-        $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
+        $insertMultiple->buildAndExecute($executor);
 
-        $this->repository = new Repository($this->dbDriver, $this->userMapper);
-        ORMSubject::getInstance()->clearObservers();
     }
 
     #[Override]
     public function tearDown(): void
     {
-        $this->dbDriver->execute('drop table if exists users;');
-        $this->dbDriver->execute('drop table if exists info;');
+        $this->repository->getExecutor()->execute('drop table if exists users;');
+        $this->repository->getExecutor()->execute('drop table if exists info;');
         ORM::resetMemory();
     }
 
@@ -155,7 +152,7 @@ class RepositoryTest extends TestCase
     public function testGetSelectFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
-        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+        $this->repository = new Repository($this->repository->getExecutor(), $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withSelectFunction(new class implements MapperFunctionInterface {
@@ -204,7 +201,7 @@ class RepositoryTest extends TestCase
             ->table('users')
             ->where('id = :id', ['id' => 1]);
 
-        $iterator = $query->buildAndGetIterator($this->repository->getDbDriver(), null)->toArray();
+        $iterator = $query->buildAndGetIterator($this->repository->getExecutor(), null)->toArray();
         $this->assertEquals(1, count($iterator));
     }
 
@@ -217,27 +214,27 @@ class RepositoryTest extends TestCase
         $cacheEngine = new ArrayCacheEngine();
 
         // Sanity test
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getExecutor())->toArray();
         $this->assertCount(1, $result);
 
         $cacheObject = new CacheQueryResult($cacheEngine, "mykey", 120);
 
         // Get the result and save to cache
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getExecutor(), cache: $cacheObject)->toArray();
         $this->assertCount(1, $result);
 
         // Delete the record
         $deleteQuery = DeleteQuery::getInstance()
             ->table('users')
             ->where('id = :id', ['id' => 1]);
-        $deleteQuery->buildAndExecute($this->repository->getDbDriver());
+        $deleteQuery->buildAndExecute($this->repository->getExecutor());
 
         // Check if query with no cache the record is not found
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver())->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getExecutor())->toArray();
         $this->assertCount(0, $result);
 
         // Check if query with cache the record is found
-        $result = $query->buildAndGetIterator($this->repository->getDbDriver(), cache: $cacheObject)->toArray();
+        $result = $query->buildAndGetIterator($this->repository->getExecutor(), cache: $cacheObject)->toArray();
         $this->assertCount(1, $result);
     }
 
@@ -336,7 +333,7 @@ class RepositoryTest extends TestCase
             $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlStatement);
+        $this->repository->getExecutor()->execute($sqlStatement);
 
         $users2 = $this->repository->get(4);
 
@@ -355,7 +352,7 @@ class RepositoryTest extends TestCase
 //        $this->infoMapper->withPrimaryKeySeedFunction(function ($instance) {
 //            return 50;
 //        });
-        $this->repository = new Repository($this->dbDriver, UsersWithAttribute::class);
+        $this->repository = new Repository($this->repository->getExecutor(), UsersWithAttribute::class);
 
         $users = new Users();
         $users->setName('Bla99991919');
@@ -374,7 +371,7 @@ class RepositoryTest extends TestCase
     public function testInsertUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
-        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+        $this->repository = new Repository($this->repository->getExecutor(), $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withUpdateFunction(new class implements MapperFunctionInterface {
@@ -462,7 +459,7 @@ class RepositoryTest extends TestCase
             ->table('users')
             ->set('name', 'New Name')
             ->where('id = :id', ['id' => 1]);
-        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+        $updateQuery->buildAndExecute($this->repository->getExecutor());
 
         $users = $this->repository->get(1);
         $this->assertEquals('New Name', $users->getName());
@@ -479,7 +476,7 @@ class RepositoryTest extends TestCase
                 'name',
                 'createdate'
             ]);
-        $insertQuery->buildAndExecute($this->repository->getDbDriver(), ['name' => 'inserted name', 'createdate' => '2024-09-03']);
+        $insertQuery->buildAndExecute($this->repository->getExecutor(), ['name' => 'inserted name', 'createdate' => '2024-09-03']);
 
         $users = $this->repository->get(4);
         $this->assertEquals('inserted name', $users->getName());
@@ -496,7 +493,7 @@ class RepositoryTest extends TestCase
             ->set('name', 'inserted name')
             ->set('createdate', '2024-09-03')
         ;
-        $insertQuery->buildAndExecute($this->repository->getDbDriver());
+        $insertQuery->buildAndExecute($this->repository->getExecutor());
 
         $users = $this->repository->get(4);
         $this->assertEquals('inserted name', $users->getName());
@@ -511,7 +508,7 @@ class RepositoryTest extends TestCase
         $updateQuery = DeleteQuery::getInstance()
             ->table('users')
             ->where('id = :id', ['id' => 1]);
-        $updateQuery->buildAndExecute($this->repository->getDbDriver());
+        $updateQuery->buildAndExecute($this->repository->getExecutor());
 
         $users = $this->repository->get(1);
         $this->assertEmpty($users);
@@ -576,7 +573,7 @@ class RepositoryTest extends TestCase
             $sqlStatement
         );
 
-        $this->repository->getDbDriverWrite()->execute($sqlStatement);
+        $this->repository->getExecutor()->execute($sqlStatement);
 
         $users2 = $this->repository->get(1);
 
@@ -589,7 +586,7 @@ class RepositoryTest extends TestCase
     public function testUpdateFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');
-        $this->repository = new Repository($this->dbDriver, $this->userMapper);
+        $this->repository = new Repository($this->repository->getExecutor(), $this->userMapper);
 
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withUpdateFunction(new class implements MapperFunctionInterface {
@@ -691,7 +688,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>1000])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         $this->assertEquals(count($result), 0);
@@ -703,7 +700,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         $this->assertEquals(count($result), 1);
@@ -769,7 +766,7 @@ class RepositoryTest extends TestCase
             ->fields(['property'])
             ->where('iduser = :id', ['id'=>3]);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getScalar($query);
 
         $this->assertEquals(3.5, $result);
@@ -781,7 +778,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>1])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         $this->assertEquals(1, $result[0]->getId());
@@ -967,12 +964,12 @@ class RepositoryTest extends TestCase
 
 
         // This update has an observer, and you change the `test` variable
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $query = $infoRepository->queryInstance()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -1041,7 +1038,7 @@ class RepositoryTest extends TestCase
 
 
         // This update has an observer, and you change the `test` variable
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $query = $infoRepository->queryInstance()
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
@@ -1101,7 +1098,7 @@ class RepositoryTest extends TestCase
 
         $this->assertNull($this->test);
         $this->assertNull($this->onError);
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->delete(3);
         $this->assertTrue($this->test);
         $this->assertNull($this->onError);
@@ -1160,7 +1157,7 @@ class RepositoryTest extends TestCase
 
         $this->assertNull($this->test);
         $this->assertNull($this->onError);
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $infoRepository->save($info);
         $this->assertTrue($this->test);
         $this->assertNull($this->onError);
@@ -1209,7 +1206,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -1228,7 +1225,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -1243,7 +1240,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id' => 3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -1264,7 +1261,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id' => 3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         // Set Zero
@@ -1278,7 +1275,7 @@ class RepositoryTest extends TestCase
         $query = $this->infoMapper->getQueryBasic()
             ->where('iduser = :id', ['id'=>3]);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($query);
 
         $this->assertEquals(count($result), 1);
@@ -1302,7 +1299,7 @@ class RepositoryTest extends TestCase
             ->addQuery($query2)
             ->orderBy(['iduser']);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $result = $infoRepository->getByQuery($union);
 
         $this->assertEquals(count($result), 2);
@@ -1323,7 +1320,7 @@ class RepositoryTest extends TestCase
             ->where('iduser = :id', ['id'=>3])
             ->orderBy(['property']);
 
-        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         /** @var ModelWithAttributes[] $result */
         $result = $infoRepository->getByQuery($query);
@@ -1341,7 +1338,7 @@ class RepositoryTest extends TestCase
 
     public function testMappingAttributeInsert()
     {
-        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         // Sanity check
         $query = new Query();
@@ -1391,7 +1388,7 @@ class RepositoryTest extends TestCase
 
     public function testMappingAttributeSoftDeleteAndGetByQuery()
     {
-        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         $query = $infoRepository->queryInstance()
             ->where('iduser = :id', ['id' => 3])
@@ -1418,7 +1415,7 @@ class RepositoryTest extends TestCase
 
     public function testMappingAttributeSoftDeleteAndGetByFilter()
     {
-        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         $iteratorFilter = new IteratorFilter();
         $iteratorFilter->and('iduser', Relation::EQUAL, 3);
@@ -1439,7 +1436,7 @@ class RepositoryTest extends TestCase
 
     public function testMappingAttributeSoftDeleteAndGetByPK()
     {
-        $infoRepository = new Repository($this->dbDriver, ModelWithAttributes::class);
+        $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         $result = $infoRepository->get(3);
 
@@ -1519,7 +1516,7 @@ class RepositoryTest extends TestCase
         $query = $this->infoMapper->getQueryBasic()
             ->where('id = :id1', ['id1'=>3]);
 
-        $infoRepository = new Repository($this->dbDriver, $this->infoMapper);
+        $infoRepository = new Repository($this->repository->getExecutor(), $this->infoMapper);
         $cacheEngine = new ArrayCacheEngine();
 
         // Sanity test
@@ -1536,7 +1533,7 @@ class RepositoryTest extends TestCase
         $deleteQuery = DeleteQuery::getInstance()
             ->table($this->infoMapper->getTable())
             ->where('id = :id', ['id' => 3]);
-        $deleteQuery->buildAndExecute($this->repository->getDbDriver());
+        $deleteQuery->buildAndExecute($this->repository->getExecutor());
 
         // Check if query with no cache the record is not found
         $result = $infoRepository->getByQuery($query);
@@ -1549,7 +1546,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordGet()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $this->assertEquals('info', ActiveRecordModel::tableName());
 
@@ -1566,7 +1563,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordRefresh()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $this->assertEquals('info', ActiveRecordModel::tableName());
 
@@ -1587,7 +1584,7 @@ class RepositoryTest extends TestCase
         $this->assertNull($deletedAt); 
 
         // Update the record OUTSIDE the Active Record
-        $this->dbDriver->execute("UPDATE info SET iduser = 4, property = 44.44 WHERE id = 3");
+        $this->repository->getExecutorWrite()->execute("UPDATE info SET iduser = 4, property = 44.44 WHERE id = 3");
 
         // Check model isn't updated (which is the expected behavior)
         $this->assertEquals(3, $model->getPk());
@@ -1611,7 +1608,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordRefreshError()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $this->expectException(OrmInvalidFieldsException::class);
         $this->expectExceptionMessage("Primary key 'pk' is null");
@@ -1622,7 +1619,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordFill()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $model = ActiveRecordModel::get(3);
 
@@ -1649,7 +1646,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordFilter()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::EQUAL, 1));
 
@@ -1671,7 +1668,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordEmptyFilter()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $model = ActiveRecordModel::filter(new IteratorFilter());
 
@@ -1680,7 +1677,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordAll()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         $model = ActiveRecordModel::all();
 
@@ -1689,7 +1686,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordNew()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         //
         $model = ActiveRecordModel::get(4);
@@ -1719,7 +1716,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordUpdate()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         //
         $model = ActiveRecordModel::get(3);
@@ -1745,7 +1742,7 @@ class RepositoryTest extends TestCase
 
     public function testActiveRecordDelete()
     {
-        ActiveRecordModel::initialize($this->dbDriver);
+        ActiveRecordModel::initialize($this->repository->getExecutor());
 
         //
         $model = ActiveRecordModel::get(3);
@@ -1760,20 +1757,20 @@ class RepositoryTest extends TestCase
     public function testInitializeActiveRecordDefaultDbDriverError()
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("You must initialize the ORM with a DbDriverInterface");
+        $this->expectExceptionMessage("You must initialize the ORM with a DatabaseExecutor");
         ActiveRecordModel::initialize();
     }
 
     public function testInitializeActiveRecordDefaultDbDriver()
     {
-        ORM::defaultDbDriver($this->dbDriver);
+        ORM::defaultDbDriver($this->repository->getExecutor());
         ActiveRecordModel::initialize();
         $this->assertTrue(true);
     }
 
     public function testInitializeActiveRecordDefaultDbDriver2()
     {
-        ORM::defaultDbDriver($this->dbDriver);
+        ORM::defaultDbDriver($this->repository->getExecutor());
         $model = ActiveRecordModel::get(1);
         $this->assertNotNull($model);
     }

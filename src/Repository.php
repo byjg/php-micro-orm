@@ -4,13 +4,14 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\AnyDataset;
 use ByJG\AnyDataset\Core\Enum\Relation;
+use ByJG\AnyDataset\Core\Exception\DatabaseException;
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\Exception\DbDriverNotConnected;
 use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
-use ByJG\AnyDataset\Lists\ArrayDataset;
 use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
@@ -28,7 +29,6 @@ use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
-use Closure;
 use Exception;
 use ReflectionException;
 use stdClass;
@@ -43,14 +43,14 @@ class Repository
     protected Mapper $mapper;
 
     /**
-     * @var DbDriverInterface
+     * @var DatabaseExecutor
      */
-    protected DbDriverInterface $dbDriver;
+    protected DatabaseExecutor $dbDriver;
 
     /**
-     * @var DbDriverInterface|null
+     * @var DatabaseExecutor|null
      */
-    protected ?DbDriverInterface $dbDriverWrite = null;
+    protected ?DatabaseExecutor $dbDriverWrite = null;
 
     /**
      * @var EntityProcessorInterface|null
@@ -64,16 +64,16 @@ class Repository
 
     /**
      * Repository constructor.
-     * @param DbDriverInterface $dbDataset
+     * @param DatabaseExecutor $executor
      * @param string|Mapper $mapperOrEntity
+     * @throws InvalidArgumentException
      * @throws OrmModelInvalidException
      * @throws ReflectionException
-     * @throws InvalidArgumentException
      */
-    public function __construct(DbDriverInterface $dbDataset, string|Mapper $mapperOrEntity)
+    public function __construct(DatabaseExecutor $executor, string|Mapper $mapperOrEntity)
     {
-        $this->dbDriver = $dbDataset;
-        $this->dbDriverWrite = $dbDataset;
+        $this->dbDriver = $executor;
+        $this->dbDriverWrite = $executor;
         if (is_string($mapperOrEntity)) {
             $mapperOrEntity = new Mapper($mapperOrEntity);
         }
@@ -88,9 +88,9 @@ class Repository
         }
     }
 
-    public function addDbDriverForWrite(DbDriverInterface $dbDriver): void
+    public function addDbDriverForWrite(DatabaseExecutor $executor): void
     {
-        $this->dbDriverWrite = $dbDriver;
+        $this->dbDriverWrite = $executor;
     }
 
     public function setRepositoryReadOnly(): void
@@ -106,12 +106,22 @@ class Repository
         return $this->mapper;
     }
 
-    /**
-     * @return DbDriverInterface
-     */
-    public function getDbDriver(): DbDriverInterface
+    public function getExecutor(): DatabaseExecutor
     {
         return $this->dbDriver;
+
+    }
+
+    /**
+     * @return DatabaseExecutor
+     * @throws RepositoryReadOnlyException
+     */
+    public function getExecutorWrite(): DatabaseExecutor
+    {
+        if (empty($this->dbDriverWrite)) {
+            throw new RepositoryReadOnlyException('Repository is ReadOnly');
+        }
+        return $this->dbDriverWrite;
     }
 
     public function entity(array $values): mixed
@@ -148,18 +158,6 @@ class Repository
     }
 
     /**
-     * @return DbDriverInterface|null
-     * @throws RepositoryReadOnlyException
-     */
-    public function getDbDriverWrite(): ?DbDriverInterface
-    {
-        if (empty($this->dbDriverWrite)) {
-            throw new RepositoryReadOnlyException('Repository is ReadOnly');
-        }
-        return $this->dbDriverWrite;
-    }
-
-    /**
      * @param array|string|int|LiteralInterface $pkId
      * @return mixed|null
      * @throws InvalidArgumentException
@@ -189,7 +187,7 @@ class Repository
         if ($this->mapper->isSoftDeleteEnabled()) {
             $updatable = UpdateQuery::getInstance()
                 ->table($this->mapper->getTable())
-                ->set('deleted_at', new Literal($this->getDbDriverWrite()->getDbHelper()->sqlDate('Y-m-d H:i:s')))
+                ->set('deleted_at', new Literal($this->getExecutorWrite()->getHelper()->sqlDate('Y-m-d H:i:s')))
                 ->where($filterList, $filterKeys);
             $this->update($updatable);
             return true;
@@ -219,7 +217,7 @@ class Repository
             throw new InvalidArgumentException('You pass an empty array to bulk');
         }
 
-        $dbDriver = $this->getDbDriverWrite();
+        $dbDriver = $this->getExecutor()->getDriver();
 
         $bigSqlWrites = '';
         $selectSql = null;
@@ -268,12 +266,12 @@ class Repository
             // First execute all writes (if any) in a single batch using direct PDO exec
             if (trim($bigSqlWrites) !== '') {
                 // Use direct PDO to ensure multi-statement execution across drivers like SQLite
-                $dbDriver->execute($bigSqlWrites, $bigParams);
+                DatabaseExecutor::using($dbDriver)->execute($bigSqlWrites, $bigParams);
             }
 
             // If there is a trailing SELECT, fetch it and return its iterator. Otherwise return an empty iterator
             if (!empty($selectSql)) {
-                $it = $dbDriver->getIterator($selectSql, $selectParams);
+                $it = DatabaseExecutor::using($dbDriver)->getIterator(new SqlStatement($selectSql, $selectParams));
             } else {
                 $it = (new AnyDataset())->getIterator();
             }
@@ -292,12 +290,14 @@ class Repository
      * @return bool
      * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
      */
     public function deleteByQuery(DeleteQuery $updatable): bool
     {
         $sqlStatement = $updatable->build();
 
-        $this->getDbDriverWrite()->execute($sqlStatement);
+        $this->getExecutorWrite()->execute($sqlStatement);
 
         ORMSubject::getInstance()->notify($this->mapper->getTable(), ObserverEvent::Delete, null, $sqlStatement->getParams());
 
@@ -362,25 +362,25 @@ class Repository
      */
     public function getScalar(QueryBuilderInterface $query): mixed
     {
-        $sqlBuild = $query->build($this->getDbDriver());
-        return $this->getDbDriver()->getScalar($sqlBuild);
+        $sqlBuild = $query->build($this->getExecutor()->getDriver());
+        return $this->getExecutor()->getScalar($sqlBuild);
     }
 
     public function getIterator(QueryBuilderInterface|SqlStatement $query, ?CacheQueryResult $cache = null): GenericIterator
     {
-        if ($query instanceof SqlStatement) {
-            $sqlStatement = $query->build($this->getDbDriver());
-            return $this->getDbDriver()->getIterator($sqlStatement);
+        if ($query instanceof QueryBuilderInterface) {
+            $sqlStatement = $query->build($this->getExecutor()->getDriver())
+                ->withEntityClass($this->mapper->getEntityClass())
+                ->withEntityTransformer(new MapFromDbToInstanceHandler($this->mapper));
+        } else {
+            $sqlStatement = $query;
         }
 
-        $sqlBuild = $query->build($this->getDbDriver());
         if (!empty($cache)) {
-            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
-        $sqlBuild = $sqlBuild->withEntityClass($this->mapper->getEntityClass());
-        $sqlBuild = $sqlBuild->withEntityTransformer(new MapFromDbToInstanceHandler($this->mapper));
 
-        return $this->getDbDriver()->getIterator($sqlBuild);
+        return $this->getExecutor()->getIterator($sqlStatement);
     }
 
     /**
@@ -400,11 +400,11 @@ class Repository
         }
 
         // For multiple mappers, get raw data without transformation
-        $sqlBuild = $query->build($this->getDbDriver());
+        $sqlBuild = $query->build($this->getExecutor()->getDriver());
         if (!empty($cache)) {
             $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
         }
-        $iterator = $this->getDbDriver()->getIterator($sqlBuild);
+        $iterator = $this->getExecutor()->getIterator($sqlBuild);
 
         $result = [];
         foreach ($iterator as $row) {
@@ -428,8 +428,8 @@ class Repository
      */
     public function getByQueryRaw(QueryBuilderInterface $query): array
     {
-        $sqlStatement = $query->build($this->getDbDriver());
-        $iterator = $this->getDbDriver()->getIterator($sqlStatement);
+        $sqlStatement = $query->build($this->getExecutor()->getDriver());
+        $iterator = $this->getExecutor()->getIterator($sqlStatement);
         return $iterator->toArray();
     }
 
@@ -452,7 +452,7 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $keyGen = $this->getMapper()->generateKey($this->getDbDriver(), $instance) ?? [];
+            $keyGen = $this->getMapper()->generateKey($this->getExecutorWrite(), $instance) ?? [];
             if (!empty($keyGen) && !is_array($keyGen)) {
                 $keyGen = [$keyGen];
             }
@@ -538,7 +538,7 @@ class Repository
         ObjectCopy::copy(
             $array,
             $valuesToUpdate,
-            new PrepareToUpdateHandler($mapper, $instance, $this->getDbDriverWrite())
+            new PrepareToUpdateHandler($mapper, $instance, $this->getExecutorWrite())
         );
         $array = array_filter((array)$valuesToUpdate, fn($value) => $value !== false);
 
@@ -566,7 +566,7 @@ class Repository
                 $array = $this->beforeInsert->process($array);
             }
             foreach ($this->getMapper()->getFieldMap() as $fieldMap) {
-                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getDbDriverWrite()->getDbHelper());
+                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getExecutorWrite()->getHelper());
                 if ($fieldValue !== false) {
                     $array[$fieldMap->getFieldName()] = $fieldValue;
                 }
@@ -599,6 +599,8 @@ class Repository
      * @param InsertQuery $updatable
      * @param mixed $keyGen
      * @return mixed
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
@@ -620,33 +622,36 @@ class Repository
      */
     protected function insertWithAutoInc(InsertQuery $updatable): int
     {
-        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
-        $dbFunctions = $this->getDbDriverWrite()->getDbHelper();
-        return $dbFunctions->executeAndGetInsertedId($this->getDbDriverWrite(), $sqlStatement);
+        $dbFunctions = $this->getExecutorWrite()->getHelper();
+        $sqlStatement = $updatable->build($dbFunctions);
+        return $dbFunctions->executeAndGetInsertedId($this->getExecutorWrite(), $sqlStatement);
     }
 
     /**
      * @param InsertQuery $updatable
      * @return void
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     protected function insertWithKeyGen(InsertQuery $updatable): void
     {
-        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
-        $this->getDbDriverWrite()->execute($sqlStatement);
+        $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper());
+        $this->getExecutorWrite()->execute($sqlStatement);
     }
 
     /**
      * @param UpdateQuery $updatable
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
      * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
     protected function update(UpdateQuery $updatable): void
     {
-        $sqlStatement = $updatable->build($this->getDbDriverWrite()->getDbHelper());
-
-        $this->getDbDriverWrite()->execute($sqlStatement);
+        $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper());
+        $this->getExecutorWrite()->execute($sqlStatement);
     }
 
     /**

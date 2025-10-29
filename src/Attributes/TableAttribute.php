@@ -4,20 +4,21 @@ namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
 
 #[Attribute(Attribute::TARGET_CLASS)]
 class TableAttribute
 {
 
     private string $tableName;
-    private mixed $primaryKeySeedFunction;
+    private string|UniqueIdGeneratorInterface|null $primaryKeySeedFunction;
     private ?string $tableAlias;
     private string|EntityProcessorInterface|null $beforeInsert = null;
     private string|EntityProcessorInterface|null $beforeUpdate = null;
 
     public function __construct(
-        string                          $tableName,
-        ?callable                            $primaryKeySeedFunction = null,
+        string                                 $tableName,
+        string|UniqueIdGeneratorInterface|null $primaryKeySeedFunction = null,
         ?string                              $tableAlias = null,
         string|EntityProcessorInterface|null $beforeInsert = null,
         string|EntityProcessorInterface|null $beforeUpdate = null
@@ -40,7 +41,7 @@ class TableAttribute
         return $this->tableAlias;
     }
 
-    public function getPrimaryKeySeedFunction(): ?callable
+    public function getPrimaryKeySeedFunction(): string|UniqueIdGeneratorInterface|null
     {
         return $this->primaryKeySeedFunction;
     }

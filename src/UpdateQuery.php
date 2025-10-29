@@ -68,7 +68,7 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
+    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
         $dbHelper = $dbDriverOrHelper;
@@ -164,7 +164,7 @@ class UpdateQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->set))
