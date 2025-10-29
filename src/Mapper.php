@@ -2,14 +2,17 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
+use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\Serializer\ObjectCopy;
-use Closure;
+use ByJG\Serializer\Serialize;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
@@ -21,13 +24,17 @@ class Mapper
     private string $table;
     private array $primaryKey;
     private array $primaryKeyModel;
-    private mixed $primaryKeySeedFunction = null;
+    private string|UniqueIdGeneratorInterface|null $primaryKeySeedFunction = null;
     private bool $softDelete = false;
+    private string|EntityProcessorInterface|null $beforeInsert = null;
+    private string|EntityProcessorInterface|null $beforeUpdate = null;
 
     /**
      * @var FieldMapping[]
      */
     private array $fieldMap = [];
+
+    private array $fieldToProperty = [];
     private bool $preserveCaseName = false;
     private ?string $tableAlias = null;
 
@@ -37,6 +44,7 @@ class Mapper
      * @param string $entity
      * @param string|null $table
      * @param string|array|null $primaryKey
+     * @param string|null $tableAlias
      * @throws OrmModelInvalidException
      * @throws ReflectionException
      */
@@ -83,6 +91,12 @@ class Mapper
         if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
             $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
         }
+        if (!empty($tableAttribute->getBeforeInsert())) {
+            $this->withBeforeInsert($tableAttribute->getBeforeInsert());
+        }
+        if (!empty($tableAttribute->getBeforeUpdate())) {
+            $this->withBeforeUpdate($tableAttribute->getBeforeUpdate());
+        }
         ORM::addMapper($this);
 
         $this->primaryKey = [];
@@ -107,7 +121,7 @@ class Mapper
         }
     }
 
-    public function withPrimaryKeySeedFunction(callable $primaryKeySeedFunction): static
+    public function withPrimaryKeySeedFunction(string|UniqueIdGeneratorInterface $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
@@ -116,6 +130,18 @@ class Mapper
     public function withPreserveCaseName(): static
     {
         $this->preserveCaseName = true;
+        return $this;
+    }
+
+    public function withBeforeInsert(EntityProcessorInterface|string $processor): static
+    {
+        $this->beforeInsert = $processor;
+        return $this;
+    }
+
+    public function withBeforeUpdate(EntityProcessorInterface|string $processor): static
+    {
+        $this->beforeUpdate = $processor;
         return $this;
     }
 
@@ -150,6 +176,8 @@ class Mapper
             ->withFieldName($fieldName)
             ->withFieldAlias($fieldAlias)
         ;
+        $this->fieldToProperty[$fieldName] = $propertyName;
+        $this->fieldToProperty[$fieldAlias] = $propertyName;
 
         if ($fieldName === 'deleted_at') {
             $this->softDelete = true;
@@ -163,27 +191,9 @@ class Mapper
         return $this;
     }
 
-    /**
-     * @param string $property
-     * @param string $fieldName
-     * @param Closure|null $updateFunction
-     * @param Closure|null $selectFunction
-     * @return $this
-     * @deprecated Use addFieldMapping instead
-     */
-    public function addFieldMap(string $property, string $fieldName, Closure $updateFunction = null, Closure $selectFunction = null): static
+    public function getEntityClass(): string
     {
-        $fieldMapping = FieldMapping::create($property)
-            ->withFieldName($fieldName);
-
-        if (!is_null($updateFunction)) {
-            $fieldMapping->withUpdateFunction($updateFunction);
-        }
-        if (!is_null($selectFunction)) {
-            $fieldMapping->withSelectFunction($selectFunction);
-        }
-
-        return $this->addFieldMapping($fieldMapping);
+        return $this->entity;
     }
 
     /**
@@ -195,27 +205,11 @@ class Mapper
         $class = $this->entity;
         $instance = new $class();
 
-        if (empty($fieldValues)) {
-            return $instance;
-        }
-
-        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            if (!empty($fieldMap->getFieldAlias()) && isset($fieldValues[$fieldMap->getFieldAlias()])) {
-                $fieldValues[$fieldMap->getFieldName()] = $fieldValues[$fieldMap->getFieldAlias()];
-            }
-            if ($property != $fieldMap->getFieldName() && isset($fieldValues[$fieldMap->getFieldName()])) {
-                $fieldValues[$property] = $fieldValues[$fieldMap->getFieldName()];
-                unset($fieldValues[$fieldMap->getFieldName()]);
-            }
-        }
-        ObjectCopy::copy($fieldValues, $instance);
-
-        foreach ((array)$this->getFieldMap() as $property => $fieldMap) {
-            $fieldValues[$property] = $fieldMap->getSelectFunctionValue($fieldValues[$property] ?? "", $instance);
-        }
-        if (count($this->getFieldMap()) > 0) {
-            ObjectCopy::copy($fieldValues, $instance);
-        }
+        // The command below is to get all properties of the class.
+        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // Particularly useful for processing the selectFunction.
+        $fieldValues = array_merge(Serialize::from($instance)->toArray(), $fieldValues);
+        ObjectCopy::copy($fieldValues, $instance, new MapFromDbToInstanceHandler($this));
 
         return $instance;
     }
@@ -313,7 +307,7 @@ class Mapper
      * @param string|null $property
      * @return FieldMapping[]|FieldMapping|null
      */
-    public function getFieldMap(string $property = null): array|FieldMapping|null
+    public function getFieldMap(?string $property = null): array|FieldMapping|null
     {
         if (empty($property)) {
             return $this->fieldMap;
@@ -326,6 +320,11 @@ class Mapper
         }
 
         return $this->fieldMap[$property];
+    }
+
+    public function getPropertyName(string $fieldName): string
+    {
+        return $this->fieldToProperty[$fieldName] ?? $fieldName;
     }
 
     /**
@@ -343,20 +342,42 @@ class Mapper
     }
 
     /**
-     * @param DbDriverInterface $dbDriver
+     * @param DatabaseExecutor $executor
+     * @param object $instance
      * @return mixed|null
      */
-    public function generateKey(DbDriverInterface $dbDriver, object $instance): mixed
+    public function generateKey(DatabaseExecutor $executor, object $instance): mixed
     {
         if (empty($this->primaryKeySeedFunction)) {
             return null;
         }
 
-        return call_user_func_array($this->primaryKeySeedFunction, [$dbDriver, $instance]);
+        $primaryKeyFunction = $this->primaryKeySeedFunction;
+        if (is_string($this->primaryKeySeedFunction)) {
+            $primaryKeyFunction = new $this->primaryKeySeedFunction();
+        }
+
+        return $primaryKeyFunction->process($executor, $instance);
     }
 
     public function isSoftDeleteEnabled(): bool
     {
         return $this->softDelete;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBeforeInsert(): mixed
+    {
+        return $this->beforeInsert;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getBeforeUpdate(): mixed
+    {
+        return $this->beforeUpdate;
     }
 }

@@ -2,12 +2,14 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\TransactionManager;
 use InvalidArgumentException;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
 
@@ -18,6 +20,7 @@ class TransactionManagerTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     public function setUp(): void
     {
         $this->object = new TransactionManager();
@@ -28,6 +31,7 @@ class TransactionManagerTest extends TestCase
         ConnectionUtil::getConnection("d");
     }
 
+    #[Override]
     public function tearDown(): void
     {
         $this->object->destroy();
@@ -98,17 +102,18 @@ class TransactionManagerTest extends TestCase
     public function testAddRepository()
     {
         $dbDriver = ConnectionUtil::getConnection("a");
+        $userMapper = new Mapper(Users::class, 'users', 'Id');
+        $repository = new Repository(DatabaseExecutor::using($dbDriver), $userMapper);
 
-        $dbDriver->execute('create table users (
+        $repository->getExecutor()->execute('create table users (
             id integer primary key  auto_increment,
             name varchar(45),
             createdate datetime);'
         );
-        $dbDriver->execute("insert into users (name, createdate) values ('John Doe', '2017-01-02')");
-        $dbDriver->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
-        $dbDriver->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
-        $userMapper = new Mapper(Users::class, 'users', 'Id');
-        $repository = new Repository($dbDriver, $userMapper);
+        $repository->getExecutor()->execute("insert into users (name, createdate) values ('John Doe', '2015-05-02')");
+        $repository->getExecutor()->execute("insert into users (name, createdate) values ('Jane Doe', '2017-01-04')");
+        $repository->getExecutor()->execute("insert into users (name, createdate) values ('JG', '1974-01-26')");
+
 
         $this->object->addRepository($repository);
         $this->assertEquals(1, $this->object->count());

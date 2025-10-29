@@ -52,7 +52,7 @@ class TransactionManager
 
     public function addRepository(Repository $repository): void
     {
-        $this->addDbDriver($repository->getDbDriver());
+        $this->addDbDriver($repository->getExecutor()->getDriver());
     }
 
     /**

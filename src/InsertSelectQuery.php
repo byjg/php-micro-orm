@@ -4,9 +4,11 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DbDriverInterface;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use InvalidArgumentException;
+use Override;
 
 class InsertSelectQuery extends Updatable
 {
@@ -14,10 +16,10 @@ class InsertSelectQuery extends Updatable
 
     protected ?QueryBuilderInterface $query = null;
 
-    protected ?SqlObject $sqlObject = null;
+    protected ?SqlStatement $sqlStatement = null;
 
 
-    public static function getInstance(string $table = null, array $fields = []): self
+    public static function getInstance(?string $table = null, array $fields = []): self
     {
         $query = new InsertSelectQuery();
         if (!is_null($table)) {
@@ -42,19 +44,20 @@ class InsertSelectQuery extends Updatable
         return $this;
     }
 
-    public function fromSqlObject(SqlObject $sqlObject): static
+    public function fromSqlStatement(SqlStatement $sqlStatement): static
     {
-        $this->sqlObject = $sqlObject;
+        $this->sqlStatement = $sqlStatement;
 
         return $this;
     }
 
     /**
      * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    #[Override]
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -67,9 +70,9 @@ class InsertSelectQuery extends Updatable
             $dbHelper = $dbDriverOrHelper->getDbHelper();
         }
 
-        if (empty($this->query) && empty($this->sqlObject)) {
+        if (empty($this->query) && empty($this->sqlStatement)) {
             throw new OrmInvalidFieldsException('You must specify the query for insert');
-        } elseif (!empty($this->query) && !empty($this->sqlObject)) {
+        } elseif (!empty($this->query) && !empty($this->sqlStatement)) {
             throw new OrmInvalidFieldsException('You must specify only one query for insert');
         }
 
@@ -87,16 +90,17 @@ class InsertSelectQuery extends Updatable
             . $tableStr
             . ' ( ' . implode(', ', $fieldsStr) . ' ) ';
 
-        if (!is_null($this->sqlObject)) {
-            $fromObj = $this->sqlObject;
+        if (!is_null($this->sqlStatement)) {
+            $fromObj = $this->sqlStatement;
         } else {
             $fromObj = $this->query->build($dbDriver);
         }
 
-        return new SqlObject($sql . $fromObj->getSql(), $fromObj->getParameters());
+        return new SqlStatement($sql . $fromObj->getSql(), $fromObj->getParams());
     }
 
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    #[Override]
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertSelectQuery to a Query');
     }

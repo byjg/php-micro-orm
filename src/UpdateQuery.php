@@ -9,6 +9,7 @@ use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use Override;
 
 class UpdateQuery extends Updatable
 {
@@ -19,7 +20,7 @@ class UpdateQuery extends Updatable
     /**
      * @throws InvalidArgumentException
      */
-    public static function getInstance(array $fields = [], Mapper $mapper = null): UpdateQuery
+    public static function getInstance(array $fields = [], ?Mapper $mapper = null): UpdateQuery
     {
         $updatable = new UpdateQuery();
 
@@ -67,7 +68,7 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
+    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
         $dbHelper = $dbDriverOrHelper;
@@ -102,10 +103,11 @@ class UpdateQuery extends Updatable
 
     /**
      * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    #[Override]
+    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');
@@ -118,7 +120,7 @@ class UpdateQuery extends Updatable
         } else {
             $dbHelper = $dbDriverOrHelper;
         }
-        
+
         $fieldsStr = [];
         $params = [];
         foreach ($this->set as $field => $value) {
@@ -158,9 +160,11 @@ class UpdateQuery extends Updatable
         $params = array_merge($params, $whereStr[1]);
 
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params, SqlObjectEnum::UPDATE);
+        return new SqlStatement($sql, $params);
     }
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+
+    #[Override]
+    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->set))

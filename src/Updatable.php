@@ -2,9 +2,9 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\UpdateBuilderInterface;
+use Override;
 
 abstract class Updatable implements UpdateBuilderInterface
 {
@@ -26,9 +26,13 @@ abstract class Updatable implements UpdateBuilderInterface
         return $this;
     }
 
-    public function buildAndExecute(DbDriverInterface $dbDriver, $params = [], ?DbFunctionsInterface $dbHelper = null): bool
+    #[Override]
+    public function buildAndExecute(DatabaseExecutor $executor, $params = []): bool
     {
-        $sqlObject = $this->build($dbHelper);
-        return $dbDriver->execute($sqlObject->getSql(), array_merge($sqlObject->getParameters(), $params));
+        $sqlStatement = $this->build($executor->getHelper());
+        if (!empty($params)) {
+            $sqlStatement = $sqlStatement->withParams($params);
+        }
+        return $executor->execute($sqlStatement);
     }
 }

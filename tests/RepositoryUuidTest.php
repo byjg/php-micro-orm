@@ -2,38 +2,36 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Repository;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\UsersWithUuidKey;
 
 class RepositoryUuidTest extends TestCase
 {
     /**
-     * @var DbDriverInterface
-     */
-    protected $dbDriver;
-
-    /**
      * @var Repository
      */
-    protected $repository;
+    protected Repository $repository;
 
+    #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $this->repository = new Repository(DatabaseExecutor::using($dbDriver), UsersWithUuidKey::class);
 
-        $this->dbDriver->execute('create table usersuuid (
+        $this->repository->getExecutor()->execute('create table usersuuid (
             id binary(16) primary key,
             name varchar(45));'
         );
-        $this->repository = new Repository($this->dbDriver, UsersWithUuidKey::class);
     }
 
+    #[Override]
     public function tearDown(): void
     {
-        $this->dbDriver->execute('drop table if exists usersuuid;');
+        $this->repository->getExecutor()->execute('drop table if exists usersuuid;');
     }
 
     public function testGet()

@@ -13,7 +13,7 @@ class UsersWithUuidKey
     protected string|Literal|null $Id = null;
 
     #[FieldAttribute(fieldName: 'name')]
-    protected ?string $name;
+    protected ?string $name = null;
 
     /**
      * @return mixed
