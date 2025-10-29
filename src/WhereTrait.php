@@ -128,7 +128,7 @@ trait WhereTrait
         return $this;
     }
 
-    public function unsafe()
+    public function unsafe(): void
     {
         $this->unsafe = true;
     }
