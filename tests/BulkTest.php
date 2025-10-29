@@ -12,6 +12,7 @@ use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\QueryRaw;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\UpdateQuery;
+use Override;
 use PDOException;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Users;
@@ -21,6 +22,7 @@ class BulkTest extends TestCase
     protected DbDriverInterface $dbDriver;
     protected Repository $repository;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->dbDriver = ConnectionUtil::getConnection('testmicroorm');
@@ -41,6 +43,7 @@ class BulkTest extends TestCase
         $this->repository = new Repository($this->dbDriver, $mapper);
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->dbDriver->execute('drop table users');
