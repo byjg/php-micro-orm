@@ -73,17 +73,17 @@ use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
 When applied, this function will generate a SQL statement that sets the field to the current timestamp using the
 database server's date/time functions.
 
-### UpdateBinaryUuidMapper and SelectBinaryUuidMapper
+### FormatUpdateUuidMapper and FormatSelectUuidMapper
 
 These mapper functions are used to convert between string UUID values and binary representations for database storage.
 
 ```php
-use ByJG\MicroOrm\MapperFunctions\UpdateBinaryUuidMapper;
-use ByJG\MicroOrm\MapperFunctions\SelectBinaryUuidMapper;
+use ByJG\MicroOrm\MapperFunctions\FormatUpdateUuidMapper;
+use ByJG\MicroOrm\MapperFunctions\FormatSelectUuidMapper;
 ```
 
-- `UpdateBinaryUuidMapper`: Converts a UUID string to a binary representation for storage in the database
-- `SelectBinaryUuidMapper`: Converts a binary representation of a UUID back to a string when retrieving from the
+- `FormatUpdateUuidMapper`: Converts a UUID string to a binary representation for storage in the database
+- `FormatSelectUuidMapper`: Converts a binary representation of a UUID back to a string when retrieving from the
   database
 
 ## Using Mapper Functions
@@ -205,16 +205,16 @@ When working with UUIDs stored as binary in the database:
 
 ```php
 use ByJG\MicroOrm\Attributes\FieldAttribute;
-use ByJG\MicroOrm\MapperFunctions\SelectBinaryUuidMapper;
-use ByJG\MicroOrm\MapperFunctions\UpdateBinaryUuidMapper;
+use ByJG\MicroOrm\MapperFunctions\FormatSelectUuidMapper;
+use ByJG\MicroOrm\MapperFunctions\FormatUpdateUuidMapper;
 
 class Product
 {
     #[FieldAttribute(
         primaryKey: true,
         fieldName: "uuid",
-        updateFunction: UpdateBinaryUuidMapper::class,
-        selectFunction: SelectBinaryUuidMapper::class
+        updateFunction: FormatUpdateUuidMapper::class,
+        selectFunction: FormatSelectUuidMapper::class
     )]
     protected ?string $uuid = null;
     

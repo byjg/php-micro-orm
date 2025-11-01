@@ -119,8 +119,8 @@ specific database.
 
 The `FieldUuidAttribute` is used to mark fields as UUID primary keys. It internally configures:
 
-- `UpdateBinaryUuidMapper` - Handles converting string UUIDs to binary format when saving to database
-- `SelectBinaryUuidMapper` - Handles converting binary UUIDs from database to string format when reading
+- `FormatUpdateUuidMapper` - Handles converting string UUIDs to binary format when saving to database
+- `FormatSelectUuidMapper` - Handles converting binary UUIDs from database to string format when reading
 
 ## Working with UUID Literals
 

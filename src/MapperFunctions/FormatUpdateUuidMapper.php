@@ -8,7 +8,7 @@ use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
 use Override;
 
-class UpdateBinaryUuidMapper implements MapperFunctionInterface
+class FormatUpdateUuidMapper implements MapperFunctionInterface
 {
     #[Override]
     public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed

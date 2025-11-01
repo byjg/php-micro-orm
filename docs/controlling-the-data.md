@@ -81,8 +81,8 @@ The `processedValue` method in your custom mapper class will receive three argum
 | `StandardMapper`         | Defines the basic behavior for select and update fields; You don't need to set it. Just know it exists.    |
 | `ReadOnlyMapper`         | Defines a read-only field. It can be retrieved from the database but will not be updated.                  |
 | `NowUtcMapper`           | Returns the current date/time in UTC. It is used to set the current date/time in the database.             |
-| `UpdateBinaryUuidMapper` | Converts a UUID string to a binary representation. It is used to store UUID in a binary field.             |
-| `SelectBinaryUuidMapper` | Converts a binary representation of a UUID to a string. It is used to retrieve a UUID from a binary field. |
+| `FormatUpdateUuidMapper` | Converts a UUID string to a binary representation. It is used to store UUID in a binary field.             |
+| `FormatSelectUuidMapper` | Converts a binary representation of a UUID to a string. It is used to retrieve a UUID from a binary field. |
 
 You can use them in the FieldAttribute as well:
 

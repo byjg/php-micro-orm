@@ -140,8 +140,8 @@ In this example:
 The `FieldUuidAttribute` is a specialized field attribute designed for UUID fields. It internally configures the
 appropriate mapper functions for handling binary UUID values:
 
-- For reading from the database: Uses `SelectBinaryUuidMapper` to convert binary UUID to string format
-- For writing to the database: Uses `UpdateBinaryUuidMapper` to convert string UUID to binary format
+- For reading from the database: Uses `FormatSelectUuidMapper` to convert binary UUID to string format
+- For writing to the database: Uses `FormatUpdateUuidMapper` to convert string UUID to binary format
 
 ### Database Schema Requirements
 
