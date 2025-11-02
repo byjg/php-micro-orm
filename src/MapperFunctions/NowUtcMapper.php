@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm\MapperFunctions;
 
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use Override;
@@ -10,8 +10,8 @@ use Override;
 class NowUtcMapper implements MapperFunctionInterface
 {
     #[Override]
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
-        return new Literal($helper->sqlDate('Y-m-d H:i:s'));
+        return new Literal($executor->getHelper()->sqlDate('Y-m-d H:i:s'));
     }
 } 

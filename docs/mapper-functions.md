@@ -125,12 +125,12 @@ $mapper->addFieldMapping($fieldMap);
 You can create your own mapper functions by implementing the `MapperFunctionInterface`:
 
 ```php
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 
 class MyCustomMapper implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         // Transform the value as needed
         return $transformedValue;
@@ -142,7 +142,7 @@ The `processedValue` method receives:
 
 - `$value`: The current value of the field
 - `$instance`: The entity instance being processed
-- `$helper`: The database helper that provides database-specific functions
+- `$executor`: The database executor that allows query the database or provides database-specific functions
 
 You can then use your custom mapper function just like the built-in ones:
 
@@ -232,13 +232,13 @@ This setup:
 For custom data formatting, like storing phone numbers in a standardized format:
 
 ```php
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 
 class PhoneNumberFormatter implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         if (!$value) {
             return $value;
@@ -251,7 +251,7 @@ class PhoneNumberFormatter implements MapperFunctionInterface
 
 class PhoneNumberDisplay implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         if (!$value || strlen($value) !== 10) {
             return $value;

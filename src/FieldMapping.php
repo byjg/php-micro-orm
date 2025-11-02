@@ -2,6 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\MapperFunctions\ReadOnlyMapper;
 use ByJG\MicroOrm\MapperFunctions\StandardMapper;
@@ -172,22 +173,22 @@ class FieldMapping
         return $function->processedValue($value, $instance, null);
     }
 
-    public function getUpdateFunctionValue(mixed $value, mixed $instance, mixed $helper): mixed
+    public function getUpdateFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         $function = $this->updateFunction;
         if (is_string($function)) {
             $function = new $function();
         }
-        return $function->processedValue($value, $instance, $helper);
+        return $function->processedValue($value, $instance, $executor);
     }
 
-    public function getInsertFunctionValue(mixed $value, mixed $instance, mixed $helper): mixed
+    public function getInsertFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         $function = $this->insertFunction;
         if (is_string($function)) {
             $function = new $function();
         }
-        return $function->processedValue($value, $instance, $helper);
+        return $function->processedValue($value, $instance, $executor);
     }
 
     public function isSyncWithDb(): bool

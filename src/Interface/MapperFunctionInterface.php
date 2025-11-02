@@ -2,9 +2,9 @@
 
 namespace ByJG\MicroOrm\Interface;
 
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 
 interface MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed;
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed;
 } 

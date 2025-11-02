@@ -5,7 +5,6 @@ namespace Tests;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
@@ -155,7 +154,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withSelectFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($value)) {
                         return null;
@@ -168,7 +167,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($instance["createdate"])) {
                         return null;
@@ -374,7 +373,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withUpdateFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($value)) {
                         return null;
@@ -387,7 +386,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($instance["createdate"])) {
                         return null;
@@ -589,7 +588,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('name')
             ->withUpdateFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($value)) {
                         return null;
@@ -602,7 +601,7 @@ class RepositoryTest extends TestCase
         $this->userMapper->addFieldMapping(FieldMapping::create('year')
             ->withSelectFunction(new class implements MapperFunctionInterface {
                 #[Override]
-                public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+                public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
                 {
                     if (empty($instance["createdate"])) {
                         return null;

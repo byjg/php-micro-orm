@@ -16,7 +16,7 @@ These methods accept either a class name string or an instance of `MapperFunctio
 <?php
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 
 // Creating the mapping
 $mapper = new \ByJG\MicroOrm\Mapper(...);
@@ -24,7 +24,7 @@ $mapper = new \ByJG\MicroOrm\Mapper(...);
 // Custom mapper class implementing MapperFunctionInterface
 class PhoneNumberFormatMapper implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         // Remove non-numeric characters before storing
         return preg_replace('/[^0-9]/', '', $value);
@@ -33,7 +33,7 @@ class PhoneNumberFormatMapper implements MapperFunctionInterface
 
 class PhoneNumberDisplayMapper implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         // Format as (XX) XXXX-XXXX when retrieving
         return preg_replace('/(\d{2})(\d{4})(\d{4})/', '($1) $2-$3', $value);
@@ -72,7 +72,8 @@ The `processedValue` method in your custom mapper class will receive three argum
 
 - `$value`: The value of the field in the entity class
 - `$instance`: The instance of the entity class
-- `$dbHelper`: The instance of the DbFunctionsInterface. You can use it to convert the value to the database format
+- `$executor`: The instance of the DatabaseExecutor. You can use it to query the database or convert the value to the
+  database format.
 
 ## Pre-defined functions
 
@@ -104,11 +105,11 @@ If you need a simple transformation, you can create a lightweight mapper class:
 ```php
 <?php
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 
 class TrimMapper implements MapperFunctionInterface
 {
-    public function processedValue(mixed $value, mixed $instance, ?DbFunctionsInterface $helper = null): mixed
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         if (is_string($value)) {
             return trim($value);

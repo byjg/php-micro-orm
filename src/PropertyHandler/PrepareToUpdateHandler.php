@@ -32,6 +32,6 @@ class PrepareToUpdateHandler implements PropertyHandlerInterface
     public function transformValue(string $propertyName, string $targetName, mixed $value, mixed $instance = null): mixed
     {
         $fieldMap = $this->mapper->getFieldMap($propertyName);
-        return $fieldMap?->getUpdateFunctionValue($value, $this->instance, $this->executor->getHelper()) ?? $value;
+        return $fieldMap?->getUpdateFunctionValue($value, $this->instance, $this->executor) ?? $value;
     }
 }

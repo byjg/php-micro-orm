@@ -615,7 +615,7 @@ class Repository
                 $array = $this->beforeInsert->process($array);
             }
             foreach ($this->getMapper()->getFieldMap() as $fieldMap) {
-                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getExecutorWrite()->getHelper());
+                $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getExecutorWrite());
                 if ($fieldValue !== false) {
                     $array[$fieldMap->getFieldName()] = $fieldValue;
                 }

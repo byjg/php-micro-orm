@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
@@ -100,8 +101,12 @@ class MapperFunctionsTest extends TestCase
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');
 
+        $executorMock = $this->createMock(DatabaseExecutor::class);
+        $executorMock->method('getHelper')
+            ->willReturn($dbHelperMock);
+
         $mapper = new NowUtcMapper();
-        $result = $mapper->processedValue(null, new stdClass(), $dbHelperMock);
+        $result = $mapper->processedValue(null, new stdClass(), $executorMock);
 
         $this->assertInstanceOf(Literal::class, $result);
         $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
@@ -114,8 +119,12 @@ class MapperFunctionsTest extends TestCase
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');
 
+        $executorMock = $this->createMock(DatabaseExecutor::class);
+        $executorMock->method('getHelper')
+            ->willReturn($dbHelperMock);
+
         $mapper = new NowUtcMapper();
-        $result = $mapper->processedValue('ignored value', new stdClass(), $dbHelperMock);
+        $result = $mapper->processedValue('ignored value', new stdClass(), $executorMock);
 
         $this->assertInstanceOf(Literal::class, $result);
         $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
