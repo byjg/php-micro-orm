@@ -8,7 +8,7 @@ use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
-use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\Serializer\ObjectCopy;
@@ -24,7 +24,7 @@ class Mapper
     private string $table;
     private array $primaryKey;
     private array $primaryKeyModel;
-    private string|UniqueIdGeneratorInterface|null $primaryKeySeedFunction = null;
+    private string|MapperFunctionInterface|null $primaryKeySeedFunction = null;
     private bool $softDelete = false;
     private string|EntityProcessorInterface|null $beforeInsert = null;
     private string|EntityProcessorInterface|null $beforeUpdate = null;
@@ -121,7 +121,7 @@ class Mapper
         }
     }
 
-    public function withPrimaryKeySeedFunction(string|UniqueIdGeneratorInterface $primaryKeySeedFunction): static
+    public function withPrimaryKeySeedFunction(string|MapperFunctionInterface $primaryKeySeedFunction): static
     {
         $this->primaryKeySeedFunction = $primaryKeySeedFunction;
         return $this;
@@ -357,7 +357,7 @@ class Mapper
             $primaryKeyFunction = new $this->primaryKeySeedFunction();
         }
 
-        return $primaryKeyFunction->process($executor, $instance);
+        return $primaryKeyFunction->processedValue(null, $instance, $executor);
     }
 
     public function isSoftDeleteEnabled(): bool

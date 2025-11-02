@@ -4,12 +4,12 @@ namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use Override;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-class TableSqliteUuidPKAttribute extends TableAttribute implements UniqueIdGeneratorInterface
+class TableSqliteUuidPKAttribute extends TableAttribute implements MapperFunctionInterface
 {
     public function __construct(string $tableName)
     {
@@ -17,7 +17,7 @@ class TableSqliteUuidPKAttribute extends TableAttribute implements UniqueIdGener
     }
 
     #[Override]
-    public function process(DatabaseExecutor $executor, array|object $instance): string|Literal|int
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         return new Literal("X'" . $executor->getScalar("SELECT hex(randomblob(16))") . "'");
     }

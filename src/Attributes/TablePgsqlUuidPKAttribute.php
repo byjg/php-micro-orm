@@ -4,12 +4,11 @@ namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\MicroOrm\Interface\UniqueIdGeneratorInterface;
-use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use Override;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-class TablePgsqlUuidPKAttribute extends TableAttribute implements UniqueIdGeneratorInterface
+class TablePgsqlUuidPKAttribute extends TableAttribute implements MapperFunctionInterface
 {
     public function __construct(string $tableName)
     {
@@ -17,7 +16,7 @@ class TablePgsqlUuidPKAttribute extends TableAttribute implements UniqueIdGenera
     }
 
     #[Override]
-    public function process(DatabaseExecutor $executor, array|object $instance): string|Literal|int
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         $bytes = random_bytes(16);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
