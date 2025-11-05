@@ -160,13 +160,51 @@ class Repository
     }
 
     /**
+     * Apply updateFunction to primary key values if configured in the field mapping.
+     * This allows automatic conversion of values (e.g., UUID strings to HexUuidLiteral).
+     *
+     * @param array|string|int|LiteralInterface $pkId
+     * @return array|string|int|LiteralInterface Processed primary key value(s)
+     */
+    private function applyPkUpdateFunction(array|string|int|LiteralInterface $pkId): array|string|int|LiteralInterface
+    {
+        // Ensure we have an array to work with
+        if (!is_array($pkId)) {
+            $pkId = [$pkId];
+        }
+
+        $pkList = $this->mapper->getPrimaryKey();
+
+        // Apply updateFunction to each primary key value
+        foreach ($pkId as $index => $value) {
+            $pkName = $pkList[$index] ?? null;
+            if ($pkName !== null) {
+                $fieldMap = $this->mapper->getFieldMap($this->mapper->getPropertyName($pkName));
+                if ($fieldMap && $fieldMap->getUpdateFunction()) {
+                    $value = $fieldMap->getUpdateFunctionValue($value, null, $this->getExecutor());
+                }
+            }
+            $pkId[$index] = $value;
+        }
+
+        // If single PK, unwrap the array
+        if (count($pkId) === 1) {
+            return $pkId[0];
+        }
+
+        return $pkId;
+    }
+
+    /**
      * @param array|string|int|LiteralInterface $pkId
      * @return mixed|null
      * @throws InvalidArgumentException
      */
     public function get(array|string|int|LiteralInterface $pkId): mixed
     {
-        [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
+        $processedPkId = $this->applyPkUpdateFunction($pkId);
+
+        [$filterList, $filterKeys] = $this->mapper->getPkFilter($processedPkId);
         $result = $this->getByFilter($filterList, $filterKeys);
 
         if (count($result) === 1) {
@@ -179,12 +217,16 @@ class Repository
     /**
      * @param array|string|int|LiteralInterface $pkId
      * @return bool
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
      * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
     public function delete(array|string|int|LiteralInterface $pkId): bool
     {
-        [$filterList, $filterKeys] = $this->mapper->getPkFilter($pkId);
+        $processedPkId = $this->applyPkUpdateFunction($pkId);
+
+        [$filterList, $filterKeys] = $this->mapper->getPkFilter($processedPkId);
 
         if ($this->mapper->isSoftDeleteEnabled()) {
             $updatable = UpdateQuery::getInstance()

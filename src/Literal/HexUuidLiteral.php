@@ -76,20 +76,18 @@ class HexUuidLiteral extends Literal
             return null;
         }
 
-        if (strlen($item) === 16 && !ctype_print($item)) {
+        if (strlen($item) === 16) {
             $item = bin2hex($item);
         }
 
-        $pattern = preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item);
+        $pattern = strtoupper(preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item));
 
         if (strlen($pattern) === 32) {
-            $item = preg_replace("/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/", "$1-$2-$3-$4-$5", $pattern);
+            return preg_replace("/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/", "$1-$2-$3-$4-$5", $pattern);
         } elseif ($throwErrorIfInvalid) {
             throw new InvalidArgumentException("Invalid UUID format");
-        } else {
-            return $default;
         }
 
-        return strtoupper($item);
+        return $default;
     }
 }

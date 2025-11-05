@@ -178,92 +178,61 @@ class MapperFunctionsTest extends TestCase
 
     // FormatSelectUuidMapper Tests
 
-    public function testFormatSelectUuidMapperWithArrayInstanceWithUuid()
+    public function testFormatSelectUuidMapperWithBinaryUuid()
     {
         $mapper = new FormatSelectUuidMapper();
         $binaryUuid = hex2bin('F47AC10B58CC4372A5670E02B2C3D479');
-        $instance = ['uuid' => $binaryUuid];
 
-        $result = $mapper->processedValue(null, $instance);
-
-        $this->assertEquals('F47AC10B-58CC-4372-A567-0E02B2C3D479', $result);
-    }
-
-    public function testFormatSelectUuidMapperWithArrayInstanceWithoutUuid()
-    {
-        $mapper = new FormatSelectUuidMapper();
-        $instance = ['id' => 123];
-
-        $result = $mapper->processedValue('original value', $instance);
-
-        $this->assertEquals('original value', $result);
-    }
-
-    public function testFormatSelectUuidMapperWithArrayInstanceEmptyUuid()
-    {
-        $mapper = new FormatSelectUuidMapper();
-        $instance = ['uuid' => ''];
-
-        $result = $mapper->processedValue('fallback value', $instance);
-
-        $this->assertEquals('fallback value', $result);
-    }
-
-    public function testFormatSelectUuidMapperWithObjectWithGetUuidMethod()
-    {
-        $mapper = new FormatSelectUuidMapper();
-
-        $instance = new class {
-            public function getUuid()
-            {
-                return hex2bin('F47AC10B58CC4372A5670E02B2C3D479');
-            }
-        };
-
-        $result = $mapper->processedValue(null, $instance);
+        $result = $mapper->processedValue($binaryUuid, []);
 
         $this->assertEquals('F47AC10B-58CC-4372-A567-0E02B2C3D479', $result);
     }
 
-    public function testFormatSelectUuidMapperWithObjectWithoutGetUuidMethod()
+    public function testFormatSelectUuidMapperWithHexString()
     {
         $mapper = new FormatSelectUuidMapper();
-        $instance = new stdClass();
+        $hexUuid = 'F47AC10B58CC4372A5670E02B2C3D479';
 
-        $result = $mapper->processedValue('original value', $instance);
+        $result = $mapper->processedValue($hexUuid, []);
 
-        $this->assertEquals('original value', $result);
-    }
-
-    public function testFormatSelectUuidMapperWithObjectGetUuidReturnsEmpty()
-    {
-        $mapper = new FormatSelectUuidMapper();
-
-        $instance = new class {
-            public function getUuid()
-            {
-                return null;
-            }
-        };
-
-        $result = $mapper->processedValue('fallback value', $instance);
-
-        $this->assertEquals('fallback value', $result);
+        $this->assertEquals('F47AC10B-58CC-4372-A567-0E02B2C3D479', $result);
     }
 
     public function testFormatSelectUuidMapperWithFormattedUuid()
     {
         $mapper = new FormatSelectUuidMapper();
+        $formattedUuid = 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
 
-        $instance = new class {
-            public function getUuid()
-            {
-                return 'F47AC10B-58CC-4372-A567-0E02B2C3D479';
-            }
-        };
-
-        $result = $mapper->processedValue(null, $instance);
+        $result = $mapper->processedValue($formattedUuid, []);
 
         $this->assertEquals('F47AC10B-58CC-4372-A567-0E02B2C3D479', $result);
+    }
+
+    public function testFormatSelectUuidMapperWithEmptyValue()
+    {
+        $mapper = new FormatSelectUuidMapper();
+
+        $result = $mapper->processedValue('', []);
+
+        $this->assertEquals('', $result);
+    }
+
+    public function testFormatSelectUuidMapperWithNullValue()
+    {
+        $mapper = new FormatSelectUuidMapper();
+
+        $result = $mapper->processedValue(null, []);
+
+        $this->assertNull($result);
+    }
+
+    public function testFormatSelectUuidMapperWithInvalidValue()
+    {
+        $mapper = new FormatSelectUuidMapper();
+
+        $result = $mapper->processedValue('invalid-uuid', []);
+
+        // Should return null when invalid and throwErrorIfInvalid is false
+        $this->assertNull($result);
     }
 }
