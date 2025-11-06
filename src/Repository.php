@@ -34,7 +34,6 @@ use ByJG\XmlUtil\Exception\XmlUtilException;
 use Exception;
 use ReflectionException;
 use stdClass;
-use Throwable;
 
 class Repository
 {
@@ -201,10 +200,11 @@ class Repository
     /**
      * @param array|string|int|LiteralInterface $pkId
      * @return mixed|null
-     * @throws InvalidArgumentException
      * @throws DatabaseException
      * @throws DbDriverNotConnected
      * @throws FileException
+     * @throws InvalidArgumentException
+     * @throws OrmInvalidFieldsException
      * @throws XmlUtilException
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
@@ -228,6 +228,7 @@ class Repository
      * @throws DatabaseException
      * @throws DbDriverNotConnected
      * @throws InvalidArgumentException
+     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
     public function delete(array|string|int|LiteralInterface $pkId): bool
@@ -259,9 +260,12 @@ class Repository
      * @param array<int, Updatable|QueryBuilderInterface> $queries List of queries to be executed in bulk
      * @param IsolationLevelEnum|null $isolationLevel
      * @return GenericIterator|null
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
      * @throws InvalidArgumentException
-     * @throws RepositoryReadOnlyException
-     * @throws Throwable
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function bulkExecute(array $queries, ?IsolationLevelEnum $isolationLevel = null): ?GenericIterator
     {
@@ -363,7 +367,12 @@ class Repository
      * @param int $page
      * @param int|null $limit
      * @return array
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
      * @throws InvalidArgumentException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getByFilter(string|IteratorFilter $filter = "", array $params = [], bool $forUpdate = false, int $page = 0, ?int $limit = null): array
     {
@@ -523,7 +532,12 @@ class Repository
      *
      * @param Query $query
      * @return array
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
      * @throws InvalidArgumentException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getByQueryRaw(QueryBuilderInterface $query): array
     {
@@ -538,11 +552,16 @@ class Repository
      * @param mixed $instance The instance to save
      * @param UpdateConstraintInterface|UpdateConstraintInterface[]|null $updateConstraints One or more constraints to apply
      * @return mixed The saved instance
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
      * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      * @throws UpdateConstraintException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function save(mixed $instance, UpdateConstraintInterface|array|null $updateConstraints = null): mixed
     {
@@ -618,9 +637,15 @@ class Repository
      *
      * @param mixed $instance
      * @return array [Updatable $updatable, array $array, array $fieldToProperty, bool $isInsert, mixed $oldInstance, array $pkList]
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
      * @throws InvalidArgumentException
      * @throws OrmBeforeInvalidException
+     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     protected function saveUpdatableInternal(mixed $instance): array
     {
@@ -697,13 +722,13 @@ class Repository
     /**
      * @param InsertQuery $updatable
      * @param mixed $keyGen
-     * @return mixed
+     * @return int|null
      * @throws DatabaseException
      * @throws DbDriverNotConnected
      * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insert(InsertQuery $updatable, mixed $keyGen): mixed
+    protected function insert(InsertQuery $updatable, mixed $keyGen): ?int
     {
         if (empty($keyGen)) {
             return $this->insertWithAutoinc($updatable);
@@ -758,6 +783,7 @@ class Repository
      *
      * @param EntityProcessorInterface|string $processor The processor to execute
      * @return void
+     * @throws InvalidArgumentException
      */
     public function setBeforeUpdate(EntityProcessorInterface|string $processor): void
     {
@@ -780,6 +806,7 @@ class Repository
      *
      * @param EntityProcessorInterface|string $processor The processor to execute
      * @return void
+     * @throws InvalidArgumentException
      */
     public function setBeforeInsert(EntityProcessorInterface|string $processor): void
     {
