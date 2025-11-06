@@ -101,7 +101,45 @@ $myClass->someProperty = 456;
 $myClass->save();
 ```
 
-### Complex Filtering
+### Query with Fluent API
+
+The new fluent query API provides a more intuitive way to build and execute queries:
+
+```php
+// Get first record matching criteria
+$myClass = MyClass::where('someProperty = :value', ['value' => 123])
+    ->first();
+
+// Get first record or throw exception if not found
+$myClass = MyClass::where('someProperty = :value', ['value' => 123])
+    ->firstOrFail();
+
+// Check if records exist
+if (MyClass::where('someProperty > :min', ['min' => 100])->exists()) {
+    echo "Records found!";
+}
+
+// Get all matching records as array
+$myClassList = MyClass::where('someProperty = :value', ['value' => 123])
+    ->orderBy(['id DESC'])
+    ->toArray();
+
+// Chain multiple conditions
+$myClass = MyClass::where('someProperty > :min', ['min' => 100])
+    ->where('someProperty < :max', ['max' => 200])
+    ->orderBy(['someProperty'])
+    ->first();
+
+// Build query step by step
+$query = MyClass::newQuery()
+    ->where('someProperty = :value', ['value' => 123])
+    ->orderBy(['id DESC'])
+    ->limit(0, 10);
+
+$results = $query->toArray();
+```
+
+### Complex Filtering (Legacy)
 
 ```php
 $myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::EQUAL, 123));

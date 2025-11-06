@@ -199,19 +199,24 @@ class Repository
      * @param array|string|int|LiteralInterface $pkId
      * @return mixed|null
      * @throws InvalidArgumentException
+     * @throws DatabaseException
+     * @throws DbDriverNotConnected
+     * @throws FileException
+     * @throws XmlUtilException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function get(array|string|int|LiteralInterface $pkId): mixed
     {
         $processedPkId = $this->applyPkUpdateFunction($pkId);
 
         [$filterList, $filterKeys] = $this->mapper->getPkFilter($processedPkId);
-        $result = $this->getByFilter($filterList, $filterKeys);
 
-        if (count($result) === 1) {
-            return $result[0];
+        $query = $this->getMapper()->getQuery();
+        if (!empty($filterList)) {
+            $query->where($filterList, $filterKeys);
         }
 
-        return null;
+        return $this->getIterator($query)->first();
     }
 
     /**

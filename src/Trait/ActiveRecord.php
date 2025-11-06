@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm\Trait;
 
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\ActiveRecordQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Mapper;
@@ -143,6 +144,32 @@ trait ActiveRecord
     {
         self::initialize();
         return self::$repository->getByQuery($query);
+    }
+
+    /**
+     * Create a new query builder for this Active Record model
+     *
+     * @return ActiveRecordQuery
+     */
+    public static function newQuery(): ActiveRecordQuery
+    {
+        self::initialize();
+        return new ActiveRecordQuery(self::$repository);
+    }
+
+    /**
+     * Create a new query with an initial WHERE clause for fluent syntax
+     *
+     * Example: User::where('email = :email', ['email' => 'test@example.com'])->first()
+     *
+     * @param array|string $filter
+     * @param array $params
+     * @return ActiveRecordQuery
+     */
+    public static function where(array|string $filter, array $params = []): ActiveRecordQuery
+    {
+        self::initialize();
+        return ActiveRecordQuery::createWhere(self::$repository, $filter, $params);
     }
 
     // Override this method to create a custom mapper instead of discovering by attributes in the class

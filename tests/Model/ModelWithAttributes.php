@@ -39,4 +39,28 @@ class ModelWithAttributes
         $this->pk = $pk;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->pk;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getIdUser()
+    {
+        return $this->iduser;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
+
 }
