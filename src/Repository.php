@@ -177,19 +177,22 @@ class Repository
 
         // Apply updateFunction to each primary key value
         foreach ($pkId as $index => $value) {
-            $pkName = $pkList[$index] ?? null;
-            if ($pkName !== null) {
-                $fieldMap = $this->mapper->getFieldMap($this->mapper->getPropertyName($pkName));
-                if ($fieldMap && $fieldMap->getUpdateFunction()) {
-                    $value = $fieldMap->getUpdateFunctionValue($value, null, $this->getExecutor());
-                }
+            $pkName = null;
+            if (is_numeric($index)) {
+                $pkName = $pkList[$index] ?? null;
+            } else {
+                $pkName = in_array($index, $pkList) ? $index : null;
+            }
+
+            if ($pkName === null) {
+                throw new OrmInvalidFieldsException('Primary field key not found');
+            }
+
+            $fieldMap = $this->mapper->getFieldMap($this->mapper->getPropertyName($pkName));
+            if ($fieldMap && $fieldMap->getUpdateFunction()) {
+                $value = $fieldMap->getUpdateFunctionValue($value, null, $this->getExecutor());
             }
             $pkId[$index] = $value;
-        }
-
-        // If single PK, unwrap the array
-        if (count($pkId) === 1) {
-            return $pkId[0];
         }
 
         return $pkId;
