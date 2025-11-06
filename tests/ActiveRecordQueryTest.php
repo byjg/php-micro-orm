@@ -80,7 +80,6 @@ class ActiveRecordQueryTest extends TestCase
             ->orderBy(['property'])
             ->toArray();
 
-        $this->assertIsArray($results);
         $this->assertCount(2, $results);
         $this->assertEquals(30.4, $results[0]->getValue());
         $this->assertEquals(1250.96, $results[1]->getValue());
@@ -201,7 +200,6 @@ class ActiveRecordQueryTest extends TestCase
         $results = ActiveRecordModel::where('iduser = :iduser', ['iduser' => 1])
             ->toArray();
 
-        $this->assertIsArray($results);
         $this->assertCount(2, $results);
         $this->assertContainsOnlyInstancesOf(ActiveRecordModel::class, $results);
     }
@@ -302,7 +300,6 @@ class ActiveRecordQueryTest extends TestCase
 
         $results = ActiveRecordModel::newQuery()->toArray();
 
-        $this->assertIsArray($results);
         $this->assertEmpty($results);
     }
 

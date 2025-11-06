@@ -57,8 +57,10 @@ class HexUuidMapperFunctionTest extends TestCase
         $this->repository->save($entity);
 
         // After save, ID should be populated with a HexUuidLiteral
-        $this->assertNotNull($entity->getId());
-        $this->assertMatchesRegularExpression('/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i', $entity->getId());
+        /** @var string $id */
+        $id = $entity->getId();
+        $this->assertNotNull($id);
+        $this->assertMatchesRegularExpression('/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i', $id);
     }
 
     public function testSelectWithHexUuidPrimaryKey()
@@ -69,6 +71,7 @@ class HexUuidMapperFunctionTest extends TestCase
         $entity->setDescription('Testing SELECT with UUID');
         $this->repository->save($entity);
 
+        /** @var string $savedId */
         $savedId = $entity->getId();
         $this->assertMatchesRegularExpression('/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i', $savedId);
 
@@ -264,6 +267,7 @@ class HexUuidMapperFunctionTest extends TestCase
  */
 class HexUuidGenerator implements MapperFunctionInterface
 {
+    #[Override]
     public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
         return new HexUuidLiteral(bin2hex(random_bytes(16)));
@@ -292,7 +296,7 @@ class HexUuidEntity
     #[FieldAttribute]
     protected ?string $description = null;
 
-    public function getId(): string|HexUuidLiteral|null
+    public function getId(): string|HexUuidLiteral|Literal|null
     {
         return $this->id;
     }
