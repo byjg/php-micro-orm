@@ -143,6 +143,7 @@ class Repository
             }
 
             $array = Serialize::from($model)
+                ->withStopAtFirstLevel()
                 ->withDoNotParseNullValues()
                 ->toArray();
 
@@ -588,7 +589,7 @@ class Repository
         // The command below is to get all properties of the class.
         // This will allow to process all properties, even if they are not in the $fieldValues array.
         // Particularly useful for processing the selectFunction.
-        $array = array_merge(Serialize::from($instance)->toArray(), $array);
+        $array = array_merge(Serialize::from($instance)->withStopAtFirstLevel()->toArray(), $array);
         ObjectCopy::copy($array, $instance, new MapFromDbToInstanceHandler($this->mapper));
 
         if (!$isInsert) {

@@ -81,7 +81,7 @@ trait ActiveRecord
     {
         self::initialize();
         $data = $data ?? [];
-        return self::$repository->entity(Serialize::from($data)->toArray());
+        return self::$repository->entity(Serialize::from($data)->withStopAtFirstLevel()->toArray());
     }
 
     public static function get(mixed ...$pk)
@@ -129,11 +129,12 @@ trait ActiveRecord
 
     public function toArray(bool $includeNullValue = false): array
     {
+        $serialize = Serialize::from($this)->withStopAtFirstLevel();
         if ($includeNullValue) {
-            return Serialize::from($this)->toArray();
+            return $serialize->toArray();
         }
 
-        return Serialize::from($this)->withDoNotParseNullValues()->toArray();
+        return $serialize->withDoNotParseNullValues()->toArray();
     }
 
     /**

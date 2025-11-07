@@ -81,7 +81,7 @@ class QueryBasic implements QueryBuilderInterface
     {
         $entityClass = $mapper->getEntity();
         $entity = new $entityClass();
-        $serialized = Serialize::from($entity)->toArray();
+        $serialized = Serialize::from($entity)->withStopAtFirstLevel()->toArray();
 
         foreach (array_keys($serialized) as $fieldName) {
             $fieldMapping = $mapper->getFieldMap($fieldName);
