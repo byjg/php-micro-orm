@@ -189,7 +189,7 @@ class Repository
             }
 
             $fieldMap = $this->mapper->getFieldMap($this->mapper->getPropertyName($pkName));
-            if ($fieldMap && $fieldMap->getUpdateFunction()) {
+            if ($fieldMap?->getUpdateFunction()) {
                 $value = $fieldMap->getUpdateFunctionValue($value, null, $this->getExecutor());
             }
             $pkId[$index] = $value;
