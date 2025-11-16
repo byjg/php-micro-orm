@@ -14,6 +14,7 @@ use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Exception\MissingPrimaryKeyException;
 use ByJG\MicroOrm\Exception\OrmBeforeInvalidException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
@@ -171,6 +172,10 @@ class Repository
         // Ensure we have an array to work with
         if (!is_array($pkId)) {
             $pkId = [$pkId];
+        }
+
+        if (count($pkId) === 0) {
+            throw new MissingPrimaryKeyException("Missing primary key value(s)");
         }
 
         $pkList = $this->mapper->getPrimaryKey();
@@ -670,7 +675,9 @@ class Repository
         // Defines if is Insert or Update
         $pkList = $this->getMapper()->getPrimaryKey();
         $oldInstance = null;
-        if (count($pkList) == 1) {
+        if (count($pkList) === 0) {
+            throw new MissingPrimaryKeyException("Missing primary key definition");
+        } elseif (count($pkList) === 1) {
             $pk = $pkList[0];
             if (!empty($array[$pk])) {
                 $oldInstance = $this->get($array[$pk]);

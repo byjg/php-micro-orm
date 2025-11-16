@@ -13,6 +13,7 @@ use ByJG\MicroOrm\Constraint\RequireChangedValuesConstraint;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
+use ByJG\MicroOrm\Exception\MissingPrimaryKeyException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\RequireChangedValuesConstraintException;
@@ -37,6 +38,7 @@ use Exception;
 use Override;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Tests\Model\ActiveRecordModel;
 use Tests\Model\Info;
 use Tests\Model\ModelWithAttributes;
@@ -1809,5 +1811,46 @@ class RepositoryTest extends TestCase
         $this->assertEquals(2, $users2->getId());
         $this->assertEquals('Jane Doe', $users2->getName());
         $this->assertEquals('2017-01-04 00:00:00', $users2->getCreatedate());
+    }
+
+    public function testMissingPrimaryKeyException_OnSave_WithNoPrimaryKeyDefinition()
+    {
+        $this->expectException(MissingPrimaryKeyException::class);
+        $this->expectExceptionMessage("Missing primary key definition");
+
+        // Create a mapper with a primary key, then remove it using reflection
+        $mapperNoPk = new Mapper(Users::class, 'users', 'Id');
+
+        // Use reflection to clear the primaryKey property
+        $reflection = new ReflectionClass($mapperNoPk);
+        $pkProperty = $reflection->getProperty('primaryKey');
+        $pkProperty->setAccessible(true);
+        $pkProperty->setValue($mapperNoPk, []);
+
+        $repository = new Repository($this->repository->getExecutor(), $mapperNoPk);
+
+        $user = new Users();
+        $user->setName('Test User');
+
+        // This should throw MissingPrimaryKeyException because the mapper has no primary key
+        $repository->save($user);
+    }
+
+    public function testMissingPrimaryKeyException_OnDelete_WithEmptyPrimaryKey()
+    {
+        $this->expectException(MissingPrimaryKeyException::class);
+        $this->expectExceptionMessage("Missing primary key value(s)");
+
+        // Attempt to delete with an empty array as primary key
+        $this->repository->delete([]);
+    }
+
+    public function testMissingPrimaryKeyException_OnGet_WithEmptyPrimaryKey()
+    {
+        $this->expectException(MissingPrimaryKeyException::class);
+        $this->expectExceptionMessage("Missing primary key value(s)");
+
+        // Attempt to get with an empty array as primary key
+        $this->repository->get([]);
     }
 }
