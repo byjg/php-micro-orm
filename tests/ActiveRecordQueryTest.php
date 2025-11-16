@@ -29,6 +29,7 @@ class ActiveRecordQueryTest extends TestCase
             id integer primary key auto_increment,
             iduser INTEGER,
             property decimal(10, 2),
+            registration_id VARCHAR(255),
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deleted_at datetime);'

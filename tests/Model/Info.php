@@ -13,6 +13,7 @@ class Info
     protected $id;
     protected $iduser;
     protected $value;
+    protected $registrationId;
 
     /**
      * @return mixed
@@ -62,5 +63,20 @@ class Info
         $this->value = $value;
     }
 
+    /**
+     * @return mixed
+     */
+    public function getRegistrationId()
+    {
+        return $this->registrationId;
+    }
+
+    /**
+     * @param mixed $registrationId
+     */
+    public function setRegistrationId($registrationId)
+    {
+        $this->registrationId = $registrationId;
+    }
 
 }

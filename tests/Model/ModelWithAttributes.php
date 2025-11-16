@@ -23,6 +23,9 @@ class ModelWithAttributes
     #[FieldAttribute(fieldName: "property")]
     public $value;
 
+    #[FieldAttribute(fieldName: "registration_id")]
+    protected $registrationId;
+
     /**
      * @return mixed
      */
@@ -61,6 +64,22 @@ class ModelWithAttributes
     public function getValue()
     {
         return $this->value;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getRegistrationId()
+    {
+        return $this->registrationId;
+    }
+
+    /**
+     * @param mixed $registrationId
+     */
+    public function setRegistrationId($registrationId)
+    {
+        $this->registrationId = $registrationId;
     }
 
 }

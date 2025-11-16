@@ -74,6 +74,7 @@ class RepositoryTest extends TestCase
         $this->userMapper = new Mapper(Users::class, 'users', 'Id');
         $this->infoMapper = new Mapper(Info::class, 'info', 'id');
         $this->infoMapper->addFieldMapping(FieldMapping::create('value')->withFieldName('property'));
+        $this->infoMapper->addFieldMapping(FieldMapping::create('registrationId')->withFieldName('registration_id'));
 
         $this->repository = new Repository($executor, $this->userMapper);
         ORMSubject::getInstance()->clearObservers();
@@ -93,14 +94,15 @@ class RepositoryTest extends TestCase
             id integer primary key  auto_increment,
             iduser INTEGER,
             property decimal(10, 2),
+            registration_id VARCHAR(255) not null,
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deleted_at datetime);'
         );
-        $insertMultiple = InsertBulkQuery::getInstance('info', ['iduser', 'property']);
-        $insertMultiple->values(['iduser' => 1, 'property' => 30.4]);
-        $insertMultiple->values(['iduser' => 1, 'property' => 1250.96]);
-        $insertMultiple->values(['iduser' => 3, 'property' => 3.5]);
+        $insertMultiple = InsertBulkQuery::getInstance('info', ['iduser', 'property', 'registration_id']);
+        $insertMultiple->values(['iduser' => 1, 'property' => 30.4, 'registration_id' => 'REG001']);
+        $insertMultiple->values(['iduser' => 1, 'property' => 1250.96, 'registration_id' => 'REG002']);
+        $insertMultiple->values(['iduser' => 3, 'property' => 3.5, 'registration_id' => 'REG003']);
         $insertMultiple->buildAndExecute($executor);
 
     }
@@ -707,6 +709,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getId());
         $this->assertEquals(3, $result[0]->getIduser());
         $this->assertEquals(3.5, $result[0]->getValue());
+        $this->assertEquals('REG003', $result[0]->getRegistrationId());
 
         // Set Zero
         $result[0]->setValue(0);
@@ -783,10 +786,12 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals(1, $result[0]->getIduser());
         $this->assertEquals(30.4, $result[0]->getValue());
+        $this->assertEquals('REG001', $result[0]->getRegistrationId());
 
         $this->assertEquals(2, $result[1]->getId());
         $this->assertEquals(1, $result[1]->getIduser());
         $this->assertEquals(1250.96, $result[1]->getValue());
+        $this->assertEquals('REG002', $result[1]->getRegistrationId());
     }
 
     public function testJoin()
@@ -1152,6 +1157,7 @@ class RepositoryTest extends TestCase
         $info = new Info();
         $info->setValue("3");
         $info->setIduser(1);
+        $info->setRegistrationId('REG004');
 
 
         $this->assertNull($this->test);
@@ -1282,6 +1288,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals(3, $result[0]->getId());
         $this->assertEquals(3, $result[0]->getIduser());
         $this->assertEquals(3.5, $result[0]->getValue());
+        $this->assertEquals('REG003', $result[0]->getRegistrationId());
     }
 
     public function testUnion()
@@ -1306,10 +1313,12 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $result[0]->getId());
         $this->assertEquals(1, $result[0]->getIduser());
         $this->assertEquals(30.4, $result[0]->getValue());
+        $this->assertEquals('REG001', $result[0]->getRegistrationId());
 
         $this->assertEquals(3, $result[1]->getId());
         $this->assertEquals(3, $result[1]->getIduser());
         $this->assertEquals(3.5, $result[1]->getValue());
+        $this->assertEquals('REG003', $result[1]->getRegistrationId());
     }
 
     public function testMappingAttribute()
@@ -1351,6 +1360,7 @@ class RepositoryTest extends TestCase
         $info = new ModelWithAttributes();
         $info->iduser = 123;
         $info->value = 98.5;
+        $info->setRegistrationId('REG005');
         $infoRepository->save($info);
 
         // Get the Record and assert the values
@@ -1361,6 +1371,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals(4, $result[0]->getPk());
         $this->assertEquals(123, $result[0]->iduser);
         $this->assertEquals(98.5, $result[0]->value);
+        $this->assertEquals('REG005', $result[0]->getRegistrationId());
         $this->assertNotNull($result[0]->getCreatedAt());
         $this->assertNotNull($result[0]->getUpdatedAt());
         $this->assertNull($result[0]->getDeletedAt());
@@ -1693,13 +1704,15 @@ class RepositoryTest extends TestCase
 
         $model = ActiveRecordModel::new([
             'iduser' => 5,
-            'value' => 55.8
+            'value' => 55.8,
+            'registrationId' => 'REG006'
         ]);
         $model->save();
 
         $this->assertEquals(4, $model->getPk());
         $this->assertEquals(5, $model->iduser);
         $this->assertEquals(55.8, $model->value);
+        $this->assertEquals('REG006', $model->getRegistrationId());
         $this->assertNotNull($model->getCreatedAt());
         $this->assertNotNull($model->getUpdatedAt());
         $this->assertNull($model->getDeletedAt()); 
@@ -1708,9 +1721,10 @@ class RepositoryTest extends TestCase
         $this->assertEquals(4, $model->getPk());
         $this->assertEquals(5, $model->iduser);
         $this->assertEquals(55.8, $model->value);
+        $this->assertEquals('REG006', $model->getRegistrationId());
         $this->assertNotNull($model->getCreatedAt());
         $this->assertNotNull($model->getUpdatedAt());
-        $this->assertNull($model->getDeletedAt()); 
+        $this->assertNull($model->getDeletedAt());
     }
 
     public function testActiveRecordUpdate()
