@@ -40,8 +40,10 @@ use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Tests\Model\ActiveRecordModel;
+use Tests\Model\ActiveRecordProduct;
 use Tests\Model\Info;
 use Tests\Model\ModelWithAttributes;
+use Tests\Model\Product;
 use Tests\Model\TestInsertProcessor;
 use Tests\Model\TestUpdateProcessor;
 use Tests\Model\Users;
@@ -1866,5 +1868,135 @@ class RepositoryTest extends TestCase
 
         // Attempt to get with an empty array as primary key
         $this->repository->get([]);
+    }
+
+    public function testVarcharPrimaryKey()
+    {
+        // Create table with varchar primary key
+        $executor = $this->repository->getExecutor();
+        $executor->execute('DROP TABLE IF EXISTS products');
+        $executor->execute('CREATE TABLE products (
+            sku VARCHAR(50) PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            price DECIMAL(10, 2) NOT NULL
+        )');
+
+        // Create mapper with varchar primary key
+        $productMapper = new Mapper(Product::class, 'products', 'sku');
+        $productRepository = new Repository($executor, $productMapper);
+
+        // Create and save a product
+        $product1 = new Product();
+        $product1->setSku('PROD-001');
+        $product1->setName('Laptop');
+        $product1->setPrice(999.99);
+        $productRepository->save($product1);
+
+        $product2 = new Product();
+        $product2->setSku('PROD-002');
+        $product2->setName('Mouse');
+        $product2->setPrice(29.99);
+        $productRepository->save($product2);
+
+        // Query the data
+        $result = $productRepository->get('PROD-001');
+        $this->assertNotNull($result);
+        $this->assertEquals('PROD-001', $result->getSku());
+        $this->assertEquals('Laptop', $result->getName());
+        $this->assertEquals(999.99, $result->getPrice());
+
+        // Query the second product
+        $result2 = $productRepository->get('PROD-002');
+        $this->assertNotNull($result2);
+        $this->assertEquals('PROD-002', $result2->getSku());
+        $this->assertEquals('Mouse', $result2->getName());
+        $this->assertEquals(29.99, $result2->getPrice());
+
+        // Query all products
+        $query = $productMapper->getQuery();
+        $allProducts = $productRepository->getByQuery($query);
+        $this->assertCount(2, $allProducts);
+
+        // Update a product
+        $result->setPrice(899.99);
+        $productRepository->save($result);
+
+        $updatedProduct = $productRepository->get('PROD-001');
+        $this->assertEquals(899.99, $updatedProduct->getPrice());
+
+        // Delete a product
+        $productRepository->delete('PROD-002');
+        $deletedProduct = $productRepository->get('PROD-002');
+        $this->assertNull($deletedProduct);
+
+        // Clean up
+        $executor->execute('DROP TABLE products');
+    }
+
+    public function testActiveRecordVarcharPrimaryKey()
+    {
+        // Create table with varchar primary key
+        $executor = $this->repository->getExecutor();
+        $executor->execute('DROP TABLE IF EXISTS products');
+        $executor->execute('CREATE TABLE products (
+            sku VARCHAR(50) PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            price DECIMAL(10, 2) NOT NULL
+        )');
+
+        // Initialize ActiveRecord
+        ActiveRecordProduct::initialize($executor);
+
+        // Create and save products using ActiveRecord
+        $product1 = ActiveRecordProduct::new([
+            'sku' => 'PROD-101',
+            'name' => 'Keyboard',
+            'price' => 79.99
+        ]);
+        $product1->save();
+
+        $this->assertEquals('PROD-101', $product1->getSku());
+        $this->assertEquals('Keyboard', $product1->getName());
+        $this->assertEquals(79.99, $product1->getPrice());
+
+        $product2 = ActiveRecordProduct::new([
+            'sku' => 'PROD-102',
+            'name' => 'Monitor',
+            'price' => 299.99
+        ]);
+        $product2->save();
+
+        // Get by primary key
+        $retrieved = ActiveRecordProduct::get('PROD-101');
+        $this->assertNotNull($retrieved);
+        $this->assertEquals('PROD-101', $retrieved->getSku());
+        $this->assertEquals('Keyboard', $retrieved->getName());
+        $this->assertEquals(79.99, $retrieved->getPrice());
+
+        // Update using ActiveRecord
+        $retrieved->setPrice(89.99);
+        $retrieved->save();
+
+        // Verify update
+        $updated = ActiveRecordProduct::get('PROD-101');
+        $this->assertEquals(89.99, $updated->getPrice());
+
+        // Query all products
+        $allProducts = ActiveRecordProduct::all();
+        $this->assertCount(2, $allProducts);
+
+        // Delete using ActiveRecord
+        $product2->delete();
+
+        $deleted = ActiveRecordProduct::get('PROD-102');
+        $this->assertEmpty($deleted);
+
+        // Verify only one product remains
+        $remaining = ActiveRecordProduct::all();
+        $this->assertCount(1, $remaining);
+        $this->assertEquals('PROD-101', $remaining[0]->getSku());
+
+        // Clean up
+        $executor->execute('DROP TABLE products');
     }
 }
