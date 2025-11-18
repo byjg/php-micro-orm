@@ -28,5 +28,9 @@
     "ext-curl": "*",
     "ext-pdo_mysql": "*"
   },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "psalm": "vendor/bin/psalm"
+  },
   "license": "MIT"
 }

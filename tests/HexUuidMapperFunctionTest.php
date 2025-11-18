@@ -8,7 +8,7 @@ use ByJG\MicroOrm\Attributes\FieldUuidAttribute;
 use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
-use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\MapperFunctions\FormatSelectUuidMapper;
 use ByJG\MicroOrm\MapperFunctions\FormatUpdateUuidMapper;
 use ByJG\MicroOrm\Repository;
@@ -285,7 +285,7 @@ class HexUuidEntity
         updateFunction: FormatUpdateUuidMapper::class,
         selectFunction: FormatSelectUuidMapper::class
     )]
-    protected string|HexUuidLiteral|Literal|null $id = null;
+    protected string|LiteralInterface|null $id = null;
 
     #[FieldUuidAttribute(fieldName: 'uuid_field')]
     protected ?string $uuidField = null;
@@ -296,12 +296,12 @@ class HexUuidEntity
     #[FieldAttribute]
     protected ?string $description = null;
 
-    public function getId(): string|HexUuidLiteral|Literal|null
+    public function getId(): string|LiteralInterface|null
     {
         return $this->id;
     }
 
-    public function setId(string|HexUuidLiteral|null $id): void
+    public function setId(string|LiteralInterface|null $id): void
     {
         $this->id = $id;
     }

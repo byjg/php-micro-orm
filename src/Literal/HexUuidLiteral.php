@@ -11,7 +11,7 @@ class HexUuidLiteral extends Literal
 
     protected string $formattedUuid;
 
-    public function __construct(Literal|string $value)
+    public function __construct(LiteralInterface|string $value)
     {
         parent::__construct($this->binaryString($value));
     }
@@ -39,7 +39,7 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public function binaryString(Literal|string $value): string
+    public function binaryString(LiteralInterface|string $value): string
     {
         if ($value instanceof HexUuidLiteral) {
             $value = $value->formattedUuid;
@@ -66,9 +66,9 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public static function getFormattedUuid(Literal|string|null $item, bool $throwErrorIfInvalid = true, $default = null): ?string
+    public static function getFormattedUuid(LiteralInterface|string|null $item, bool $throwErrorIfInvalid = true, $default = null): ?string
     {
-        if ($item instanceof Literal) {
+        if ($item instanceof LiteralInterface) {
             $item = $item->__toString();
         }
 

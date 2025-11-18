@@ -6,6 +6,7 @@ use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\DbFunctionsInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\MapperFunctions\FormatSelectUuidMapper;
 use ByJG\MicroOrm\MapperFunctions\FormatUpdateUuidMapper;
 use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
@@ -108,7 +109,7 @@ class MapperFunctionsTest extends TestCase
         $mapper = new NowUtcMapper();
         $result = $mapper->processedValue(null, new stdClass(), $executorMock);
 
-        $this->assertInstanceOf(Literal::class, $result);
+        $this->assertInstanceOf(LiteralInterface::class, $result);
         $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
     }
 
@@ -126,7 +127,7 @@ class MapperFunctionsTest extends TestCase
         $mapper = new NowUtcMapper();
         $result = $mapper->processedValue('ignored value', new stdClass(), $executorMock);
 
-        $this->assertInstanceOf(Literal::class, $result);
+        $this->assertInstanceOf(LiteralInterface::class, $result);
         $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
     }
 

@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class ORMHelper
 {
@@ -18,7 +18,7 @@ class ORMHelper
         }
 
         foreach ($params as $field => $param) {
-            if ($param instanceof Literal) {
+            if ($param instanceof LiteralInterface) {
                 $literalValue = $param->getLiteralValue();
                 $sql = preg_replace(
                     [
