@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;

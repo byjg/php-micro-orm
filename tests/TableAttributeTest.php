@@ -3,7 +3,7 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\InsertBulkQuery;
 use ByJG\MicroOrm\Repository;

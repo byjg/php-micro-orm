@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\Util\Uri;
 

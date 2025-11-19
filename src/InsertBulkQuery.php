@@ -2,8 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
@@ -61,19 +61,19 @@ class InsertBulkQuery extends Updatable
     }
 
     /**
-     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
+     * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
      * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
-            $dbDriverOrHelper = $dbDriverOrHelper->getDbHelper();
+            $dbDriverOrHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
         $tableStr = $this->table;
@@ -127,7 +127,7 @@ class InsertBulkQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
+    public function convert(?SqlDialectInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertBulkQuery to a Query');
     }

@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use Override;
@@ -124,7 +124,7 @@ class Query extends QueryBasic
             throw new InvalidArgumentException('To get FOR UPDATE working you have to pass the DbDriver');
         }
 
-        return $dbDriver->getDbHelper()->forUpdate($sql);
+        return $dbDriver->getSqlDialect()->forUpdate($sql);
     }
 
     /**
@@ -143,7 +143,7 @@ class Query extends QueryBasic
             throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
         }
 
-        return $dbDriver->getDbHelper()->top($sql, $this->top);
+        return $dbDriver->getSqlDialect()->top($sql, $this->top);
     }
 
     /**
@@ -162,7 +162,7 @@ class Query extends QueryBasic
             throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
         }
 
-        return $dbDriver->getDbHelper()->limit($sql, $this->limitStart, $this->limitEnd);
+        return $dbDriver->getSqlDialect()->limit($sql, $this->limitStart, $this->limitEnd);
     }
 
     /**

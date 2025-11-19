@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\Helpers\DbMysqlFunctions;
-use ByJG\AnyDataset\Db\Helpers\DbPgsqlFunctions;
-use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
+use ByJG\AnyDataset\Db\SqlDialect\MysqlDialect;
+use ByJG\AnyDataset\Db\SqlDialect\PgsqlDialect;
+use ByJG\AnyDataset\Db\SqlDialect\SqliteDialect;
 use ByJG\AnyDataset\Db\PdoMysql;
 use ByJG\AnyDataset\Db\PdoObj;
 use ByJG\AnyDataset\Db\SqlStatement;
@@ -53,7 +53,7 @@ class UpdateQueryTest extends TestCase
             $sqlStatement
         );
 
-        $sqlStatement = $this->object->build(new DbSqliteFunctions());
+        $sqlStatement = $this->object->build(new SqliteDialect());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE `test` SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
@@ -137,7 +137,7 @@ class UpdateQueryTest extends TestCase
         $this->object->set('fld3', 'C');
         $this->object->where('fld1 = :id', ['id' => 10]);
 
-        $sqlStatement = $this->object->build(new DbMysqlFunctions());
+        $sqlStatement = $this->object->build(new MysqlDialect());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE `test` INNER JOIN `table2` ON table2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
@@ -156,7 +156,7 @@ class UpdateQueryTest extends TestCase
         $this->object->set('fld3', 'C');
         $this->object->where('fld1 = :id', ['id' => 10]);
 
-        $sqlObject = $this->object->build(new DbMysqlFunctions());
+        $sqlObject = $this->object->build(new MysqlDialect());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE `test` INNER JOIN `table2` AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
@@ -206,7 +206,7 @@ class UpdateQueryTest extends TestCase
         $this->object->set('fld3', 'C');
         $this->object->where('fld1 = :id', ['id' => 10]);
 
-        $sqlStatement = $this->object->build(new DbPgsqlFunctions());
+        $sqlStatement = $this->object->build(new PgsqlDialect());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE "test" SET "fld1" = :fld1 , "fld2" = :fld2 , "fld3" = :fld3  FROM "table2" ON table2.id = test.id WHERE fld1 = :id',
@@ -232,7 +232,7 @@ class UpdateQueryTest extends TestCase
         );
 
         // Test with database helper
-        $sqlStatement = $this->object->build(new DbMysqlFunctions());
+        $sqlStatement = $this->object->build(new MysqlDialect());
         $this->assertEquals(
             new SqlStatement(
                 'UPDATE `test` SET `counter` = counter + 1  WHERE id = :id',

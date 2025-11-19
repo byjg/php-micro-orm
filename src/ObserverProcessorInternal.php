@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 
 class ObserverProcessorInternal

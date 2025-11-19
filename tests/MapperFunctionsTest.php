@@ -3,7 +3,7 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
@@ -97,7 +97,7 @@ class MapperFunctionsTest extends TestCase
 
     public function testNowUtcMapperReturnsLiteral()
     {
-        $dbHelperMock = $this->createMock(DbFunctionsInterface::class);
+        $dbHelperMock = $this->createMock(SqlDialectInterface::class);
         $dbHelperMock->method('sqlDate')
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');
@@ -115,7 +115,7 @@ class MapperFunctionsTest extends TestCase
 
     public function testNowUtcMapperIgnoresInputValue()
     {
-        $dbHelperMock = $this->createMock(DbFunctionsInterface::class);
+        $dbHelperMock = $this->createMock(SqlDialectInterface::class);
         $dbHelperMock->method('sqlDate')
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');

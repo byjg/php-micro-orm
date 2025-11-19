@@ -2,8 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
@@ -52,12 +52,12 @@ class InsertSelectQuery extends Updatable
     }
 
     /**
-     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
+     * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
      * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -67,7 +67,7 @@ class InsertSelectQuery extends Updatable
         $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
             $dbDriver = $dbDriverOrHelper;
-            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
         if (empty($this->query) && empty($this->sqlStatement)) {
@@ -100,7 +100,7 @@ class InsertSelectQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
+    public function convert(?SqlDialectInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertSelectQuery to a Query');
     }

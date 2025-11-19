@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\Helpers\DbSqliteFunctions;
+use ByJG\AnyDataset\Db\SqlDialect\SqliteDialect;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\InsertQuery;
 use Override;
@@ -41,7 +41,7 @@ class InsertQueryTest extends TestCase
             $sqlStatement
         );
 
-        $sqlStatement = $this->object->build(new DbSqliteFunctions());
+        $sqlStatement = $this->object->build(new SqliteDialect());
         $this->assertEquals(
             new SqlStatement('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( :fld1, :fld2, :fld3 ) ', ['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']),
             $sqlStatement

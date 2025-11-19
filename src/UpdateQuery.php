@@ -2,8 +2,8 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
@@ -68,18 +68,18 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): array
+    protected function getJoinTables(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
         $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
             $dbDriver = $dbDriverOrHelper;
-            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
         if (is_null($dbHelper)) {
             if (!empty($this->joinTables)) {
-                throw new InvalidArgumentException('You must specify a DbFunctionsInterface to use join tables');
+                throw new InvalidArgumentException('You must specify a SqlDialectInterface to use join tables');
             }
             return ['sql' => '', 'position' => 'before_set'];
         }
@@ -102,12 +102,12 @@ class UpdateQuery extends Updatable
     }
 
     /**
-     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
+     * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
      * @return SqlStatement
      * @throws InvalidArgumentException
      */
     #[Override]
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');
@@ -115,7 +115,7 @@ class UpdateQuery extends Updatable
 
         $dbDriver = null;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
-            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbHelper = $dbDriverOrHelper->getSqlDialect();
             $dbDriver = $dbDriverOrHelper;
         } else {
             $dbHelper = $dbDriverOrHelper;
@@ -164,7 +164,7 @@ class UpdateQuery extends Updatable
     }
 
     #[Override]
-    public function convert(?DbFunctionsInterface $dbHelper = null): QueryBuilderInterface
+    public function convert(?SqlDialectInterface $dbHelper = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->set))
