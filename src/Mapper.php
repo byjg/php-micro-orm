@@ -78,6 +78,7 @@ class Mapper
      */
     protected function processAttribute(string $entity): void
     {
+        /** @psalm-var class-string $entity */
         $reflection = new ReflectionClass($entity);
         $attributes = $reflection->getAttributes(TableAttribute::class, ReflectionAttribute::IS_INSTANCEOF);
         if (count($attributes) == 0) {
@@ -88,14 +89,17 @@ class Mapper
         $tableAttribute = $attributes[0]->newInstance();
         $this->table = $tableAttribute->getTableName();
         $this->tableAlias = $tableAttribute->getTableAlias();
-        if (!empty($tableAttribute->getPrimaryKeySeedFunction())) {
-            $this->withPrimaryKeySeedFunction($tableAttribute->getPrimaryKeySeedFunction());
+        $primaryKeySeedFunc = $tableAttribute->getPrimaryKeySeedFunction();
+        if ($primaryKeySeedFunc !== null && $primaryKeySeedFunc !== '') {
+            $this->withPrimaryKeySeedFunction($primaryKeySeedFunc);
         }
-        if (!empty($tableAttribute->getBeforeInsert())) {
-            $this->withBeforeInsert($tableAttribute->getBeforeInsert());
+        $beforeInsert = $tableAttribute->getBeforeInsert();
+        if ($beforeInsert !== null && $beforeInsert !== '') {
+            $this->withBeforeInsert($beforeInsert);
         }
-        if (!empty($tableAttribute->getBeforeUpdate())) {
-            $this->withBeforeUpdate($tableAttribute->getBeforeUpdate());
+        $beforeUpdate = $tableAttribute->getBeforeUpdate();
+        if ($beforeUpdate !== null && $beforeUpdate !== '') {
+            $this->withBeforeUpdate($beforeUpdate);
         }
         ORM::addMapper($this);
 
@@ -115,8 +119,10 @@ class Mapper
                 $this->primaryKeyModel[] = $property->getName();
             }
 
-            if (!empty($fieldAttribute->getParentTable())) {
-                ORM::addRelationship($fieldAttribute->getParentTable(), $this, $fieldAttribute->getFieldName());
+            $parentTable = $fieldAttribute->getParentTable();
+            $fieldName = $fieldAttribute->getFieldName();
+            if ($parentTable !== null && $parentTable !== '' && $fieldName !== null && $fieldName !== '') {
+                ORM::addRelationship($parentTable, $this, $fieldName);
             }
         }
     }
@@ -162,7 +168,10 @@ class Mapper
     {
         $result = [];
         foreach ($fieldList as $key => $value) {
-            $result[$this->fixFieldName($key)] = $value;
+            $fixedKey = $this->fixFieldName($key);
+            if ($fixedKey !== null) {
+                $result[$fixedKey] = $value;
+            }
         }
         return $result;
     }
@@ -172,6 +181,11 @@ class Mapper
         $propertyName = $this->fixFieldName($fieldMapping->getPropertyName());
         $fieldName = $this->fixFieldName($fieldMapping->getFieldName());
         $fieldAlias = $this->fixFieldName($fieldMapping->getFieldAlias());
+
+        if ($propertyName === null || $fieldName === null || $fieldAlias === null) {
+            return $this;
+        }
+
         $this->fieldMap[$propertyName] = $fieldMapping
             ->withFieldName($fieldName)
             ->withFieldAlias($fieldAlias)
@@ -183,8 +197,9 @@ class Mapper
             $this->softDelete = true;
         }
 
-        if (!empty($fieldMapping->getParentTable())) {
-            ORM::addRelationship($fieldMapping->getParentTable(), $this, $fieldMapping->getFieldName(), "?");
+        $parentTable = $fieldMapping->getParentTable();
+        if ($parentTable !== null && $parentTable !== '') {
+            ORM::addRelationship($parentTable, $this, $fieldMapping->getFieldName(), "?");
         }
 
 
@@ -334,7 +349,7 @@ class Mapper
     public function getFieldAlias(?string $fieldName = null): ?string
     {
         $fieldMapVar = $this->getFieldMap($fieldName);
-        if (empty($fieldMapVar)) {
+        if (empty($fieldMapVar) || is_array($fieldMapVar)) {
             return null;
         }
 
@@ -352,9 +367,10 @@ class Mapper
             return null;
         }
 
-        $primaryKeyFunction = $this->primaryKeySeedFunction;
         if (is_string($this->primaryKeySeedFunction)) {
             $primaryKeyFunction = new $this->primaryKeySeedFunction();
+        } else {
+            $primaryKeyFunction = $this->primaryKeySeedFunction;
         }
 
         return $primaryKeyFunction->processedValue(null, $instance, $executor);

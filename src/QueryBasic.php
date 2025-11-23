@@ -85,7 +85,7 @@ class QueryBasic implements QueryBuilderInterface
 
         foreach (array_keys($serialized) as $fieldName) {
             $fieldMapping = $mapper->getFieldMap($fieldName);
-            if (empty($fieldMapping)) {
+            if (empty($fieldMapping) || is_array($fieldMapping)) {
                 $mapField = $fieldName;
                 $alias = null;
             } else {
@@ -234,7 +234,7 @@ class QueryBasic implements QueryBuilderInterface
             } elseif ($field instanceof QueryBasic) {
                 $subQuery = $field->build($this->dbDriver);
                 $fieldList .= '(' . $subQuery->getSql() . ') as ' . $alias;
-                $params = array_merge($params, $subQuery->getParams());
+                $params = array_merge($params, $subQuery->getParams() ?? []);
             } else {
                 $fieldList .= $field . ' as ' . $alias;
             }
@@ -278,7 +278,8 @@ class QueryBasic implements QueryBuilderInterface
             $table = "({$subQuery->getSql()})";
             $params = $subQuery->getParams();
         }
-        return [ $table . (!empty($alias) && $table != $alias ? " as " . $alias : ""), $params ];
+        $aliasStr = is_string($alias) ? $alias : '';
+        return [$table . (!empty($aliasStr) && $table != $aliasStr ? " as " . $aliasStr : ""), $params];
     }
 
     protected function addGroupBy(): string
@@ -342,7 +343,7 @@ class QueryBasic implements QueryBuilderInterface
     {
         $sqlStatement = $this->build($executor->getDriver());
         if (!empty($cache)) {
-            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtlInSeconds());
         }
         return $executor->getIterator($sqlStatement);
     }

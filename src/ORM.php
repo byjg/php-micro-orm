@@ -24,18 +24,24 @@ class ORM
 
     public static function addRelationship(string|Mapper $parent, string|Mapper $child, string $foreignKeyName, ?string $primaryKey = '?'): void
     {
-        $parentTableName = $parent;
         if (is_string($parent) && isset(static::$mapper[$parent])) {
             $parent = static::$mapper[$parent];
         }
         if ($parent instanceof Mapper) {
             $parentTableName = $parent->getTable();
-            $primaryKey = $parent->getPrimaryKey()[0];
+            $primaryKey = $parent->getPrimaryKey()[0] ?? null;
+        } else {
+            $parentTableName = $parent;
         }
 
-        $childTableName = $child;
         if ($child instanceof Mapper) {
             $childTableName = $child->getTable();
+        } else {
+            $childTableName = $child;
+        }
+
+        if ($primaryKey === null) {
+            return;
         }
 
         // Store relationships in a standardized order (alphabetically)

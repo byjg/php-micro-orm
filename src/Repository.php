@@ -150,7 +150,7 @@ class Repository
 
             foreach ($array as $key => $value) {
                 $fieldMap = $this->mapper->getFieldMap($key);
-                if (!empty($fieldMap)) {
+                if (!empty($fieldMap) && !is_array($fieldMap)) {
                     $key = $fieldMap->getFieldName();
                 }
                 $query->where("$key = :$key", [$key => $value]);
@@ -305,18 +305,20 @@ class Repository
             }
 
             // For write statements, avoid parameter name collisions by uniquifying named params
-            foreach ($params as $key => $value) {
-                // Only process named parameters (string keys)
-                if (isset($bigParams[$key])) {
-                    $uniqueKey = $key . '__b' . $i;
-                    // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
-                    $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
-                    $replacement = ':' . $uniqueKey;
-                    $sql = preg_replace($pattern, $replacement, $sql);
-                    $bigParams[$uniqueKey] = $value;
-                } else {
-                    // Positional parameter or numeric key; just carry over
-                    $bigParams[$key] = $value;
+            if ($params !== null) {
+                foreach ($params as $key => $value) {
+                    // Only process named parameters (string keys)
+                    if (isset($bigParams[$key])) {
+                        $uniqueKey = $key . '__b' . $i;
+                        // Replace ":key" with ":key__b{i}" using a safe regex that avoids partial matches
+                        $pattern = '/(?<!:):' . preg_quote($key, '/') . '(?![A-Za-z0-9_])/';
+                        $replacement = ':' . $uniqueKey;
+                        $sql = (string)preg_replace($pattern, $replacement, $sql);
+                        $bigParams[$uniqueKey] = $value;
+                    } else {
+                        // Positional parameter or numeric key; just carry over
+                        $bigParams[$key] = $value;
+                    }
                 }
             }
 
@@ -462,7 +464,7 @@ class Repository
         }
 
         if (!empty($cache)) {
-            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtlInSeconds());
         }
 
         return $this->getExecutor()->getIterator($sqlStatement);
@@ -515,7 +517,7 @@ class Repository
         // (Entity transformation would fail because joined rows don't match single entity structure)
         $sqlBuild = $query->build($this->getExecutor()->getDriver());
         if (!empty($cache)) {
-            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlBuild = $sqlBuild->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtlInSeconds());
         }
         $iterator = $this->getExecutor()->getIterator($sqlBuild);
 
@@ -800,10 +802,12 @@ class Repository
                 throw new InvalidArgumentException("The class '$processor' does not exist");
             }
 
-            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+            $interfaces = class_implements($processor);
+            if ($interfaces === false || !in_array(EntityProcessorInterface::class, $interfaces)) {
                 throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
             }
 
+            /** @var EntityProcessorInterface $processor */
             $processor = new $processor();
         }
         $this->beforeUpdate = $processor;
@@ -823,10 +827,12 @@ class Repository
                 throw new InvalidArgumentException("The class '$processor' does not exist");
             }
 
-            if (!in_array(EntityProcessorInterface::class, class_implements($processor))) {
+            $interfaces = class_implements($processor);
+            if ($interfaces === false || !in_array(EntityProcessorInterface::class, $interfaces)) {
                 throw new InvalidArgumentException("The class '$processor' must implement EntityProcessorInterface");
             }
 
+            /** @var EntityProcessorInterface $processor */
             $processor = new $processor();
         }
         $this->beforeInsert = $processor;

@@ -77,12 +77,12 @@ class InsertSelectQuery extends Updatable
         }
 
         $fieldsStr = $this->fields;
-        if (!is_null($dbHelper)) {
+        if ($dbHelper instanceof SqlDialectInterface) {
             $fieldsStr = $dbHelper->delimiterField($fieldsStr);
         }
 
         $tableStr = $this->table;
-        if (!is_null($dbHelper)) {
+        if ($dbHelper instanceof SqlDialectInterface) {
             $tableStr = $dbHelper->delimiterTable($tableStr);
         }
 
@@ -92,8 +92,10 @@ class InsertSelectQuery extends Updatable
 
         if (!is_null($this->sqlStatement)) {
             $fromObj = $this->sqlStatement;
-        } else {
+        } elseif ($this->query !== null) {
             $fromObj = $this->query->build($dbDriver);
+        } else {
+            throw new OrmInvalidFieldsException('Query or SqlStatement must be set');
         }
 
         return new SqlStatement($sql . $fromObj->getSql(), $fromObj->getParams());

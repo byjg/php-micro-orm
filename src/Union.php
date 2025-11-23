@@ -14,7 +14,7 @@ class Union implements QueryBuilderInterface
 {
     protected array $queryList = [];
 
-    protected ?Query $queryAggregation = null;
+    protected Query $queryAggregation;
 
     public function __construct()
     {
@@ -104,7 +104,10 @@ class Union implements QueryBuilderInterface
 
         $build = $this->queryAggregation->build($dbDriver);
 
-        $unionQuery = trim($unionQuery . " " . substr($build->getSql(), strpos($build->getSql(), "__TMP__") + 8));
+        $pos = strpos($build->getSql(), "__TMP__");
+        if ($pos !== false) {
+            $unionQuery = trim($unionQuery . " " . substr($build->getSql(), $pos + 8));
+        }
 
         return new SqlStatement($unionQuery, $params);
     }
@@ -115,7 +118,7 @@ class Union implements QueryBuilderInterface
     {
         $sqlStatement = $this->build($executor->getDriver());
         if (!empty($cache)) {
-            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtl());
+            $sqlStatement = $sqlStatement->withCache($cache->getCache(), $cache->getCacheKey(), $cache->getTtlInSeconds());
         }
         return $executor->getIterator($sqlStatement);
     }

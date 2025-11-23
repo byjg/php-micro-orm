@@ -70,7 +70,8 @@ class FieldMapping
             throw new InvalidArgumentException("The class '$className' does not exist");
         }
 
-        if (!in_array(MapperFunctionInterface::class, class_implements($className))) {
+        $interfaces = class_implements($className);
+        if ($interfaces === false || !in_array(MapperFunctionInterface::class, $interfaces)) {
             throw new InvalidArgumentException("The class '$className' must implement MapperFunctionInterface");
         }
     }

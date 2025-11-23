@@ -1,6 +1,6 @@
 {
   "name": "byjg/micro-orm",
-  "description": "A micro framework for create a very simple decoupled ORM (sqlite, mysql, postgres, sqlserver)",
+  "description": "A micro framework for create a very simple decoupled ORM. This library intended to be very small and very simple to use",
   "autoload": {
     "psr-4": {
       "ByJG\\MicroOrm\\": "src/"
@@ -14,7 +14,7 @@
   "prefer-stable": true,
   "minimum-stability": "dev",
   "require": {
-    "php": ">=8.1 <8.5",
+    "php": ">=8.3 <8.6",
     "ext-json": "*",
     "ext-pdo": "*",
     "byjg/anydataset-db": "^6.0"
@@ -22,7 +22,7 @@
   "require-dev": {
     "phpunit/phpunit": "^10.5|^11.5",
     "byjg/cache-engine": "^6.0",
-    "vimeo/psalm": "^5.9|^6.2"
+    "vimeo/psalm": "^5.9|^6.13"
   },
   "suggest": {
     "ext-curl": "*",
@@ -30,7 +30,7 @@
   },
   "scripts": {
     "test": "vendor/bin/phpunit",
-    "psalm": "vendor/bin/psalm"
+    "psalm": "vendor/bin/psalm --threads=1"
   },
   "license": "MIT"
 }

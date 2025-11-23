@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm\PropertyHandler;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\Serializer\PropertyHandler\PropertyHandlerInterface;
 use Override;
@@ -25,7 +26,11 @@ class PrepareToUpdateHandler implements PropertyHandlerInterface
     public function mapName(string $property): string
     {
         $sourcePropertyName = $this->mapper->fixFieldName($property);
-        return $this->mapper->getFieldMap($sourcePropertyName)?->getFieldName() ?? $sourcePropertyName ?? $property;
+        $fieldMap = $this->mapper->getFieldMap($sourcePropertyName);
+        if ($fieldMap instanceof FieldMapping) {
+            return $fieldMap->getFieldName();
+        }
+        return $sourcePropertyName ?? $property;
     }
 
     #[Override]

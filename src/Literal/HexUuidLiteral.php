@@ -46,6 +46,9 @@ class HexUuidLiteral extends Literal
         } else {
             $value = self::getFormattedUuid($value);
         }
+        if ($value === null) {
+            throw new InvalidArgumentException("UUID value cannot be null or empty");
+        }
         $this->formattedUuid = $value;
         return $this->prefix . preg_replace('/[^0-9A-Fa-f]/', '', $this->formattedUuid) . $this->suffix;
     }
@@ -80,7 +83,7 @@ class HexUuidLiteral extends Literal
             $item = bin2hex($item);
         }
 
-        $pattern = strtoupper(preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item));
+        $pattern = strtoupper((string)preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item));
 
         if (strlen($pattern) === 32) {
             return preg_replace("/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/", "$1-$2-$3-$4-$5", $pattern);

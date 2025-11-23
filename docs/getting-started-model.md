@@ -62,7 +62,7 @@ public function setId(?int $id): void
 | Method                                 | Description                               |
 |----------------------------------------|-------------------------------------------|
 | [Mapper](using-mapper-object.md) class | Define mappings using the Mapper class    |
-| [Attributes](model-attribute.md)       | Define mappings using PHP 8.0+ attributes |
+| [Attributes](model-attribute.md)       | Define mappings using PHP 8.3+ attributes |
 
 _See also: [Controlling the data](controlling-the-data.md) for advanced mapping_
 
@@ -74,7 +74,7 @@ The `Mapper` class is more flexible and can be used in any PHP version. Use case
 * You don't want change the Model class
 * You can't change the Model class
 
-The `Attributes` is more simple and can be used in PHP 8.0 or later. Use cases:
+The `Attributes` is more simple and can be used in PHP 8.3 or later. Use cases:
 
 * You want a more simple way to define the Model
 * You want to use the latest PHP features

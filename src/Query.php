@@ -162,6 +162,10 @@ class Query extends QueryBasic
             throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
         }
 
+        if ($this->limitEnd === null) {
+            throw new InvalidArgumentException('Limit end cannot be null');
+        }
+
         return $dbDriver->getSqlDialect()->limit($sql, $this->limitStart, $this->limitEnd);
     }
 

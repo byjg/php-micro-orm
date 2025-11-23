@@ -89,11 +89,11 @@ class ActiveRecordQuery extends Query
      * Alias for where() to enable fluent syntax from Active Record
      * This allows: Model::where('field = :value', ['value' => 123])->first()
      *
-     * @param array|string $filter
+     * @param string $filter
      * @param array $params
      * @return static
      */
-    public static function createWhere(Repository $repository, array|string $filter, array $params = []): static
+    public static function createWhere(Repository $repository, string $filter, array $params = []): static
     {
         $query = new static($repository);
         return $query->where($filter, $params);

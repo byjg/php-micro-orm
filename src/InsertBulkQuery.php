@@ -29,7 +29,7 @@ class InsertBulkQuery extends Updatable
     }
 
 
-    public static function getInstance(string $table, array $fieldNames): static
+    public static function getInstance(string $table, array $fieldNames): InsertBulkQuery
     {
         return new InsertBulkQuery($table, $fieldNames);
     }
@@ -100,7 +100,8 @@ class InsertBulkQuery extends Updatable
                 if ($this->safe) {
                     $params[$paramKey] = $this->fields[$col][$i];
                 } else {
-                    $value = str_replace("'", "''", $this->fields[$col][$i]);
+                    $value = $this->fields[$col][$i];
+                    $value = str_replace("'", "''", (string)$value);
                     if (!is_numeric($value)) {
                         $value = "'{$value}'";
                     }

@@ -20,7 +20,7 @@ class ORMHelper
         foreach ($params as $field => $param) {
             if ($param instanceof LiteralInterface) {
                 $literalValue = $param->getLiteralValue();
-                $sql = preg_replace(
+                $sql = (string)preg_replace(
                     [
                         "/\[\[$field]]/",
                         "/:$field(\W|$)/"
@@ -35,6 +35,6 @@ class ORMHelper
             }
         }
 
-        return $sql ?? "";
+        return $sql;
     }
 }

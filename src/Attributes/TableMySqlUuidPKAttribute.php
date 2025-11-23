@@ -6,6 +6,7 @@ use Attribute;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\Literal;
+use InvalidArgumentException;
 use Override;
 
 #[Attribute(Attribute::TARGET_CLASS)]
@@ -19,6 +20,9 @@ class TableMySqlUuidPKAttribute extends TableAttribute implements MapperFunction
     #[Override]
     public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
+        if ($executor === null) {
+            throw new InvalidArgumentException('DatabaseExecutor is required for TableMySqlUuidPKAttribute');
+        }
         return new Literal("X'" . $executor->getScalar("SELECT hex(uuid_to_bin(uuid()))") . "'");
     }
 }

@@ -77,7 +77,7 @@ class UpdateQuery extends Updatable
             $dbHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
-        if (is_null($dbHelper)) {
+        if (!($dbHelper instanceof SqlDialectInterface)) {
             if (!empty($this->joinTables)) {
                 throw new InvalidArgumentException('You must specify a SqlDialectInterface to use join tables');
             }
@@ -125,7 +125,8 @@ class UpdateQuery extends Updatable
         $params = [];
         foreach ($this->set as $field => $value) {
             $fieldName = explode('.', $field);
-            $paramName = preg_replace('/[^A-Za-z0-9_]/', '', $fieldName[count($fieldName) - 1]);
+            $lastIndex = count($fieldName) - 1;
+            $paramName = preg_replace('/[^A-Za-z0-9_]/', '', $fieldName[$lastIndex] ?? '');
             if (!is_null($dbHelper)) {
                 foreach ($fieldName as $key => $item) {
                     $fieldName[$key] = $dbHelper->delimiterField($item);
@@ -134,7 +135,9 @@ class UpdateQuery extends Updatable
             /** @psalm-suppress InvalidArgument $fieldName */
             $fieldName = implode('.', $fieldName);
             $fieldsStr[] = "$fieldName = :{$paramName} ";
-            $params[$paramName] = $value;
+            if ($paramName !== null && $paramName !== '') {
+                $params[$paramName] = $value;
+            }
         }
         
         $whereStr = $this->getWhere();

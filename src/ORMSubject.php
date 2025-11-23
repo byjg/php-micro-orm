@@ -17,7 +17,7 @@ class ORMSubject
     }
 
     // Define a singleton method
-    public static function getInstance(): ?ORMSubject
+    public static function getInstance(): ORMSubject
     {
         if (self::$instance == null) {
             self::$instance = new ORMSubject();
