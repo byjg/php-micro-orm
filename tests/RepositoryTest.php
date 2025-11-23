@@ -1840,7 +1840,6 @@ class RepositoryTest extends TestCase
         // Use reflection to clear the primaryKey property
         $reflection = new ReflectionClass($mapperNoPk);
         $pkProperty = $reflection->getProperty('primaryKey');
-        $pkProperty->setAccessible(true);
         $pkProperty->setValue($mapperNoPk, []);
 
         $repository = new Repository($this->repository->getExecutor(), $mapperNoPk);
