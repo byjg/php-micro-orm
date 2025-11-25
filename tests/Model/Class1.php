@@ -4,5 +4,5 @@ namespace Tests\Model;
 
 class Class1
 {
-    public ?int $id;
+    public ?int $id = null;
 }

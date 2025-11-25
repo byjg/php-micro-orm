@@ -221,10 +221,14 @@ class Mapper
         $instance = new $class();
 
         // The command below is to get all properties of the class.
-        // This will allow to process all properties, even if they are not in the $fieldValues array.
+        // This will allow processing all properties, even if they are not in the $fieldValues array.
         // Particularly useful for processing the selectFunction.
         $fieldValues = array_merge(Serialize::from($instance)->withStopAtFirstLevel()->toArray(), $fieldValues);
         ObjectCopy::copy($fieldValues, $instance, new MapFromDbToInstanceHandler($this));
+
+        if (is_array($instance)) {
+            $instance = (object)$instance;
+        }
 
         return $instance;
     }

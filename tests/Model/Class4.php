@@ -12,8 +12,8 @@ class Class4
     use DeletedAt;
 
     #[FieldAttribute(primaryKey: true)]
-    public ?int $id;
+    public ?int $id = null;
 
     #[FieldAttribute(fieldName: "id_table2", parentTable: "table2")]
-    public ?int $idTable2;
+    public ?int $idTable2 = null;
 }
