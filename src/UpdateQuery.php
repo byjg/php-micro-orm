@@ -2,13 +2,14 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use Override;
 
 class UpdateQuery extends Updatable
 {
@@ -19,7 +20,7 @@ class UpdateQuery extends Updatable
     /**
      * @throws InvalidArgumentException
      */
-    public static function getInstance(array $fields = [], Mapper $mapper = null): UpdateQuery
+    public static function getInstance(array $fields = [], ?Mapper $mapper = null): UpdateQuery
     {
         $updatable = new UpdateQuery();
 
@@ -67,18 +68,18 @@ class UpdateQuery extends Updatable
         return $this;
     }
 
-    protected function getJoinTables(DbFunctionsInterface|DbDriverInterface $dbDriverOrHelper = null): array
+    protected function getJoinTables(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): array
     {
         $dbDriver = null;
         $dbHelper = $dbDriverOrHelper;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
             $dbDriver = $dbDriverOrHelper;
-            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
-        if (is_null($dbHelper)) {
+        if (!($dbHelper instanceof SqlDialectInterface)) {
             if (!empty($this->joinTables)) {
-                throw new InvalidArgumentException('You must specify a DbFunctionsInterface to use join tables');
+                throw new InvalidArgumentException('You must specify a SqlDialectInterface to use join tables');
             }
             return ['sql' => '', 'position' => 'before_set'];
         }
@@ -101,11 +102,12 @@ class UpdateQuery extends Updatable
     }
 
     /**
-     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
+     * @return SqlStatement
      * @throws InvalidArgumentException
      */
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    #[Override]
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->set)) {
             throw new InvalidArgumentException('You must specify the fields for update');
@@ -113,17 +115,18 @@ class UpdateQuery extends Updatable
 
         $dbDriver = null;
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
-            $dbHelper = $dbDriverOrHelper->getDbHelper();
+            $dbHelper = $dbDriverOrHelper->getSqlDialect();
             $dbDriver = $dbDriverOrHelper;
         } else {
             $dbHelper = $dbDriverOrHelper;
         }
-        
+
         $fieldsStr = [];
         $params = [];
         foreach ($this->set as $field => $value) {
             $fieldName = explode('.', $field);
-            $paramName = preg_replace('/[^A-Za-z0-9_]/', '', $fieldName[count($fieldName) - 1]);
+            $lastIndex = count($fieldName) - 1;
+            $paramName = preg_replace('/[^A-Za-z0-9_]/', '', $fieldName[$lastIndex] ?? '');
             if (!is_null($dbHelper)) {
                 foreach ($fieldName as $key => $item) {
                     $fieldName[$key] = $dbHelper->delimiterField($item);
@@ -132,7 +135,9 @@ class UpdateQuery extends Updatable
             /** @psalm-suppress InvalidArgument $fieldName */
             $fieldName = implode('.', $fieldName);
             $fieldsStr[] = "$fieldName = :{$paramName} ";
-            $params[$paramName] = $value;
+            if ($paramName !== null && $paramName !== '') {
+                $params[$paramName] = $value;
+            }
         }
         
         $whereStr = $this->getWhere();
@@ -158,9 +163,11 @@ class UpdateQuery extends Updatable
         $params = array_merge($params, $whereStr[1]);
 
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params, SqlObjectEnum::UPDATE);
+        return new SqlStatement($sql, $params);
     }
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+
+    #[Override]
+    public function convert(?SqlDialectInterface $dbHelper = null): QueryBuilderInterface
     {
         $query = Query::getInstance()
             ->fields(array_keys($this->set))

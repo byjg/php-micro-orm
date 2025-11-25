@@ -3,9 +3,13 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Core\GenericIterator;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Interface\QueryBuilderInterface;
+use Override;
 
-class QueryRaw implements Interface\QueryBuilderInterface
+class QueryRaw implements QueryBuilderInterface
 {
 
     protected function __construct(protected string $sql, protected array $parameters = [])
@@ -17,13 +21,15 @@ class QueryRaw implements Interface\QueryBuilderInterface
         return new self($sql, $parameters);
     }
 
-    public function build(?DbDriverInterface $dbDriver = null): SqlObject
+    #[Override]
+    public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
-        return new SqlObject($this->sql, $this->parameters);
+        return new SqlStatement($this->sql, $this->parameters);
     }
 
-    public function buildAndGetIterator(?DbDriverInterface $dbDriver = null, ?CacheQueryResult $cache = null): GenericIterator
+    #[Override]
+    public function buildAndGetIterator(DatabaseExecutor $executor, ?CacheQueryResult $cache = null): GenericIterator
     {
-        return $dbDriver->getIterator($this->sql, $this->parameters);
+        return $executor->getIterator($this->build($executor->getDriver()));
     }
 }

@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Updating the Database
 
 Once you have defined the model, (see [Getting Started](getting-started-model.md)) you can start to
@@ -212,7 +216,7 @@ $insert = InsertQuery::getInstance('users', [
 ]);
 
 // Example of a SELECT as the last command (driver-specific last insert id)
-$selectLastId = QueryRaw::getInstance($repository->getDbDriver()->getDbHelper()->getSqlLastInsertId());
+$selectLastId = QueryRaw::getInstance($repository->getExecutor()->getHelper()->getSqlLastInsertId());
 
 $it = $repository->bulkExecute([$insert, $selectLastId]);
 foreach ($it as $row) {

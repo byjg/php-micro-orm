@@ -4,29 +4,29 @@ namespace Tests\Model;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
 use ByJG\MicroOrm\Attributes\TableMySqlUuidPKAttribute;
-use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 #[TableMySqlUuidPKAttribute(tableName: 'usersuuid')]
 class UsersWithUuidKey
 {
     #[FieldAttribute(primaryKey: true)]
-    protected string|Literal|null $Id = null;
+    protected string|LiteralInterface|null $Id = null;
 
     #[FieldAttribute(fieldName: 'name')]
-    protected ?string $name;
+    protected ?string $name = null;
 
     /**
-     * @return mixed
+     * @return string|LiteralInterface|null
      */
-    public function getId()
+    public function getId(): string|LiteralInterface|null
     {
         return $this->Id;
     }
 
     /**
-     * @param mixed $Id
+     * @param string|LiteralInterface|null $Id
      */
-    public function setId($Id)
+    public function setId(string|LiteralInterface|null $Id): void
     {
         $this->Id = $Id;
     }

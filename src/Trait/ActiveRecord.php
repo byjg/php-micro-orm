@@ -3,7 +3,9 @@
 namespace ByJG\MicroOrm\Trait;
 
 use ByJG\AnyDataset\Core\IteratorFilter;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\ActiveRecordQuery;
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
@@ -14,30 +16,30 @@ use ByJG\Serializer\Serialize;
 
 trait ActiveRecord
 {
-    protected static ?DbDriverInterface $dbDriver = null;
+    protected static ?DatabaseExecutor $executor = null;
 
     protected static ?Repository $repository = null;
 
-    public static function initialize(?DbDriverInterface $dbDriver = null)
+    public static function initialize(?DatabaseExecutor $executor = null)
     {
-        if (!is_null(self::$dbDriver)) {
+        if (!is_null(self::$executor)) {
             return;
         }
 
-        if (is_null($dbDriver)) {
-            $dbDriver = ORM::defaultDbDriver();
+        if (is_null($executor)) {
+            $executor = ORM::defaultDbDriver();
         }
 
-        self::$dbDriver = $dbDriver;
-        self::$repository = new Repository($dbDriver, self::discoverClass());
+        self::$executor = $executor;
+        self::$repository = new Repository($executor, self::discoverClass());
     }
 
-    public static function reset(?DbDriverInterface $dbDriver = null)
+    public static function reset(?DatabaseExecutor $executor = null)
     {
-        self::$dbDriver = null;
+        self::$executor = null;
         self::$repository = null;
-        if (!is_null($dbDriver)) {
-            self::initialize($dbDriver);
+        if (!is_null($executor)) {
+            self::initialize($executor);
         }
     }
 
@@ -79,7 +81,7 @@ trait ActiveRecord
     {
         self::initialize();
         $data = $data ?? [];
-        return self::$repository->entity(Serialize::from($data)->toArray());
+        return self::$repository->entity(Serialize::from($data)->withStopAtFirstLevel()->toArray());
     }
 
     public static function get(mixed ...$pk)
@@ -104,6 +106,7 @@ trait ActiveRecord
      * @param int $page
      * @param int $limit
      * @return static[]
+     * @throws InvalidArgumentException
      */
     public static function filter(IteratorFilter $filter, int $page = 0, int $limit = 50): array
     {
@@ -126,11 +129,12 @@ trait ActiveRecord
 
     public function toArray(bool $includeNullValue = false): array
     {
+        $serialize = Serialize::from($this)->withStopAtFirstLevel();
         if ($includeNullValue) {
-            return Serialize::from($this)->toArray();
+            return $serialize->toArray();
         }
 
-        return Serialize::from($this)->withDoNotParseNullValues()->toArray();
+        return $serialize->withDoNotParseNullValues()->toArray();
     }
 
     /**
@@ -141,6 +145,32 @@ trait ActiveRecord
     {
         self::initialize();
         return self::$repository->getByQuery($query);
+    }
+
+    /**
+     * Create a new query builder for this Active Record model
+     *
+     * @return ActiveRecordQuery
+     */
+    public static function newQuery(): ActiveRecordQuery
+    {
+        self::initialize();
+        return new ActiveRecordQuery(self::$repository);
+    }
+
+    /**
+     * Create a new query with an initial WHERE clause for fluent syntax
+     *
+     * Example: User::where('email = :email', ['email' => 'test@example.com'])->first()
+     *
+     * @param array|string $filter
+     * @param array $params
+     * @return ActiveRecordQuery
+     */
+    public static function where(array|string $filter, array $params = []): ActiveRecordQuery
+    {
+        self::initialize();
+        return ActiveRecordQuery::createWhere(self::$repository, $filter, $params);
     }
 
     // Override this method to create a custom mapper instead of discovering by attributes in the class

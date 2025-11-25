@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMHelper;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Class1;
 use Tests\Model\Class2;
@@ -21,9 +22,10 @@ class ORMTest extends TestCase
     private Mapper $mapper3;
     private Mapper $mapper4;
 
+    #[Override]
     public function setUp(): void
     {
-        ORM::clearRelationships();
+        ORM::resetMemory();
         $this->mapper1 = new Mapper(Class1::class, 'table1', 'id');
         $this->mapper2 = new Mapper(Class2::class, 'table2', 'id');
         $this->mapper2->addFieldMapping(FieldMapping::create('idTable1')->withFieldName('id_table1')->withParentTable('table1'));
@@ -31,9 +33,10 @@ class ORMTest extends TestCase
         $this->mapper4 = new Mapper(Class4::class);
     }
 
+    #[Override]
     public function tearDown(): void
     {
-        ORM::clearRelationships();
+        ORM::resetMemory();
     }
 
     public function testSanityCheck()
@@ -145,9 +148,9 @@ class ORMTest extends TestCase
         $query = ORM::getQueryInstance('table1');
         $query->where('field1 = :value', ['value' => new Literal(10)]);
 
-        $sqlObject = $query->build();
-        $sql = $sqlObject->getSql();
-        $params = $sqlObject->getParameters();
+        $sqlStatement = $query->build();
+        $sql = $sqlStatement->getSql();
+        $params = $sqlStatement->getParams();
 
         $sql = ORMHelper::processLiteral($sql, $params);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 10", $sql);
@@ -159,9 +162,9 @@ class ORMTest extends TestCase
         $query->where('field1 = :value', ['value' => new Literal("'testando'")]);
         $query->where('field2 = :value2', ['value2' => new Literal("'Joana D''Arc'")]);
 
-        $sqlObject = $query->build();
-        $sql = $sqlObject->getSql();
-        $params = $sqlObject->getParameters();
+        $sqlStatement = $query->build();
+        $sql = $sqlStatement->getSql();
+        $params = $sqlStatement->getParams();
 
         $sql = ORMHelper::processLiteral($sql, $params);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 'testando' AND field2 = 'Joana D''Arc'", $sql);

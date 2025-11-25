@@ -2,8 +2,11 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
-use Closure;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
+use ByJG\MicroOrm\MapperFunctions\ReadOnlyMapper;
+use ByJG\MicroOrm\MapperFunctions\StandardMapper;
+use InvalidArgumentException;
 
 class FieldMapping
 {
@@ -13,17 +16,17 @@ class FieldMapping
     private string $fieldName;
 
     /**
-     * @var callable
+     * @var MapperFunctionInterface|string
      */
     private mixed $updateFunction;
 
     /**
-     * @var callable
+     * @var MapperFunctionInterface|string
      */
     private mixed $selectFunction;
 
     /**
-     * @var callable
+     * @var MapperFunctionInterface|string
      */
     private mixed $insertFunction;
 
@@ -56,25 +59,49 @@ class FieldMapping
         $this->fieldAlias = $propertyName;
         $this->propertyName = $propertyName;
 
-        $this->selectFunction = MapperFunctions::STANDARD;
-        $this->updateFunction = MapperFunctions::STANDARD;
-        $this->insertFunction = MapperFunctions::READ_ONLY;
+        $this->selectFunction = StandardMapper::class;
+        $this->updateFunction = StandardMapper::class;
+        $this->insertFunction = ReadOnlyMapper::class;
     }
 
-    public function withUpdateFunction(callable $updateFunction): static
+    private function checkIfStringImplementsMapperInterface(string $className): void
     {
+        if (!class_exists($className)) {
+            throw new InvalidArgumentException("The class '$className' does not exist");
+        }
+
+        $interfaces = class_implements($className);
+        if ($interfaces === false || !in_array(MapperFunctionInterface::class, $interfaces)) {
+            throw new InvalidArgumentException("The class '$className' must implement MapperFunctionInterface");
+        }
+    }
+
+    public function withUpdateFunction(MapperFunctionInterface|string $updateFunction): static
+    {
+        if (is_string($updateFunction)) {
+            $this->checkIfStringImplementsMapperInterface($updateFunction);
+        }
+
         $this->updateFunction = $updateFunction;
         return $this;
     }
 
-    public function withSelectFunction(callable $selectFunction): static
+    public function withSelectFunction(MapperFunctionInterface|string $selectFunction): static
     {
+        if (is_string($selectFunction)) {
+            $this->checkIfStringImplementsMapperInterface($selectFunction);
+        }
+
         $this->selectFunction = $selectFunction;
         return $this;
     }
 
-    public function withInsertFunction(callable $insertFunction): static
+    public function withInsertFunction(MapperFunctionInterface|string $insertFunction): static
     {
+        if (is_string($insertFunction)) {
+            $this->checkIfStringImplementsMapperInterface($insertFunction);
+        }
+
         $this->insertFunction = $insertFunction;
         return $this;
     }
@@ -100,7 +127,7 @@ class FieldMapping
     public function dontSyncWithDb(): static
     {
         $this->syncWithDb = false;
-        $this->withUpdateFunction(MapperClosure::readOnly());
+        $this->withUpdateFunction(ReadOnlyMapper::class);
         return $this;
     }
 
@@ -113,17 +140,17 @@ class FieldMapping
     }
 
     /**
-     * @return Closure
+     * @return MapperFunctionInterface|string
      */
-    public function getUpdateFunction(): Closure
+    public function getUpdateFunction(): mixed
     {
         return $this->updateFunction;
     }
 
     /**
-     * @return Closure
+     * @return MapperFunctionInterface|string
      */
-    public function getSelectFunction(): Closure
+    public function getSelectFunction(): mixed
     {
         return $this->selectFunction;
     }
@@ -140,17 +167,29 @@ class FieldMapping
 
     public function getSelectFunctionValue(mixed $value, mixed $instance): mixed
     {
-        return call_user_func_array($this->selectFunction, [$value, $instance]);
+        $function = $this->selectFunction;
+        if (is_string($function)) {
+            $function = new $function();
+        }
+        return $function->processedValue($value, $instance, null);
     }
 
-    public function getUpdateFunctionValue(mixed $value, mixed $instance, DbFunctionsInterface $helper): mixed
+    public function getUpdateFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
-        return call_user_func_array($this->updateFunction, [$value, $instance, $helper]);
+        $function = $this->updateFunction;
+        if (is_string($function)) {
+            $function = new $function();
+        }
+        return $function->processedValue($value, $instance, $executor);
     }
 
-    public function getInsertFunctionValue(mixed $value, mixed $instance, DbFunctionsInterface $helper): mixed
+    public function getInsertFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
-        return call_user_func_array($this->insertFunction, [$value, $instance, $helper]);
+        $function = $this->insertFunction;
+        if (is_string($function)) {
+            $function = new $function();
+        }
+        return $function->processedValue($value, $instance, $executor);
     }
 
     public function isSyncWithDb(): bool

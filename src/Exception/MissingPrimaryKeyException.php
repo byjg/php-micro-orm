@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm\Exception;
 
 use Exception;
 
-class AllowOnlyNewValuesConstraintException extends Exception
+class MissingPrimaryKeyException extends Exception
 {
 
 }

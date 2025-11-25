@@ -2,8 +2,8 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\QueryBasic;
-use ByJG\MicroOrm\SqlObject;
 use PHPUnit\Framework\TestCase;
 
 class WhereTraitTest extends TestCase
@@ -15,7 +15,7 @@ class WhereTraitTest extends TestCase
             ->whereIsNull('test.field');
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE test.field IS NULL', []),
+            new SqlStatement('SELECT  * FROM test WHERE test.field IS NULL', []),
             $query->build()
         );
     }
@@ -27,7 +27,7 @@ class WhereTraitTest extends TestCase
             ->whereIsNotNull('test.field');
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE test.field IS NOT NULL', []),
+            new SqlStatement('SELECT  * FROM test WHERE test.field IS NOT NULL', []),
             $query->build()
         );
     }
@@ -40,7 +40,7 @@ class WhereTraitTest extends TestCase
 
         $sql = $query->build();
         $sqlString = $sql->getSql();
-        $params = $sql->getParameters();
+        $params = $sql->getParams();
 
         // We need to check the SQL and parameters separately because the parameter names are dynamic
         $this->assertStringContainsString('SELECT  * FROM test WHERE test.field IN (:', $sqlString);
@@ -62,7 +62,7 @@ class WhereTraitTest extends TestCase
             ->whereIn('test.field', []);
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test', []),
+            new SqlStatement('SELECT  * FROM test', []),
             $query->build()
         );
     }
@@ -78,7 +78,7 @@ class WhereTraitTest extends TestCase
 
         $sql = $query->build();
         $sqlString = $sql->getSql();
-        $params = $sql->getParameters();
+        $params = $sql->getParams();
 
         // Check that the SQL contains all our where clauses
         $this->assertStringContainsString('test.name = :name', $sqlString);

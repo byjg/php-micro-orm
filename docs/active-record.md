@@ -1,22 +1,54 @@
+---
+sidebar_position: 5
+---
+
 # Active Record
 
+## Pattern Overview
+
+Active Record is an implementation of **Martin
+Fowler's [Active Record pattern](https://martinfowler.com/eaaCatalog/activeRecord.html)**:
+
+> *"An object that wraps a row in a database table or view, encapsulates the database access, and adds domain logic on
+that data."*
+>
+> — Martin Fowler, Patterns of Enterprise Application Architecture
+
 Active Record is the M in MVC - the model - which is the layer of the system responsible
-for representing business data and logic. Active Record facilitates the creation and use of
+for representing business data and logic. It facilitates the creation and use of
 business objects whose data requires persistent storage to a database.
-It is an implementation of the Active Record pattern which itself is a description of an
-Object Relational Mapping system.
 
-## How to use Active Record
+**Key Characteristics:**
 
-- Create a model and add the annotations to the class and properties. (see [Model](model.md))
-- Add the `ActiveRecord` trait to your model.
-- Initialize the Active Record with the `initialize` static method (need to do only once)
+- Each Active Record instance represents a single row in the database
+- The object carries both data and behavior
+- Provides methods like `save()`, `delete()`, `get()`, `all()`, etc.
+- Database operations are directly available on the domain object
 
-e.g.:
+**When to use Active Record vs Repository/Data Mapper:**
+
+| Aspect             | Active Record                      | Repository + Data Mapper      |
+|--------------------|------------------------------------|-------------------------------|
+| **Complexity**     | Simple, straightforward            | More complex, more layers     |
+| **Best for**       | Simple domains, CRUD-heavy apps    | Complex domain logic, DDD     |
+| **Coupling**       | Domain objects know about database | Domain objects are pure       |
+| **Learning curve** | Lower                              | Higher                        |
+| **Testability**    | Harder (objects tied to DB)        | Easier (dependency injection) |
+
+💡 **Tip**: For simple applications or prototypes, Active Record is perfect. For complex domain logic or when following
+Domain-Driven Design principles, prefer Repository + Data Mapper.
+
+## How to Use Active Record
+
+1. Create a model and add the annotations to the class and properties (
+   see [Getting Started with Models and Attributes](getting-started-model.md))
+2. Add the `ActiveRecord` trait to your model
+3. Initialize the Active Record with the `initialize` static method (need to do only once)
+
+### Example
 
 ```php
-<?php
-[TableAttribute('my_table')]
+#[TableAttribute(tableName: 'my_table')]
 class MyClass
 {
     // Add the ActiveRecord trait to enable the Active Record
@@ -28,96 +60,213 @@ class MyClass
     #[FieldAttribute(fieldName: "some_property")]
     public ?int $someProperty;
 }
-
-// Initialize the Active Record
-MyClass::initialize($dbDriver);
 ```
 
-After the class is initialized you can use the Active Record to save, update, delete and retrieve the data.
-If you call the `initialize` method more than once, it won't have any effect, unless you call the method `reset`.
-
-It is possible define a Default DBDriver for all classes using the Active Record.
+If you have more than one database connection, you can define a default database connection:
 
 ```php
-<?php
 // Set a default DBDriver
 ORM::defaultDriver($dbDriver);
+```
 
-// Initialize the Active Record
-MyClass::initialize()
+or call the `initialize` method with the database connection:
+
+```php
+// Initialize the Active Record with a specific DBDriver
+MyClass::initialize($dbDriver);
 ```
 
 ## Using the Active Record
 
-Once is properly configured you can use the Active Record to save, update, delete and retrieve the data.
+Once properly configured, you can use the Active Record pattern for database operations:
 
-### Insert a new record
+### Insert a New Record
 
 ```php
-<?php
 // Create a new instance
 $myClass = MyClass::new();
 $myClass->someProperty = 123;
 $myClass->save();
 
-// Another example Create a new instance 
+// Or create with initial values
 $myClass = MyClass::new(['someProperty' => 123]);
 $myClass->save();
 ```
 
-### Retrieve a record
+### Retrieve a Record
 
 ```php
-<?php
 $myClass = MyClass::get(1);
 $myClass->someProperty = 456;
 $myClass->save();
 ```
 
-### Complex Filter
+### Query with Fluent API
+
+The new fluent query API provides a more intuitive way to build and execute queries:
 
 ```php
-<?php
+// Get first record matching criteria
+$myClass = MyClass::where('someProperty = :value', ['value' => 123])
+    ->first();
+
+// Get first record or throw exception if not found
+$myClass = MyClass::where('someProperty = :value', ['value' => 123])
+    ->firstOrFail();
+
+// Check if records exist
+if (MyClass::where('someProperty > :min', ['min' => 100])->exists()) {
+    echo "Records found!";
+}
+
+// Get all matching records as array
+$myClassList = MyClass::where('someProperty = :value', ['value' => 123])
+    ->orderBy(['id DESC'])
+    ->toArray();
+
+// Chain multiple conditions
+$myClass = MyClass::where('someProperty > :min', ['min' => 100])
+    ->where('someProperty < :max', ['max' => 200])
+    ->orderBy(['someProperty'])
+    ->first();
+
+// Build query step by step
+$query = MyClass::newQuery()
+    ->where('someProperty = :value', ['value' => 123])
+    ->orderBy(['id DESC'])
+    ->limit(0, 10);
+
+$results = $query->toArray();
+```
+
+### Complex Filtering (Legacy)
+
+```php
 $myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::EQUAL, 123));
 foreach ($myClassList as $myClass) {
     echo $myClass->someProperty;
 }
 ```
 
-### Delete a record
+### Get All Records
 
 ```php
-<?php
+// Get all records (paginated, default is page 0, limit 50)
+$myClassList = MyClass::all();
+
+// Get page 2 with 20 records per page
+$myClassList = MyClass::all(2, 20);
+```
+
+### Delete a Record
+
+```php
 $myClass = MyClass::get(1);
 $myClass->delete();
 ```
 
-### Refresh a record
+### Refresh a Record
 
 ```php
-<?php
 // Retrieve a record
 $myClass = MyClass::get(1);
 
 // do some changes in the database
-// **OR**
-// expect that the record in the database was changed by another process
+// OR
+// expect that the record was changed by another process
 
 // Get the updated data from the database
 $myClass->refresh();
 ```
 
-### Update a model from another model or array
+### Update a Model from Another Model or Array
 
 ```php
+// Get a record
+$myClass = MyClass::get(1);
 
-### Using the `Query` class
+// Update from array
+$myClass->fill(['someProperty' => 789]);
+
+// Update from another model
+$anotherModel = MyClass::new(['someProperty' => 789]);
+$myClass->fill($anotherModel);
+
+// Save changes
+$myClass->save();
+```
+
+### Convert to Array
 
 ```php
-<?php
+$myClass = MyClass::get(1);
+
+// Convert to array (excluding null values)
+$array = $myClass->toArray();
+
+// Convert to array (including null values)
+$array = $myClass->toArray(true);
+```
+
+### Using the `Query` Class
+
+```php
 $query = MyClass::joinWith('other_table');
 // do some query here
 // ...
 // Execute the query
 $myClassList = MyClass::query($query);
 ```
+
+### Get Table Name
+
+```php
+$tableName = MyClass::tableName();
+```
+
+## Custom Mapper Configuration
+
+By default, the Active Record uses the class attributes to discover the mapper configuration.
+You can override this behavior by implementing the `discoverClass` method:
+
+```php
+class MyClass
+{
+    use ActiveRecord;
+    
+    // Override the default mapper discovery
+    protected static function discoverClass(): string|Mapper
+    {
+        // Return a custom mapper
+        return new Mapper(
+            self::class,
+            'custom_table',
+            ['id']
+        );
+    }
+}
+```
+
+## Advantages of Active Record
+
+The Active Record pattern offers several advantages:
+
+1. **Simplicity**: It provides a simple, intuitive interface for database operations
+2. **Encapsulation**: Database operations are encapsulated within the model class
+3. **Reduced Boilerplate**: Eliminates the need for separate repository classes for basic operations
+4. **Fluent Interface**: Enables method chaining for a more readable code style
+
+## When to Use Active Record vs. Repository
+
+Both patterns have their place in application development:
+
+- **Use Active Record when**:
+  - You prefer a simpler, more direct approach
+  - Your application has straightforward database operations
+  - You want to reduce the number of classes in your codebase
+
+- **Use Repository when**:
+  - You need more control over database operations
+  - Your application requires complex queries
+  - You prefer a more explicit separation between models and database operations
+  - You're implementing a domain-driven design approach 

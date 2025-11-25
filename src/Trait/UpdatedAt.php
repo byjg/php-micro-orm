@@ -3,14 +3,14 @@
 namespace ByJG\MicroOrm\Trait;
 
 use ByJG\MicroOrm\Attributes\FieldAttribute;
-use ByJG\MicroOrm\MapperFunctions;
+use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
 
 trait UpdatedAt
 {
     /**
      * @var string|null
      */
-    #[FieldAttribute(fieldName: "updated_at", updateFunction: MapperFunctions::NOW_UTC)]
+    #[FieldAttribute(fieldName: "updated_at", updateFunction: NowUtcMapper::class)]
     protected ?string $updatedAt = null;
 
     public function getUpdatedAt(): ?string

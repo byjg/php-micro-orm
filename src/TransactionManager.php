@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\MicroOrm\Exception\TransactionException;
 use InvalidArgumentException;
@@ -52,7 +52,7 @@ class TransactionManager
 
     public function addRepository(Repository $repository): void
     {
-        $this->addDbDriver($repository->getDbDriver());
+        $this->addDbDriver($repository->getExecutor()->getDriver());
     }
 
     /**

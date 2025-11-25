@@ -67,7 +67,7 @@ $insert = InsertQuery::getInstance('users', [
 
 // Use DB helper to get the correct SQL for your driver
 $selectLastId = QueryRaw::getInstance(
-    $repository->getDbDriver()->getDbHelper()->getSqlLastInsertId()
+    $repository->getExecutor()->getHelper()->getSqlLastInsertId()
 );
 
 $it = $repository->bulkExecute([$insert, $selectLastId]);

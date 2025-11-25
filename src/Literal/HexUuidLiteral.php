@@ -11,7 +11,7 @@ class HexUuidLiteral extends Literal
 
     protected string $formattedUuid;
 
-    public function __construct(Literal|string $value)
+    public function __construct(LiteralInterface|string $value)
     {
         parent::__construct($this->binaryString($value));
     }
@@ -39,12 +39,15 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public function binaryString(Literal|string $value): string
+    public function binaryString(LiteralInterface|string $value): string
     {
         if ($value instanceof HexUuidLiteral) {
             $value = $value->formattedUuid;
         } else {
             $value = self::getFormattedUuid($value);
+        }
+        if ($value === null) {
+            throw new InvalidArgumentException("UUID value cannot be null or empty");
         }
         $this->formattedUuid = $value;
         return $this->prefix . preg_replace('/[^0-9A-Fa-f]/', '', $this->formattedUuid) . $this->suffix;
@@ -66,9 +69,9 @@ class HexUuidLiteral extends Literal
     /**
      * @throws InvalidArgumentException
      */
-    public static function getFormattedUuid(Literal|string|null $item, bool $throwErrorIfInvalid = true, $default = null): ?string
+    public static function getFormattedUuid(LiteralInterface|string|null $item, bool $throwErrorIfInvalid = true, $default = null): ?string
     {
-        if ($item instanceof Literal) {
+        if ($item instanceof LiteralInterface) {
             $item = $item->__toString();
         }
 
@@ -76,20 +79,18 @@ class HexUuidLiteral extends Literal
             return null;
         }
 
-        if (strlen($item) === 16 && !ctype_print($item)) {
+        if (strlen($item) === 16) {
             $item = bin2hex($item);
         }
 
-        $pattern = preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item);
+        $pattern = strtoupper((string)preg_replace('/(^0[xX]|[^A-Fa-f0-9])/', '', $item));
 
         if (strlen($pattern) === 32) {
-            $item = preg_replace("/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/", "$1-$2-$3-$4-$5", $pattern);
+            return preg_replace("/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/", "$1-$2-$3-$4-$5", $pattern);
         } elseif ($throwErrorIfInvalid) {
             throw new InvalidArgumentException("Invalid UUID format");
-        } else {
-            return $default;
         }
 
-        return strtoupper($item);
+        return $default;
     }
 }

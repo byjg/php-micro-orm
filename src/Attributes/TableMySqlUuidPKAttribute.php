@@ -3,16 +3,26 @@
 namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\Literal;
+use InvalidArgumentException;
+use Override;
 
 #[Attribute(Attribute::TARGET_CLASS)]
-class TableMySqlUuidPKAttribute extends TableAttribute
+class TableMySqlUuidPKAttribute extends TableAttribute implements MapperFunctionInterface
 {
     public function __construct(string $tableName)
     {
-        parent::__construct($tableName, function (DbDriverInterface $dbDriver, object $entity) {
-            return new Literal("X'" . $dbDriver->getScalar("SELECT hex(uuid_to_bin(uuid()))") . "'");
-        });
+        parent::__construct($tableName, primaryKeySeedFunction: $this);
+    }
+
+    #[Override]
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
+    {
+        if ($executor === null) {
+            throw new InvalidArgumentException('DatabaseExecutor is required for TableMySqlUuidPKAttribute');
+        }
+        return new Literal("X'" . $executor->getScalar("SELECT hex(uuid_to_bin(uuid()))") . "'");
     }
 }

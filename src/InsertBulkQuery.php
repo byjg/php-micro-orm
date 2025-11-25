@@ -2,20 +2,20 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
-use ByJG\AnyDataset\Db\DbFunctionsInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use InvalidArgumentException;
+use Override;
 
 class InsertBulkQuery extends Updatable
 {
     protected array $fields = [];
 
     protected ?QueryBuilderInterface $query = null;
-
-    protected ?SqlObject $sqlObject = null;
 
     protected bool $safe = false;
 
@@ -29,7 +29,7 @@ class InsertBulkQuery extends Updatable
     }
 
 
-    public static function getInstance(string $table, array $fieldNames): static
+    public static function getInstance(string $table, array $fieldNames): InsertBulkQuery
     {
         return new InsertBulkQuery($table, $fieldNames);
     }
@@ -61,18 +61,19 @@ class InsertBulkQuery extends Updatable
     }
 
     /**
-     * @param DbDriverInterface|DbFunctionsInterface|null $dbDriverOrHelper
-     * @return SqlObject
+     * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
+     * @return SqlStatement
      * @throws OrmInvalidFieldsException
      */
-    public function build(DbFunctionsInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlObject
+    #[Override]
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
     {
         if (empty($this->fields)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
         }
 
         if ($dbDriverOrHelper instanceof DbDriverInterface) {
-            $dbDriverOrHelper = $dbDriverOrHelper->getDbHelper();
+            $dbDriverOrHelper = $dbDriverOrHelper->getSqlDialect();
         }
 
         $tableStr = $this->table;
@@ -99,9 +100,10 @@ class InsertBulkQuery extends Updatable
                 if ($this->safe) {
                     $params[$paramKey] = $this->fields[$col][$i];
                 } else {
-                    $value = str_replace("'", "''", $this->fields[$col][$i]);
+                    $value = $this->fields[$col][$i];
+                    $value = str_replace("'", "''", (string)$value);
                     if (!is_numeric($value)) {
-                        $value = $dbDriverOrHelper?->delimiterField($value) ?? "'{$value}'";
+                        $value = "'{$value}'";
                     }
                     $params[$paramKey] = new Literal($value); // Map parameter key to value
                 }
@@ -122,10 +124,11 @@ class InsertBulkQuery extends Updatable
         );
 
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlObject($sql, $params);
+        return new SqlStatement($sql, $params);
     }
 
-    public function convert(?DbFunctionsInterface $dbDriver = null): QueryBuilderInterface
+    #[Override]
+    public function convert(?SqlDialectInterface $dbHelper = null): QueryBuilderInterface
     {
         throw new InvalidArgumentException('It is not possible to convert an InsertBulkQuery to a Query');
     }

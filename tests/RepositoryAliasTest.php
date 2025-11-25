@@ -2,58 +2,52 @@
 
 namespace Tests;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
+use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Customer;
 
 class RepositoryAliasTest extends TestCase
 {
-    /**
-     * @var Mapper
-     */
-    protected $customerMapper;
-
-    /**
-     * @var DbDriverInterface
-     */
-    protected $dbDriver;
 
     /**
      * @var Repository
      */
-    protected $repository;
+    protected Repository $repository;
 
+    #[Override]
     public function setUp(): void
     {
-        $this->dbDriver = ConnectionUtil::getConnection("testmicroorm");
+        $dbDriver = ConnectionUtil::getConnection("testmicroorm");
 
-        $this->dbDriver->execute('create table customers (
-            id integer primary key  auto_increment,
-            customer_name varchar(45),
-            customer_age int);'
-        );
-        $this->dbDriver->execute("insert into customers (customer_name, customer_age) values ('John Doe', 40)");
-        $this->dbDriver->execute("insert into customers (customer_name, customer_age) values ('Jane Doe', 37)");
-        $this->customerMapper = new Mapper(Customer::class, 'customers', 'id');
-        $this->customerMapper->addFieldMapping(FieldMapping::create('customerName')->withFieldName('customer_Name'));
-        $this->customerMapper->addFieldMapping(FieldMapping::create('notInTable')->dontSyncWithDb());
-
+        $customerMapper = new Mapper(Customer::class, 'customers', 'id');
+        $customerMapper->addFieldMapping(FieldMapping::create('customerName')->withFieldName('customer_Name'));
+        $customerMapper->addFieldMapping(FieldMapping::create('notInTable')->dontSyncWithDb());
 
         $fieldMap = FieldMapping::create('Age')
             ->withFieldName('customer_Age')
             ->withFieldAlias('custAge');
-        $this->customerMapper->addFieldMapping($fieldMap);
+        $customerMapper->addFieldMapping($fieldMap);
 
-        $this->repository = new Repository($this->dbDriver, $this->customerMapper);
+        $this->repository = new Repository(DatabaseExecutor::using($dbDriver), $customerMapper);
+
+        $this->repository->getExecutor()->execute('create table customers (
+            id integer primary key  auto_increment,
+            customer_name varchar(45),
+            customer_age int);'
+        );
+        $this->repository->getExecutor()->execute("insert into customers (customer_name, customer_age) values ('John Doe', 40)");
+        $this->repository->getExecutor()->execute("insert into customers (customer_name, customer_age) values ('Jane Doe', 37)");
     }
 
+    #[Override]
     public function tearDown(): void
     {
-        $this->dbDriver->execute('drop table if exists customers;');
+        $this->repository->getExecutor()->execute('drop table if exists customers;');
     }
 
     public function testGet()

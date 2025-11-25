@@ -3,6 +3,7 @@
 namespace ByJG\MicroOrm;
 
 use DateInterval;
+use DateTimeImmutable;
 use Psr\SimpleCache\CacheInterface;
 
 class CacheQueryResult
@@ -30,6 +31,17 @@ class CacheQueryResult
 
     public function getTtl(): DateInterval|int
     {
+        return $this->ttl;
+    }
+
+    public function getTtlInSeconds(): int
+    {
+        if ($this->ttl instanceof DateInterval) {
+            // Convert DateInterval to seconds
+            $reference = new DateTimeImmutable();
+            $endTime = $reference->add($this->ttl);
+            return $endTime->getTimestamp() - $reference->getTimestamp();
+        }
         return $this->ttl;
     }
 }

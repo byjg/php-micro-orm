@@ -1,3 +1,7 @@
+---
+sidebar_position: 14
+---
+
 # Using FieldAlias
 
 Field alias is an alternate name for a field. This is useful for disambiguation on join and left join queries.

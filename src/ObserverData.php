@@ -2,13 +2,15 @@
 
 namespace ByJG\MicroOrm;
 
+use ByJG\MicroOrm\Enum\ObserverEvent;
+
 class ObserverData
 {
     // The table name that was affected
     protected string $table;
 
-    // The event that was triggered. Can be 'insert', 'update' or 'delete'
-    protected string $event;
+    // The event that was triggered
+    protected ObserverEvent $event;
 
     // The data that was inserted or updated. It is null in case of delete.
     protected mixed $data;
@@ -19,7 +21,7 @@ class ObserverData
     // The repository is listening to the event (the same as $myRepository)
     protected Repository $repository;
 
-    public function __construct(string $table, string $event, mixed $data, mixed $oldData, Repository $repository)
+    public function __construct(string $table, ObserverEvent $event, mixed $data, mixed $oldData, Repository $repository)
     {
         $this->table = $table;
         $this->event = $event;
@@ -37,9 +39,9 @@ class ObserverData
     }
 
     /**
-     * @return string
+     * @return ObserverEvent
      */
-    public function getEvent(): string
+    public function getEvent(): ObserverEvent
     {
         return $this->event;
     }

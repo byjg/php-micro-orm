@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\MicroOrm\Literal\Literal;
+use ByJG\MicroOrm\Literal\LiteralInterface;
 
 class ORMHelper
 {
@@ -11,16 +11,16 @@ class ORMHelper
      * @param array|null $params
      * @return string
      */
-    public static function processLiteral(string $sql, array &$params = null): string
+    public static function processLiteral(string $sql, ?array &$params = null): string
     {
         if (empty($params)) {
             return $sql;
         }
 
         foreach ($params as $field => $param) {
-            if ($param instanceof Literal) {
+            if ($param instanceof LiteralInterface) {
                 $literalValue = $param->getLiteralValue();
-                $sql = preg_replace(
+                $sql = (string)preg_replace(
                     [
                         "/\[\[$field]]/",
                         "/:$field(\W|$)/"

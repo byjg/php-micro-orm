@@ -2,12 +2,12 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 
 class ORM
 {
-    private static ?DbDriverInterface $dbDriver = null;
+    private static ?DatabaseExecutor $executor = null;
     private static array $relationships = [];
 
     /**
@@ -17,25 +17,31 @@ class ORM
 
     private static array $incompleteRelationships = [];
 
-    public static function addMapper(Mapper $mainMapper)
+    public static function addMapper(Mapper $mainMapper): void
     {
         static::$mapper[$mainMapper->getTable()] = $mainMapper;
     }
 
     public static function addRelationship(string|Mapper $parent, string|Mapper $child, string $foreignKeyName, ?string $primaryKey = '?'): void
     {
-        $parentTableName = $parent;
         if (is_string($parent) && isset(static::$mapper[$parent])) {
             $parent = static::$mapper[$parent];
         }
         if ($parent instanceof Mapper) {
             $parentTableName = $parent->getTable();
-            $primaryKey = $parent->getPrimaryKey()[0];
+            $primaryKey = $parent->getPrimaryKey()[0] ?? null;
+        } else {
+            $parentTableName = $parent;
         }
 
-        $childTableName = $child;
         if ($child instanceof Mapper) {
             $childTableName = $child->getTable();
+        } else {
+            $childTableName = $child;
+        }
+
+        if ($primaryKey === null) {
+            return;
         }
 
         // Store relationships in a standardized order (alphabetically)
@@ -54,7 +60,7 @@ class ORM
     public static function getRelationship(string ...$tables): array
     {
         // First time we try to fix the incomplete relationships
-        foreach (static::$incompleteRelationships as $key => $relationship) {
+        foreach (static::$incompleteRelationships as $relationship) {
             if (isset(static::$mapper[$relationship["parent"]])) {
                 continue;
             }
@@ -174,12 +180,13 @@ class ORM
         }
     }
 
-    public static function clearRelationships(): void
+    public static function resetMemory(): void
     {
         static::$relationships = [];
         static::$incompleteRelationships = [];
+        static::$executor = null; // Reset the default DB driver
         foreach (static::$mapper as $mapper) {
-            // Reset the ActiveRecord DbDriver
+            // Reset the ActiveRecord DatabaseExecutor
             if (method_exists($mapper->getEntity(), 'reset')) {
                 call_user_func([$mapper->getEntity(), 'reset']);
             }
@@ -187,16 +194,16 @@ class ORM
         static::$mapper = [];
     }
 
-    public static function defaultDbDriver(?DbDriverInterface $dbDriver = null): DbDriverInterface
+    public static function defaultDbDriver(?DatabaseExecutor $executor = null): DatabaseExecutor
     {
-        if (is_null($dbDriver)) {
-            if (is_null(static::$dbDriver)) {
-                throw new InvalidArgumentException("You must initialize the ORM with a DbDriverInterface");
+        if (is_null($executor)) {
+            if (is_null(static::$executor)) {
+                throw new InvalidArgumentException("You must initialize the ORM with a DatabaseExecutor");
             }
-            return static::$dbDriver;
+            return static::$executor;
         }
 
-        static::$dbDriver = $dbDriver;
-        return $dbDriver;
+        static::$executor = $executor;
+        return $executor;
     }
 }

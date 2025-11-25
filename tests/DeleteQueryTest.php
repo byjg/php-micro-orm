@@ -2,11 +2,11 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\SqlStatement;
 use ByJG\MicroOrm\DeleteQuery;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
-use ByJG\MicroOrm\SqlObject;
-use ByJG\MicroOrm\SqlObjectEnum;
 use ByJG\MicroOrm\Updatable;
+use Override;
 use PHPUnit\Framework\TestCase;
 
 class DeleteQueryTest extends TestCase
@@ -16,11 +16,13 @@ class DeleteQueryTest extends TestCase
      */
     protected $object;
 
+    #[Override]
     protected function setUp(): void
     {
         $this->object = new DeleteQuery();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->object = null;
@@ -31,10 +33,10 @@ class DeleteQueryTest extends TestCase
         $this->object->table('test');
         $this->object->where('fld1 = :id', ['id' => 10]);
 
-        $sqlObject = $this->object->build();
+        $sqlStatement = $this->object->build();
         $this->assertEquals(
-            new SqlObject('DELETE FROM test WHERE fld1 = :id', [ 'id' => 10 ], SqlObjectEnum::DELETE),
-            $sqlObject
+            new SqlStatement('DELETE FROM test WHERE fld1 = :id', ['id' => 10]),
+            $sqlStatement
         );
     }
 
@@ -52,12 +54,12 @@ class DeleteQueryTest extends TestCase
     {
         $this->object->table('test');
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test'),
+            new SqlStatement('SELECT  * FROM test'),
             $this->object->convert()->build()
         );
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test'),
+            new SqlStatement('SELECT  * FROM test'),
             $this->object->convert()->build()
         );
 
@@ -65,7 +67,7 @@ class DeleteQueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE fld2 = :teste', [ 'teste' => 10 ]),
+            new SqlStatement('SELECT  * FROM test WHERE fld2 = :teste', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -73,7 +75,7 @@ class DeleteQueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20', [ 'teste' => 10 ]),
+            new SqlStatement('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -81,7 +83,7 @@ class DeleteQueryTest extends TestCase
             ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlObject('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', [ 'teste' => 10, 'teste2' => 40 ]),
+            new SqlStatement('SELECT  * FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', ['teste' => 10, 'teste2' => 40]),
             $this->object->convert()->build()
         );
     }

@@ -2,7 +2,7 @@
 
 namespace ByJG\MicroOrm;
 
-use ByJG\AnyDataset\Db\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 
 class ObserverProcessorInternal
@@ -28,7 +28,7 @@ class ObserverProcessorInternal
 
     public function log($message): void
     {
-        $this->repository->getDbDriver()->log($message);
+        $this->repository->getExecutor()->getDriver()->log($message);
     }
 
     public function getMapper(): Mapper
@@ -38,6 +38,6 @@ class ObserverProcessorInternal
 
     public function getDbDriver(): DbDriverInterface
     {
-        return $this->repository->getDbDriver();
+        return $this->repository->getExecutor()->getDriver();
     }
 }
