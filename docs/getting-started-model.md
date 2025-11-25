@@ -44,11 +44,11 @@ public function setId(?int $id): void
 
 ### Requirements for the properties in the Model class:
 
-| Property Characteristic    | Requirement                                              | Example                                                                                                                  |
-|----------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Property with type         | Must be nullable with default value set (null preferred) | `public ?int $id = null;`                                                                                                |
-| Property without type      | No need to set default value                             | `public $id;`                                                                                                            |
-| Protected/Private property | Must have getter and setter public methods               | `protected ?int $id = null;`<br>`public function getId(): ?int {...};`<br>`public function setId(?int $id): void {...};` |
+| Property Characteristic    | Requirement                                              | Example                                                                                                                      |
+|----------------------------|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Property with type         | Must be nullable with default value set (null preferred) | `public ?int $id = null;`                                                                                                    |
+| Property without type      | No need to set default value                             | `public $id;`                                                                                                                |
+| Protected/Private property | Must have getter and setter public methods               | `protected ?int $id = null;`<br />`public function getId(): ?int {...};`<br />`public function setId(?int $id): void {...};` |
 
 ## Property Mapping Strategy with the Database
 

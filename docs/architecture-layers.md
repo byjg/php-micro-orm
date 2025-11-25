@@ -361,15 +361,15 @@ class DataExporter
 
 ## Summary
 
-| Aspect                 | Infrastructure Layer           | Domain Layer                                              |
-|------------------------|--------------------------------|-----------------------------------------------------------|
-| **Methods**            | `Query::buildAndGetIterator()` | `Repository::getIterator()`<br>`Repository::getByQuery()` |
-| **Returns**            | Raw arrays                     | Domain entities                                           |
-| **Mapper**             | Not required                   | Required                                                  |
-| **Entity Transform**   | No                             | Yes (automatic)                                           |
-| **Multi-Mapper JOINs** | Not supported                  | Supported                                                 |
-| **Use Cases**          | Migrations, utilities, testing | Application logic, CRUD                                   |
-| **Coupling**           | Low (stateless)                | High (repository lifecycle)                               |
+| Aspect                 | Infrastructure Layer           | Domain Layer                                                |
+|------------------------|--------------------------------|-------------------------------------------------------------|
+| **Methods**            | `Query::buildAndGetIterator()` | `Repository::getIterator()`<br />`Repository::getByQuery()` |
+| **Returns**            | Raw arrays                     | Domain entities                                             |
+| **Mapper**             | Not required                   | Required                                                    |
+| **Entity Transform**   | No                             | Yes (automatic)                                             |
+| **Multi-Mapper JOINs** | Not supported                  | Supported                                                   |
+| **Use Cases**          | Migrations, utilities, testing | Application logic, CRUD                                     |
+| **Coupling**           | Low (stateless)                | High (repository lifecycle)                                 |
 
 **Key Takeaway**: Use Repository methods in your application code. Reserve Query methods for infrastructure-level
 operations where entity transformation is not needed or not desired.
