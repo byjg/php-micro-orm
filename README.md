@@ -1,11 +1,4 @@
----
-tags: [php, databases, orm]
----
-
 # MicroOrm for PHP
-
-A micro framework for create a very simple decoupled ORM.
-This library intended to be very small and very simple to use;
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml)
@@ -13,6 +6,9 @@ This library intended to be very small and very simple to use;
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-micro-orm/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-micro-orm.svg)](https://opensource.byjg.com/opensource/licensing.html)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-micro-orm.svg)](https://github.com/byjg/php-micro-orm/releases/)
+
+A micro framework for create a very simple decoupled ORM.
+This library intended to be very small and very simple to use;
 
 Key Features:
 
@@ -79,7 +75,7 @@ These are the key components:
 * **Repository** orchestrates all MicroORM components and uses DatabaseExecutor to interact with the database
 
 For a detailed explanation of the architecture and when to use each layer,
-see [Architecture Layers: Infrastructure vs Domain](architecture-layers).
+see [Architecture Layers: Infrastructure vs Domain](docs/architecture-layers.md).
 
 
 ## Getting Started
@@ -174,33 +170,33 @@ $result = $repository->getByQuery($query);
 
 ## Basics
 
-* [Defining the Model](getting-started-model)
-* [Querying the Database](querying-the-database)
-* [Updating the database](updating-the-database)
-* [Using the Mapper Object](using-mapper-object)
-* [The Model Attributes](model-attribute)
-* [The Repository Class](repository)
-* [Common Traits for Timestamp Fields](common-traits)
-* [Architecture Layers: Infrastructure vs Domain](architecture-layers)
-* [Comparison with Other ORMs (Eloquent, Doctrine)](comparison-with-other-orms)
+* [Defining the Model](docs/getting-started-model.md)
+* [Querying the Database](docs/querying-the-database.md)
+* [Updating the database](docs/updating-the-database.md)
+* [Using the Mapper Object](docs/using-mapper-object.md)
+* [The Model Attributes](docs/model-attribute.md)
+* [The Repository Class](docs/repository.md)
+* [Common Traits for Timestamp Fields](docs/common-traits.md)
+* [Architecture Layers: Infrastructure vs Domain](docs/architecture-layers.md)
+* [Comparison with Other ORMs (Eloquent, Doctrine)](docs/comparison-with-other-orms.md)
 
 ## Advanced Topics
 
-* [Active Record](active-record)
-* [Auto Discovering Relationship](auto-discovering-relationship)
-* [The Literal Object](the-literal-object)
-* [Soft Delete](softdelete)
-* [Caching the Results](cache)
-* [Observing the Database](observers)
-* [Controlling the data queried/updated](controlling-the-data)
-* [Mapper Functions](mapper-functions)
-* [Using FieldAlias](using-fieldalias)
-* [Tables without auto increments fields](tables-without-auto-increment-fields)
-* [Using With Recursive SQL Command](using-with-recursive-sql-command)
-* [QueryRaw (raw SQL)](query-raw)
-* [Update Constraints](update-constraints)
-* [Building SQL Queries](query-build)
-* [UUID Support](uuid-support)
+* [Active Record](docs/active-record.md)
+* [Auto Discovering Relationship](docs/auto-discovering-relationship.md)
+* [The Literal Object](docs/the-literal-object.md)
+* [Soft Delete](docs/softdelete.md)
+* [Caching the Results](docs/cache.md)
+* [Observing the Database](docs/observers.md)
+* [Controlling the data queried/updated](docs/controlling-the-data.md)
+* [Mapper Functions](docs/mapper-functions.md)
+* [Using FieldAlias](docs/using-fieldalias.md)
+* [Tables without auto increments fields](docs/tables-without-auto-increment-fields.md)
+* [Using With Recursive SQL Command](docs/using-with-recursive-sql-command.md)
+* [QueryRaw (raw SQL)](docs/query-raw.md)
+* [Update Constraints](docs/update-constraints.md)
+* [Building SQL Queries](docs/query-build.md)
+* [UUID Support](docs/uuid-support.md)
 
 ## Install
 
