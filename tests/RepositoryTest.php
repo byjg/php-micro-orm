@@ -48,6 +48,7 @@ use Tests\Model\TestInsertProcessor;
 use Tests\Model\TestUpdateProcessor;
 use Tests\Model\Users;
 use Tests\Model\UsersMap;
+use Tests\Model\UsersTyped;
 use Tests\Model\UsersWithAttribute;
 use Throwable;
 
@@ -133,6 +134,47 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, $users->getId());
         $this->assertEquals('John Doe', $users->getName());
         $this->assertEquals('2015-05-02 00:00:00', $users->getCreatedate());
+    }
+
+    /**
+     * Regression: a model with non-nullable typed properties (no default) is "uninitialized" on
+     * `new`. The hydration path serializes an empty instance to enumerate the fields, which used
+     * to raise "must not be accessed before initialization".
+     */
+    public function testGetIntoUninitializedTypedModel()
+    {
+        $mapper = new Mapper(UsersTyped::class, 'users', 'id');
+        $repository = new Repository($this->repository->getExecutor(), $mapper);
+
+        $user = $repository->get(1);
+        $this->assertInstanceOf(UsersTyped::class, $user);
+        $this->assertEquals(1, $user->id);
+        $this->assertEquals('John Doe', $user->name);
+        $this->assertEquals('2015-05-02 00:00:00', $user->createdate);
+    }
+
+    /**
+     * Regression: saving an entity whose non-nullable typed PK is left uninitialized (it is an
+     * auto-increment column) must not raise "must not be accessed before initialization" when the
+     * entity is serialized to build the INSERT. The uninitialized property is simply omitted.
+     */
+    public function testSaveObjectWithUninitializedTypedProperty()
+    {
+        $mapper = new Mapper(UsersTyped::class, 'users', 'id');
+        $repository = new Repository($this->repository->getExecutor(), $mapper);
+
+        $user = new UsersTyped();
+        $user->name = 'Newbie';
+        // $user->id and $user->createdate are intentionally left uninitialized: both must be
+        // omitted from the INSERT instead of raising an error while serializing the entity.
+
+        $repository->save($user);
+
+        // save() writes the auto-increment id back onto the entity, proving the INSERT ran and the
+        // uninitialized properties were serialized (omitted) without raising an error. createdate
+        // stays uninitialized (save only writes back the PK), so it is not read here.
+        $this->assertEquals(4, $user->id);
+        $this->assertEquals('Newbie', $user->name);
     }
 
     public function testGetByFilter()
