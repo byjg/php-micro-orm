@@ -334,7 +334,7 @@ class Mapper
 
         $property = $this->fixFieldName($property);
 
-        if (!isset($this->fieldMap[$property])) {
+        if ($property === null || !isset($this->fieldMap[$property])) {
             return null;
         }
 
