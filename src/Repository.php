@@ -9,6 +9,7 @@ use ByJG\AnyDataset\Core\GenericIterator;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Exception\DbDriverNotConnected;
+use ByJG\AnyDataset\Db\Interfaces\DatabaseEventObserverInterface;
 use ByJG\AnyDataset\Db\IsolationLevelEnum;
 use ByJG\AnyDataset\Db\IteratorFilterSqlFormatter;
 use ByJG\AnyDataset\Db\SqlStatement;
@@ -65,6 +66,16 @@ class Repository
     protected EntityProcessorInterface|null $beforeInsert = null;
 
     /**
+     * @var ObserverProcessorInterface[]
+     */
+    protected array $observerProcessors = [];
+
+    /**
+     * @var DatabaseEventObserverInterface[]
+     */
+    protected array $rawObservers = [];
+
+    /**
      * Repository constructor.
      * @param DatabaseExecutor $executor
      * @param string|Mapper $mapperOrEntity
@@ -93,6 +104,20 @@ class Repository
     public function addDbDriverForWrite(DatabaseExecutor $executor): void
     {
         $this->dbDriverWrite = $executor;
+        if ($executor === $this->dbDriver) {
+            return;
+        }
+        foreach ($this->rawObservers as $observer) {
+            $executor->addObserver($observer);
+        }
+        if (!empty($this->observerProcessors)) {
+            $bridge = ObserverBridge::for($executor);
+            foreach ($this->observerProcessors as $processor) {
+                if (!$bridge->hasProcessor($processor)) {
+                    $bridge->addProcessor($processor, $this);
+                }
+            }
+        }
     }
 
     public function setRepositoryReadOnly(): void
@@ -248,7 +273,10 @@ class Repository
                 ->table($this->mapper->getTable())
                 ->set('deleted_at', new Literal($this->getExecutorWrite()->getHelper()->sqlDate('Y-m-d H:i:s')))
                 ->where($filterList, $filterKeys);
-            $this->update($updatable);
+            // the SQL is an UPDATE, but the caller intent is a delete
+            $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper())
+                ->withOrmEvent(ObserverEvent::SoftDelete, $this->mapper->getTable());
+            $this->getExecutorWrite()->execute($sqlStatement);
             return true;
         }
 
@@ -285,6 +313,7 @@ class Repository
         $selectSql = null;
         $selectParams = [];
         $bigParams = [];
+        $ormStatements = [];
 
         foreach ($queries as $i => $query) {
             if (!($query instanceof QueryBuilderInterface) && !($query instanceof Updatable)) {
@@ -302,6 +331,12 @@ class Repository
                 $selectSql = rtrim($sql, "; \t\n\r\0\x0B");
                 $selectParams = $params;
                 continue;
+            }
+
+            // The writes are concatenated into a single raw SQL string, so the executor
+            // observers cannot map them; keep the built statements to notify after commit
+            if ($sqlStatement instanceof OrmSqlStatement && $sqlStatement->hasOrmEvent()) {
+                $ormStatements[] = $sqlStatement;
             }
 
             // For write statements, avoid parameter name collisions by uniquifying named params
@@ -342,6 +377,13 @@ class Repository
 
             $dbDriver->commitTransaction();
 
+            $bridge = ObserverBridge::find($this->getExecutor());
+            if (!is_null($bridge)) {
+                foreach ($ormStatements as $ormStatement) {
+                    $bridge->notifyStatement($ormStatement);
+                }
+            }
+
             return $it;
         } catch (Exception $ex) {
             $dbDriver->rollbackTransaction();
@@ -362,8 +404,6 @@ class Repository
         $sqlStatement = $updatable->build();
 
         $this->getExecutorWrite()->execute($sqlStatement);
-
-        ORMSubject::getInstance()->notify($this->mapper->getTable(), ObserverEvent::Delete, null, $sqlStatement->getParams());
 
         return true;
     }
@@ -576,6 +616,8 @@ class Repository
         // Build the updatable without executing
         [$updatable, $array, $fieldToProperty, $isInsert, $oldInstance, $pkList] = $this->saveUpdatableInternal($instance);
 
+        $sqlStatement = null;
+
         // Execute the Insert or Update
         if ($isInsert) {
             $keyGen = $this->getMapper()->generateKey($this->getExecutorWrite(), $instance) ?? [];
@@ -587,7 +629,8 @@ class Repository
                 $array[$pkList[$position]] = $value;
                 $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
             }
-            $keyReturned = $this->insert($updatable, $keyGen);
+            $sqlStatement = $this->prepareForDeferredNotify($updatable, $instance, $oldInstance);
+            $keyReturned = $this->insert($sqlStatement, $keyGen);
             if (count($pkList) == 1 && !empty($keyReturned)) {
                 $array[$pkList[0]] = $keyReturned;
             }
@@ -609,17 +652,33 @@ class Repository
                     $constraint->check($oldInstance, $instance);
                 }
             }
-            $this->update($updatable);
+            $sqlStatement = $this->prepareForDeferredNotify($updatable, $instance, $oldInstance);
+            $this->update($sqlStatement);
         }
 
-
-        ORMSubject::getInstance()->notify(
-            $this->mapper->getTable(),
-            $isInsert ? ObserverEvent::Insert : ObserverEvent::Update,
-            $instance, $oldInstance
-        );
+        // Notify only now, so the observers receive the instance rehydrated
+        // with generated keys and computed fields
+        if (!is_null($sqlStatement)) {
+            foreach ($sqlStatement->getOrmContext()->drainPendingBridges() as $bridge) {
+                $bridge->notifyStatement($sqlStatement);
+            }
+        }
 
         return $instance;
+    }
+
+    /**
+     * Build the statement and mark it for deferred observer notification:
+     * the bridges seeing AFTER_EXECUTE park themselves in the statement context
+     * and save() flushes them after the entity is rehydrated.
+     */
+    private function prepareForDeferredNotify(Updatable $updatable, mixed $instance, mixed $oldInstance): OrmSqlStatement
+    {
+        $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper());
+        $context = $sqlStatement->getOrmContext();
+        $context->setEntities($instance, $oldInstance);
+        $context->defer();
+        return $sqlStatement;
     }
 
     /**
@@ -722,69 +781,107 @@ class Repository
     }
 
     /**
+     * Add an observer to this repository's executors.
+     *
+     * An ObserverProcessorInterface receives entity-level events (Insert, Update,
+     * Delete, SoftDelete) for its observed table, no matter which repository or
+     * direct executor call issued the write, as long as it flows through the
+     * same DatabaseExecutor instance(s) used by this repository.
+     *
+     * A raw DatabaseEventObserverInterface is attached directly to the executors
+     * and receives the low-level anydataset-db events (BEFORE/AFTER QUERY/EXECUTE).
+     *
      * @throws InvalidArgumentException
      */
-    public function addObserver(ObserverProcessorInterface $observerProcessor): void
+    public function addObserver(ObserverProcessorInterface|DatabaseEventObserverInterface $observer): void
     {
-        ORMSubject::getInstance()->addObserver($observerProcessor, $this);
+        if ($observer instanceof ObserverProcessorInterface) {
+            ObserverBridge::for($this->getExecutor())->addProcessor($observer, $this);
+            if (!is_null($this->dbDriverWrite) && $this->dbDriverWrite !== $this->dbDriver) {
+                ObserverBridge::for($this->dbDriverWrite)->addProcessor($observer, $this);
+            }
+            $this->observerProcessors[] = $observer;
+            return;
+        }
+
+        $this->rawObservers[] = $observer;
+        $this->getExecutor()->addObserver($observer);
+        if (!is_null($this->dbDriverWrite) && $this->dbDriverWrite !== $this->dbDriver) {
+            $this->dbDriverWrite->addObserver($observer);
+        }
+    }
+
+    public function removeObserver(ObserverProcessorInterface|DatabaseEventObserverInterface $observer): void
+    {
+        if ($observer instanceof ObserverProcessorInterface) {
+            $this->observerProcessors = array_values(
+                array_filter($this->observerProcessors, fn($item) => $item !== $observer)
+            );
+            ObserverBridge::find($this->getExecutor())?->removeProcessor($observer);
+            if (!is_null($this->dbDriverWrite) && $this->dbDriverWrite !== $this->dbDriver) {
+                ObserverBridge::find($this->dbDriverWrite)?->removeProcessor($observer);
+            }
+            return;
+        }
+
+        $this->rawObservers = array_values(
+            array_filter($this->rawObservers, fn($item) => $item !== $observer)
+        );
+        $this->getExecutor()->removeObserver($observer);
+        if (!is_null($this->dbDriverWrite) && $this->dbDriverWrite !== $this->dbDriver) {
+            $this->dbDriverWrite->removeObserver($observer);
+        }
     }
 
     /**
-     * @param InsertQuery $updatable
+     * @param OrmSqlStatement $sqlStatement
      * @param mixed $keyGen
      * @return int|null
      * @throws DatabaseException
      * @throws DbDriverNotConnected
-     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insert(InsertQuery $updatable, mixed $keyGen): ?int
+    protected function insert(OrmSqlStatement $sqlStatement, mixed $keyGen): ?int
     {
         if (empty($keyGen)) {
-            return $this->insertWithAutoinc($updatable);
+            return $this->insertWithAutoinc($sqlStatement);
         } else {
-            $this->insertWithKeyGen($updatable);
+            $this->insertWithKeyGen($sqlStatement);
             return null;
         }
     }
 
     /**
-     * @param InsertQuery $updatable
+     * @param OrmSqlStatement $sqlStatement
      * @return int
-     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithAutoInc(InsertQuery $updatable): int
+    protected function insertWithAutoInc(OrmSqlStatement $sqlStatement): int
     {
         $dbFunctions = $this->getExecutorWrite()->getHelper();
-        $sqlStatement = $updatable->build($dbFunctions);
         return $dbFunctions->executeAndGetInsertedId($this->getExecutorWrite(), $sqlStatement);
     }
 
     /**
-     * @param InsertQuery $updatable
+     * @param OrmSqlStatement $sqlStatement
      * @return void
      * @throws DatabaseException
      * @throws DbDriverNotConnected
-     * @throws OrmInvalidFieldsException
      * @throws RepositoryReadOnlyException
      */
-    protected function insertWithKeyGen(InsertQuery $updatable): void
+    protected function insertWithKeyGen(OrmSqlStatement $sqlStatement): void
     {
-        $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper());
         $this->getExecutorWrite()->execute($sqlStatement);
     }
 
     /**
-     * @param UpdateQuery $updatable
+     * @param OrmSqlStatement $sqlStatement
      * @throws DatabaseException
      * @throws DbDriverNotConnected
-     * @throws InvalidArgumentException
      * @throws RepositoryReadOnlyException
      */
-    protected function update(UpdateQuery $updatable): void
+    protected function update(OrmSqlStatement $sqlStatement): void
     {
-        $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper());
         $this->getExecutorWrite()->execute($sqlStatement);
     }
 

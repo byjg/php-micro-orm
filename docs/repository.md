@@ -80,25 +80,25 @@ The `getMapper` method returns the Mapper object that defines the relationship b
 $mapper = $repository->getMapper();
 ```
 
-### getDbDriver
+### getExecutor
 
-The `getDbDriver` method returns the database driver used for read operations. It allows you to use SQL commands
+The `getExecutor` method returns the `DatabaseExecutor` used for read operations. It allows you to use SQL commands
 directly.
-To find more about the database driver, please refer to the [AnyDataset documentation](https://github.com/byjg/anydataset)
+To find more about the executor, please refer to the [AnyDataset documentation](https://github.com/byjg/anydataset)
 and the [Query](querying-the-database.md).
 
 ```php
-$dbDriver = $repository->getDbDriver();
-$iterator = $dbDriver->getIterator('select * from mytable');
+$executor = $repository->getExecutor();
+$iterator = $executor->getIterator('select * from mytable');
 ```
 
-### getDbDriverWrite
+### getExecutorWrite
 
-The `getDbDriverWrite` method returns the database driver used for write operations. If no separate write driver was
-configured, it returns the same driver as `getDbDriver()`.
+The `getExecutorWrite` method returns the `DatabaseExecutor` used for write operations. If no separate write executor
+was configured, it returns the same executor as `getExecutor()`.
 
 ```php
-$dbDriverWrite = $repository->getDbDriverWrite();
+$executorWrite = $repository->getExecutorWrite();
 ```
 
 ## Repository Query Methods

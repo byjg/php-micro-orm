@@ -335,7 +335,7 @@ class QueryBasic implements QueryBuilderInterface
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params);
     }
 
     #[Override]

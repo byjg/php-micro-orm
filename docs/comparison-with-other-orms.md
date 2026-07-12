@@ -928,7 +928,7 @@ class UserStatusChangedObserver implements ObserverProcessorInterface
 }
 
 // Register the observer
-ORMSubject::getInstance()->registerObserver(new UserStatusChangedObserver());
+$repository->addObserver(new UserStatusChangedObserver());
 
 // Now whenever a user's status changes, your domain event fires!
 $user = $repository->get(1);
@@ -1081,7 +1081,7 @@ class Order
 }
 
 // 2. Register domain event handlers (observers)
-ORMSubject::getInstance()->registerObserver(new class implements ObserverProcessorInterface {
+$repository->addObserver(new class implements ObserverProcessorInterface {
     public function getObservedTable(): string { return 'orders'; }
 
     public function process(ObserverData $data): void
