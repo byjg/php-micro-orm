@@ -59,9 +59,10 @@ class ORM
 
     public static function getRelationship(string ...$tables): array
     {
-        // First time we try to fix the incomplete relationships
+        // Retry incomplete relationships whose parent mapper is now registered,
+        // so the parent primary key ('?') can finally be resolved.
         foreach (static::$incompleteRelationships as $relationship) {
-            if (isset(static::$mapper[$relationship["parent"]])) {
+            if (!isset(static::$mapper[$relationship["parent"]])) {
                 continue;
             }
             static::addRelationship($relationship["parent"], $relationship["child"], $relationship["fk"]);

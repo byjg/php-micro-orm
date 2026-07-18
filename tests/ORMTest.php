@@ -172,6 +172,21 @@ class ORMTest extends TestCase
         $this->assertEquals([], $params);
     }
 
+    public function testIncompleteRelationshipResolvesWhenParentRegisteredLater()
+    {
+        // Register the CHILD (table5, FK id_table1 -> table1) BEFORE its parent.
+        // At this point table1's primary key is unknown, so the relationship is
+        // stored as incomplete ('?'). Registering the parent afterwards must let
+        // getRelationship back-fill the real primary key.
+        ORM::resetMemory();
+        new Mapper(Class5::class);
+        new Mapper(Class1::class, 'table1', 'id');
+
+        $sql = ORM::getQueryInstance('table1', 'table5')->build()->getSql();
+        $this->assertStringContainsString('table1.id = table5.id_table1', $sql);
+        $this->assertStringNotContainsString('table1.? =', $sql);
+    }
+
     public function testFieldUuidAttributeRegistersParentTableRelationship()
     {
         // table1 (mapper1) is already registered in setUp. Building Class5's mapper
