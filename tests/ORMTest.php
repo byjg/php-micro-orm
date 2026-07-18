@@ -14,6 +14,7 @@ use Tests\Model\Class1;
 use Tests\Model\Class2;
 use Tests\Model\Class3;
 use Tests\Model\Class4;
+use Tests\Model\Class5;
 
 class ORMTest extends TestCase
 {
@@ -169,5 +170,26 @@ class ORMTest extends TestCase
         $sql = ORMHelper::processLiteral($sql, $params);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = 'testando' AND field2 = 'Joana D''Arc'", $sql);
         $this->assertEquals([], $params);
+    }
+
+    public function testFieldUuidAttributeRegistersParentTableRelationship()
+    {
+        // table1 (mapper1) is already registered in setUp. Building Class5's mapper
+        // must register the FK relationship declared via FieldUuidAttribute(parentTable:).
+        new Mapper(Class5::class);
+
+        $this->assertEquals(['table1,table5'], ORM::getRelationship('table1', 'table5'));
+
+        $data = ORM::getRelationshipData('table1', 'table5');
+        $this->assertCount(1, $data);
+        $this->assertEquals('table1', $data[0]['parent']);
+        $this->assertEquals('table5', $data[0]['child']);
+        $this->assertEquals('id', $data[0]['pk']);
+        $this->assertEquals('id_table1', $data[0]['fk']);
+
+        // And the dynamic query builder joins them without hand-written SQL.
+        $sql = ORM::getQueryInstance('table1', 'table5')->build()->getSql();
+        $this->assertStringContainsString('INNER JOIN table5', $sql);
+        $this->assertStringContainsString('table1.id = table5.id_table1', $sql);
     }
 }
