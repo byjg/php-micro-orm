@@ -126,41 +126,6 @@ class ORM
         return static::$mapper[$tableName] ?? null;
     }
 
-    public static function getQueryInstance(string ...$tables): Query
-    {
-        $query = new Query();
-
-        $relationships = static::getRelationshipData(...$tables);
-
-        if (empty($relationships)) {
-            if (count($tables) === 1) {
-                $query->table($tables[0]);
-                return $query;
-            } else {
-                throw new InvalidArgumentException("No relationship found between the tables");
-            }
-        }
-
-        $first = true;
-        foreach ($relationships as $relationship) {
-            $parent = $relationship["parent"];
-            $child = $relationship["child"];
-            $foreignKey = $relationship["fk"];
-            $primaryKey = $relationship["pk"];
-
-            $parentAlis = static::$mapper[$parent]->getTableAlias();
-            $childAlias = static::$mapper[$child]->getTableAlias();
-
-            if ($first) {
-                $query->table($parent, $parentAlis);
-                $first = false;
-            }
-            $query->join($child, "{$parentAlis}.{$primaryKey} = {$childAlias}.{$foreignKey}", $childAlias);
-        }
-
-        return $query;
-    }
-
     private static function getNormalizedKey(string $table1, string $table2): string
     {
         return strcmp($table1, $table2) < 0 ? "$table1,$table2" : "$table2,$table1";

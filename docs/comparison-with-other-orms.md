@@ -127,9 +127,9 @@ class Post {
     public ?string $title;
 }
 
-// 2. Auto-generate JOIN query from relationship
-$query = ORM::getQueryInstance("users", "posts");
-// Automatically generates: JOIN posts ON posts.user_id = users.id
+// 2. Build a JOIN query from the relationship
+$query = Query::getInstance()->table("users")->joinRelated("posts");
+// Automatically generates: FROM users INNER JOIN posts ON users.id = posts.user_id
 
 $results = $userRepo->getByQuery($query, [$postMapper]);
 foreach ($results as [$user, $post]) {

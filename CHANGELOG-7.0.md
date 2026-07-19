@@ -43,6 +43,15 @@ no observers are registered), and multi-connection safe.
   statement, including reads and raw SQL)
 - New `Repository::removeObserver()` for both observer kinds
 
+### Relationship joins on the query builder
+- New `QueryBasic::joinRelated()`, `leftJoinRelated()` and `rightJoinRelated()`: add a JOIN whose
+  `ON` condition is derived from a registered `parentTable` relationship, connecting the table to one
+  already in the query. If they are not directly related, the intermediate tables on the shortest
+  relationship path are joined automatically; tables already in the query are skipped. The query
+  keeps its own base table, so this composes with a repository query
+- `ActiveRecord::joinWith()` now builds on `joinRelated()` (starting from the model's own table)
+- See: `docs/auto-discovering-relationship.md`
+
 ## Breaking Changes
 
 ### ORMSubject removed
@@ -73,6 +82,12 @@ no observers are registered), and multi-connection safe.
 ### ObserverEvent enum
 - New `SoftDelete` case: exhaustive `match` expressions over `ObserverEvent` in userland need a new
   arm
+
+### ORM::getQueryInstance() removed
+- `ORM::getQueryInstance(...$tables)` is removed. Build relationship joins with
+  `Query::getInstance()->table($base)->joinRelated($related)` (or `Model::joinWith(...)` for Active
+  Record) — it keeps your base table, supports INNER/LEFT/RIGHT, and auto-joins intermediates. The
+  relationship registry (`addRelationship`/`getRelationship`/`getRelationshipData`) is unchanged
 
 ## Migration from 6.x
 

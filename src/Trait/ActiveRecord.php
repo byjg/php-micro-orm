@@ -120,11 +120,20 @@ trait ActiveRecord
         return self::$repository->getByFilter(page: $page, limit: $limit);
     }
 
+    /**
+     * Start a query on this model's table, optionally joining related tables via
+     * their registered parentTable relationships. Built on Query::joinRelated(), so
+     * the model's own table stays the base and each joined table must be directly
+     * related to a table already in the query (chain for multi-hop).
+     */
     public static function joinWith(string ...$tables): Query
     {
         self::initialize();
-        $tables[] = self::$repository->getMapper()->getTable();
-        return ORM::getQueryInstance(...$tables);
+        $query = Query::getInstance()->table(self::$repository->getMapper()->getTable());
+        foreach ($tables as $table) {
+            $query->joinRelated($table);
+        }
+        return $query;
     }
 
     public function toArray(bool $includeNullValue = false): array

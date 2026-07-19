@@ -2,12 +2,14 @@
 
 namespace Tests;
 
+use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ORM;
 use ByJG\MicroOrm\ORMHelper;
+use ByJG\MicroOrm\Query;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Tests\Model\Class1;
@@ -105,33 +107,9 @@ class ORMTest extends TestCase
         $this->assertEquals([$table1Table3, $table1Table2], ORM::getRelationshipData('table3', 'table2'));
     }
 
-    public function testGetQuery()
-    {
-        $query = ORM::getQueryInstance('table1');
-        $this->assertEquals("SELECT  * FROM table1", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table2', 'table1');
-        $this->assertEquals("SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table4', 'table2', 'table1');
-        $this->assertEquals("SELECT  * FROM table2 INNER JOIN table4 ON table2.id = table4.id_table2 INNER JOIN table2 ON table1.id = table2.id_table1 WHERE table4.deleted_at is null", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table4', 'table1', 'table2');
-        $this->assertEquals("SELECT  * FROM table2 INNER JOIN table4 ON table2.id = table4.id_table2 INNER JOIN table2 ON table1.id = table2.id_table1 WHERE table4.deleted_at is null", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table2', 'table1', 'table4');
-        $this->assertEquals("SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 INNER JOIN table4 ON table2.id = table4.id_table2 WHERE table4.deleted_at is null", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table1', 'table4');
-        $this->assertEquals("SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 INNER JOIN table4 ON table2.id = table4.id_table2 WHERE table4.deleted_at is null", $query->build()->getSql());
-
-        $query = ORM::getQueryInstance('table2', 'table3');
-        $this->assertEquals("SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 INNER JOIN table3 ON table1.id = table3.id_table1", $query->build()->getSql());
-    }
-
     public function testProcessLiteral()
     {
-        $query = ORM::getQueryInstance('table1');
+        $query = Query::getInstance()->table('table1');
         $query->where('field1 = :value', ['value' => new Literal('upper(field1)')]);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = upper(field1)", $query->build()->getSql());
 
@@ -139,14 +117,14 @@ class ORMTest extends TestCase
 
     public function testProcessHexUuidLiteral()
     {
-        $query = ORM::getQueryInstance('table1');
+        $query = Query::getInstance()->table('table1');
         $query->where('field1 = :value', ['value' => new HexUuidLiteral(hex2bin('01010101010101010101010101010101'))]);
         $this->assertEquals("SELECT  * FROM table1 WHERE field1 = X'01010101010101010101010101010101'", $query->build()->getSql());
     }
 
     public function testProcessLiteralUnsafe()
     {
-        $query = ORM::getQueryInstance('table1');
+        $query = Query::getInstance()->table('table1');
         $query->where('field1 = :value', ['value' => new Literal(10)]);
 
         $sqlStatement = $query->build();
@@ -159,7 +137,7 @@ class ORMTest extends TestCase
 
     public function testProcessLiteralString()
     {
-        $query = ORM::getQueryInstance('table1');
+        $query = Query::getInstance()->table('table1');
         $query->where('field1 = :value', ['value' => new Literal("'testando'")]);
         $query->where('field2 = :value2', ['value2' => new Literal("'Joana D''Arc'")]);
 
@@ -172,6 +150,66 @@ class ORMTest extends TestCase
         $this->assertEquals([], $params);
     }
 
+    public function testJoinRelatedDerivesOnFromRelationshipKeepingBaseTable()
+    {
+        // table3 has a FK id_table1 -> table1. Base stays table3; project is added.
+        $sql = Query::getInstance()->table('table3')->joinRelated('table1')->build()->getSql();
+        $this->assertStringContainsString('FROM table3 INNER JOIN table1 ON table1.id = table3.id_table1', $sql);
+    }
+
+    public function testLeftJoinRelated()
+    {
+        $sql = Query::getInstance()->table('table3')->leftJoinRelated('table1')->build()->getSql();
+        $this->assertStringContainsString('LEFT JOIN table1 ON table1.id = table3.id_table1', $sql);
+    }
+
+    public function testRightJoinRelated()
+    {
+        $sql = Query::getInstance()->table('table3')->rightJoinRelated('table1')->build()->getSql();
+        $this->assertStringContainsString('RIGHT JOIN table1 ON table1.id = table3.id_table1', $sql);
+    }
+
+    public function testJoinRelatedAutoDiscoversIntermediateTables()
+    {
+        // table1 is not directly related to table4 (table1 -> table2 -> table4). The
+        // intermediate table2 is joined automatically, and table4's soft-delete filter
+        // is kept. The base table (table1) is preserved.
+        $sql = Query::getInstance()->table('table1')->joinRelated('table4')->build()->getSql();
+        $this->assertEquals(
+            "SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 "
+            . "INNER JOIN table4 ON table2.id = table4.id_table2 WHERE table4.deleted_at is null",
+            $sql
+        );
+
+        // table2 -> table3 auto-discovers table1 sitting between them.
+        $sql = Query::getInstance()->table('table2')->joinRelated('table3')->build()->getSql();
+        $this->assertEquals(
+            "SELECT  * FROM table2 INNER JOIN table1 ON table1.id = table2.id_table1 "
+            . "INNER JOIN table3 ON table1.id = table3.id_table1",
+            $sql
+        );
+    }
+
+    public function testJoinRelatedSkipsTablesAlreadyInTheQuery()
+    {
+        // Naming the intermediate explicitly must not join table2 twice.
+        $sql = Query::getInstance()->table('table1')
+            ->joinRelated('table2')
+            ->joinRelated('table4')
+            ->build()->getSql();
+        $this->assertEquals(
+            "SELECT  * FROM table1 INNER JOIN table2 ON table1.id = table2.id_table1 "
+            . "INNER JOIN table4 ON table2.id = table4.id_table2 WHERE table4.deleted_at is null",
+            $sql
+        );
+    }
+
+    public function testJoinRelatedThrowsWhenNoRelationshipPathExists()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        Query::getInstance()->table('table1')->joinRelated('unrelated_table');
+    }
+
     public function testIncompleteRelationshipResolvesWhenParentRegisteredLater()
     {
         // Register the CHILD (table5, FK id_table1 -> table1) BEFORE its parent.
@@ -182,7 +220,7 @@ class ORMTest extends TestCase
         new Mapper(Class5::class);
         new Mapper(Class1::class, 'table1', 'id');
 
-        $sql = ORM::getQueryInstance('table1', 'table5')->build()->getSql();
+        $sql = Query::getInstance()->table('table1')->joinRelated('table5')->build()->getSql();
         $this->assertStringContainsString('table1.id = table5.id_table1', $sql);
         $this->assertStringNotContainsString('table1.? =', $sql);
     }
@@ -203,7 +241,7 @@ class ORMTest extends TestCase
         $this->assertEquals('id_table1', $data[0]['fk']);
 
         // And the dynamic query builder joins them without hand-written SQL.
-        $sql = ORM::getQueryInstance('table1', 'table5')->build()->getSql();
+        $sql = Query::getInstance()->table('table1')->joinRelated('table5')->build()->getSql();
         $this->assertStringContainsString('INNER JOIN table5', $sql);
         $this->assertStringContainsString('table1.id = table5.id_table1', $sql);
     }

@@ -42,32 +42,51 @@ relationship registry.
 
 ## Generating Queries with Relationships
 
-To generate the SQL query with the relationship, you can use the `ORM` static class:
-
-```php
-<?php
-$query = ORM::getQueryInstance("table1", "table2");
-```
-
-The command above will return a query object with the appropriate join, equivalent to:
+Once the relationships are registered, use `Query::joinRelated()` to add a
+relationship-derived join to a query. It derives the `ON` condition from the
+registered `parentTable` relationship instead of writing it by hand:
 
 ```php
 <?php
 $query = Query::getInstance()
-    ->table('table1')
-    ->join('table2', 'table2.id_table1 = table1.id');
+    ->table('table2')
+    ->joinRelated('table1');
+// SELECT * FROM table2 INNER JOIN table1 ON table1.id = table2.id_table1
 ```
 
-## Queries with Multiple Tables
+`joinRelated()` appends the join to whichever table is already in the query (the base
+table or a previously joined one), so it keeps your own base table. Because of that it
+composes on top of an existing query — including one a `Repository` already scoped to
+its table, where `$repository->getByQuery($query)` still returns that repository's
+entity.
 
-You can also create queries with multiple joined tables by passing more table names:
+There are `joinRelated()`, `leftJoinRelated()` and `rightJoinRelated()`, mirroring
+`join()`/`leftJoin()`/`rightJoin()`, so you can pick the join type.
+
+If the target table is **not directly related** to a table already in the query, the
+intermediate tables on the shortest relationship path are joined automatically — you
+don't have to remember them (though keep in mind the extra joins have a cost). Tables
+already in the query are skipped, so chaining stays consistent:
 
 ```php
 <?php
-$query = ORM::getQueryInstance("table1", "table2", "table3");
+// table1 -> table2 -> table4: table2 is joined for you.
+$query = Query::getInstance()->table('table1')->joinRelated('table4');
+// SELECT * FROM table1
+//   INNER JOIN table2 ON table1.id = table2.id_table1
+//   INNER JOIN table4 ON table2.id = table4.id_table2
+
+// Naming the intermediate explicitly gives the same result (table2 is not joined twice):
+$query = Query::getInstance()->table('table1')->joinRelated('table2')->joinRelated('table4');
 ```
 
-The ORM will automatically discover the path to connect these tables if relationships have been defined.
+For a `left`/`rightJoinRelated()` that spans intermediates, every hop it adds uses that
+join type. `joinRelated()` throws an `InvalidArgumentException` only when no relationship
+path connects the tables. For aliased joins, use `join()`/`leftJoin()`/`rightJoin()` with
+an explicit `ON`.
+
+Active Record models expose the same through `Model::joinWith(...$tables)`, which starts
+from the model's own table and joins the related ones.
 
 ## Manual Relationship Definition
 
