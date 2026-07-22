@@ -121,10 +121,15 @@ trait ActiveRecord
     }
 
     /**
-     * Start a query on this model's table, optionally joining related tables via
-     * their registered parentTable relationships. Built on Query::joinRelated(), so
-     * the model's own table stays the base and each joined table must be directly
-     * related to a table already in the query (chain for multi-hop).
+     * Start a query on this model's table, optionally joining related tables via their
+     * registered parentTable relationships. Built on Query::joinRelated(), so the
+     * model's own table stays the base. Each argument may be a table name or a model
+     * class; passing a class registers that entity's mapper on demand (reflection only,
+     * no DB connection). Name each entity in a multi-hop path — including the
+     * intermediate — so its mapper is known, e.g.:
+     *
+     *    Note::joinWith(Task::class, Project::class)
+     *    // FROM note JOIN task ON … JOIN project ON …  (note has no project_id)
      */
     public static function joinWith(string ...$tables): Query
     {

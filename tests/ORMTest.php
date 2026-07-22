@@ -225,6 +225,35 @@ class ORMTest extends TestCase
         $this->assertStringNotContainsString('table1.? =', $sql);
     }
 
+    public function testGetTableFromClassRegistersMapperOnDemand()
+    {
+        // Only table1 is known; Class5 (table5) has never been registered.
+        ORM::resetMemory();
+        new Mapper(Class1::class, 'table1', 'id');
+        $this->assertNull(ORM::getMapper('table5'));
+
+        // Resolving the class registers its mapper (reflection only) and returns its table.
+        $this->assertEquals('table5', ORM::getTableFromClass(Class5::class));
+        $this->assertNotNull(ORM::getMapper('table5'));
+
+        // Idempotent: a second call reuses the already-registered mapper.
+        $this->assertSame(ORM::getMapper('table5'), ORM::getMapper('table5'));
+        $this->assertEquals('table5', ORM::getTableFromClass(Class5::class));
+    }
+
+    public function testJoinRelatedAcceptsModelClassRegisteringMapperOnDemand()
+    {
+        // table5's mapper is not pre-registered; passing the class must register it on
+        // demand and join it, just like passing the 'table5' string would after setup.
+        ORM::resetMemory();
+        new Mapper(Class1::class, 'table1', 'id');
+        $this->assertNull(ORM::getMapper('table5'));
+
+        $sql = Query::getInstance()->table('table1')->joinRelated(Class5::class)->build()->getSql();
+        $this->assertStringContainsString('INNER JOIN table5 ON table1.id = table5.id_table1', $sql);
+        $this->assertNotNull(ORM::getMapper('table5'));
+    }
+
     public function testFieldUuidAttributeRegistersParentTableRelationship()
     {
         // table1 (mapper1) is already registered in setUp. Building Class5's mapper

@@ -126,6 +126,28 @@ class ORM
         return static::$mapper[$tableName] ?? null;
     }
 
+    /**
+     * Resolve a model class to its table name, registering its mapper on demand.
+     *
+     * Building the Mapper only reads the class attributes (reflection) — it does not
+     * open a database connection — so calling this at any point simply makes the
+     * entity's table and its parentTable relationships known to the ORM. This is what
+     * lets joinRelated()/joinWith() take a model class and discover the relationship
+     * graph on the current request, without every mapper being pre-registered.
+     *
+     * @param class-string $class
+     */
+    public static function getTableFromClass(string $class): string
+    {
+        foreach (static::$mapper as $mapper) {
+            if ($mapper->getEntity() === $class) {
+                return $mapper->getTable();
+            }
+        }
+
+        return (new Mapper($class))->getTable();
+    }
+
     private static function getNormalizedKey(string $table1, string $table2): string
     {
         return strcmp($table1, $table2) < 0 ? "$table1,$table2" : "$table2,$table1";

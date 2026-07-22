@@ -176,6 +176,13 @@ class QueryBasic implements QueryBuilderInterface
      * skipped. The query keeps its own base table, so this composes on top of an
      * existing query, including one a repository has scoped to its table.
      *
+     * $table may be a table name or a model class. Passing a class (e.g.
+     * Project::class) registers that entity's mapper on demand — reflection only, no DB
+     * connection — so its table and parentTable relationships are known even on a
+     * request that never touched its repository. To join across a hidden intermediate,
+     * name each entity in the path (like Eloquent's hasManyThrough through-model):
+     * joinRelated(Task::class)->joinRelated(Project::class).
+     *
      * Example:
      *    $query->table('task')->joinRelated('project');
      *    // INNER JOIN project ON project.id = task.project_id
@@ -185,6 +192,7 @@ class QueryBasic implements QueryBuilderInterface
      *
      * For aliased joins, use join()/leftJoin()/rightJoin() with an explicit ON.
      *
+     * @param string $table Table name or model class-string.
      * @throws InvalidArgumentException When no relationship path connects $table to the query.
      */
     public function joinRelated(string $table): static
@@ -220,6 +228,14 @@ class QueryBasic implements QueryBuilderInterface
      */
     private function addRelatedJoin(string $table, string $type): static
     {
+        // Accept either a table name or a model class. A class is resolved to its
+        // table and registered on demand (reflection only, no DB connection), so the
+        // intermediate/target entities of the join become known even on a request that
+        // never touched their repositories.
+        if (class_exists($table)) {
+            $table = ORM::getTableFromClass($table);
+        }
+
         foreach ($this->relatedTables() as $present) {
             $path = ORM::getRelationshipData($present, $table);
             if (empty($path)) {

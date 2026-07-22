@@ -88,6 +88,40 @@ an explicit `ON`.
 Active Record models expose the same through `Model::joinWith(...$tables)`, which starts
 from the model's own table and joins the related ones.
 
+### Passing a model class (on-demand mapper registration)
+
+`joinRelated()` (and `joinWith()`) accept a **model class** as well as a table name.
+Relationship discovery walks the ORM's registry of mappers, and a mapper is only known
+after it has been built. On a request that only touched one entity, the other entities'
+mappers are not registered yet, so their relationships are invisible. Passing a class
+fixes that: it registers that entity's mapper on demand — this reads the class attributes
+(reflection) only and does **not** open a database connection — before resolving the join.
+
+```php
+<?php
+// 'project' was never referenced on this request, so its mapper is not registered.
+$query = Query::getInstance()->table('task')->joinRelated(Project::class);
+// Project's mapper is registered on demand, then:
+// SELECT * FROM task INNER JOIN project ON project.id = task.project_id
+```
+
+To span a **hidden intermediate**, name each entity in the path — the same way Eloquent's
+`hasManyThrough` names its through-model. Auto-discovery can only join an intermediate
+whose mapper is registered, so naming it is what makes it known:
+
+```php
+<?php
+// note -> task -> project. A note has no project_id, so 'task' is the through-entity.
+$notes = Note::joinWith(Task::class, Project::class)
+    ->field('note.*')
+    ->where('project.id = :id', ['id' => $projectId]);
+// FROM note INNER JOIN task ON task.id = note.task_id
+//           INNER JOIN project ON project.id = task.project_id
+```
+
+`ORM::getTableFromClass(Model::class)` exposes the same resolution directly, returning the
+table name and registering the mapper if needed.
+
 ## Manual Relationship Definition
 
 If you need to define relationships manually (without using attributes), you can use the `addRelationship` method:

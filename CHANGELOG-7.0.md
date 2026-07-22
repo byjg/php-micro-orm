@@ -50,6 +50,13 @@ no observers are registered), and multi-connection safe.
   relationship path are joined automatically; tables already in the query are skipped. The query
   keeps its own base table, so this composes with a repository query
 - `ActiveRecord::joinWith()` now builds on `joinRelated()` (starting from the model's own table)
+- `joinRelated()`/`leftJoinRelated()`/`rightJoinRelated()`/`joinWith()` accept a **model class**
+  as well as a table name. Passing a class (e.g. `Project::class`) registers that entity's mapper
+  on demand — reflection only, no DB connection — so its table and `parentTable` relationships
+  become known even on a request that never touched its repository. To span a hidden intermediate,
+  name each entity in the path, like Eloquent's `hasManyThrough` through-model:
+  `Note::joinWith(Task::class, Project::class)`. New helper `ORM::getTableFromClass()` performs the
+  resolution
 - See: `docs/auto-discovering-relationship.md`
 
 ## Breaking Changes
