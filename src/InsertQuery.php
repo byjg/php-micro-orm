@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmInvalidFieldsException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
@@ -69,11 +69,11 @@ class InsertQuery extends Updatable
 
     /**
      * @param DbDriverInterface|SqlDialectInterface|null $dbDriverOrHelper
-     * @return SqlStatement
+     * @return OrmSqlStatement
      * @throws OrmInvalidFieldsException
      */
     #[Override]
-    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): OrmSqlStatement
     {
         if (empty($this->values)) {
             throw new OrmInvalidFieldsException('You must specify the fields for insert');
@@ -101,7 +101,7 @@ class InsertQuery extends Updatable
 
         $params = $this->values;
         $sql = ORMHelper::processLiteral($sql, $params);
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params, ObserverEvent::Insert, $this->table);
     }
 
     /**

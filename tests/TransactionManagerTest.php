@@ -37,12 +37,12 @@ class TransactionManagerTest extends TestCase
         $this->object->destroy();
         $this->object = null;
 
-        $dbDriver = ConnectionUtil::getConnection("a");
-        $dbDriver->execute('drop table if exists users;');
-        $dbDriver->execute('drop table if exists users1;');
+        $executor = DatabaseExecutor::using(ConnectionUtil::getConnection("a"));
+        $executor->execute('drop table if exists users;');
+        $executor->execute('drop table if exists users1;');
 
-        $dbDriver = ConnectionUtil::getConnection("b");
-        $dbDriver->execute('drop table if exists users2;');
+        $executor = DatabaseExecutor::using(ConnectionUtil::getConnection("b"));
+        $executor->execute('drop table if exists users2;');
     }
 
     public function testAddConnectionError()
@@ -171,18 +171,20 @@ class TransactionManagerTest extends TestCase
     {
         $dbDrive1 = ConnectionUtil::getConnection("a");
         $dbDrive2 = ConnectionUtil::getConnection("b");
+        $executor1 = DatabaseExecutor::using($dbDrive1);
+        $executor2 = DatabaseExecutor::using($dbDrive2);
 
-        $dbDrive1->execute('create table users1 (
+        $executor1->execute('create table users1 (
             id integer primary key  auto_increment,
             name varchar(45));'
         );
-        $dbDrive2->execute('create table users2 (
+        $executor2->execute('create table users2 (
             id integer primary key  auto_increment,
             name varchar(45));'
         );
 
-        $this->assertEquals(0, $dbDrive1->getScalar("select count(*) from users1"));
-        $this->assertEquals(0, $dbDrive2->getScalar("select count(*) from users2"));
+        $this->assertEquals(0, $executor1->getScalar("select count(*) from users1"));
+        $this->assertEquals(0, $executor2->getScalar("select count(*) from users2"));
 
 
         // Create Transaction Manager
@@ -191,27 +193,27 @@ class TransactionManagerTest extends TestCase
 
         // Initialize Transaction
         $this->object->beginTransaction();
-        $dbDrive1->execute("insert into users1 (name) values ('John1')");
-        $dbDrive2->execute("insert into users2 (name) values ('John2')");
-        $this->assertEquals(1, $dbDrive1->getScalar("select count(*) from users1"));
-        $this->assertEquals(1, $dbDrive2->getScalar("select count(*) from users2"));
+        $executor1->execute("insert into users1 (name) values ('John1')");
+        $executor2->execute("insert into users2 (name) values ('John2')");
+        $this->assertEquals(1, $executor1->getScalar("select count(*) from users1"));
+        $this->assertEquals(1, $executor2->getScalar("select count(*) from users2"));
         $this->object->rollbackTransaction();
 
         // After rollback, no records should be added.
-        $this->assertEquals(0, $dbDrive1->getScalar("select count(*) from users1"));
-        $this->assertEquals(0, $dbDrive2->getScalar("select count(*) from users2"));
+        $this->assertEquals(0, $executor1->getScalar("select count(*) from users1"));
+        $this->assertEquals(0, $executor2->getScalar("select count(*) from users2"));
 
         // Initialize a new Transaction
         $this->object->beginTransaction();
-        $dbDrive1->execute("insert into users1 (name) values ('John1')");
-        $dbDrive2->execute("insert into users2 (name) values ('John2')");
-        $this->assertEquals(1, $dbDrive1->getScalar("select count(*) from users1"));
-        $this->assertEquals(1, $dbDrive2->getScalar("select count(*) from users2"));
+        $executor1->execute("insert into users1 (name) values ('John1')");
+        $executor2->execute("insert into users2 (name) values ('John2')");
+        $this->assertEquals(1, $executor1->getScalar("select count(*) from users1"));
+        $this->assertEquals(1, $executor2->getScalar("select count(*) from users2"));
         $this->object->commitTransaction();
 
         // After commit, records should be added.
-        $this->assertEquals(1, $dbDrive1->getScalar("select count(*) from users1"));
-        $this->assertEquals(1, $dbDrive2->getScalar("select count(*) from users2"));
+        $this->assertEquals(1, $executor1->getScalar("select count(*) from users1"));
+        $this->assertEquals(1, $executor2->getScalar("select count(*) from users2"));
     }
 
 }

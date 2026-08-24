@@ -109,7 +109,7 @@ class Union implements QueryBuilderInterface
             $unionQuery = trim($unionQuery . " " . substr($build->getSql(), $pos + 8));
         }
 
-        return new SqlStatement($unionQuery, $params);
+        return new OrmSqlStatement($unionQuery, $params);
     }
 
 

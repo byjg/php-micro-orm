@@ -7,7 +7,8 @@ use ByJG\AnyDataset\Db\SqlDialect\PgsqlDialect;
 use ByJG\AnyDataset\Db\SqlDialect\SqliteDialect;
 use ByJG\AnyDataset\Db\PdoMysql;
 use ByJG\AnyDataset\Db\PdoObj;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Enum\ObserverEvent;
+use ByJG\MicroOrm\OrmSqlStatement;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\UpdateQuery;
@@ -46,18 +47,20 @@ class UpdateQueryTest extends TestCase
 
         $sqlStatement = $this->object->build();
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE test SET fld1 = :fld1 , fld2 = :fld2 , fld3 = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );
 
         $sqlStatement = $this->object->build(new SqliteDialect());
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE `test` SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );
@@ -80,7 +83,7 @@ class UpdateQueryTest extends TestCase
     {
         $this->object->table('test');
         $this->assertEquals(
-            new SqlStatement('SELECT  * FROM test'),
+            new OrmSqlStatement('SELECT  * FROM test'),
             $this->object->convert()->build()
         );
 
@@ -91,7 +94,7 @@ class UpdateQueryTest extends TestCase
             ->set('fld3', 'C');
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test'),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test'),
             $this->object->convert()->build()
         );
 
@@ -99,7 +102,7 @@ class UpdateQueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', ['teste' => 10]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -107,7 +110,7 @@ class UpdateQueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', ['teste' => 10]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -115,7 +118,7 @@ class UpdateQueryTest extends TestCase
             ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', ['teste' => 10, 'teste2' => 40]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', ['teste' => 10, 'teste2' => 40]),
             $this->object->convert()->build()
         );
     }
@@ -139,9 +142,10 @@ class UpdateQueryTest extends TestCase
 
         $sqlStatement = $this->object->build(new MysqlDialect());
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE `test` INNER JOIN `table2` ON table2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );
@@ -158,9 +162,10 @@ class UpdateQueryTest extends TestCase
 
         $sqlObject = $this->object->build(new MysqlDialect());
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE `test` INNER JOIN `table2` AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlObject
         );
@@ -189,9 +194,10 @@ class UpdateQueryTest extends TestCase
 
         $sqlObject = $this->object->build($dbDriver);
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE `test` INNER JOIN (SELECT  * FROM table2 WHERE id = 10) AS t2 ON t2.id = test.id SET `fld1` = :fld1 , `fld2` = :fld2 , `fld3` = :fld3  WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlObject
         );
@@ -208,9 +214,10 @@ class UpdateQueryTest extends TestCase
 
         $sqlStatement = $this->object->build(new PgsqlDialect());
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE "test" SET "fld1" = :fld1 , "fld2" = :fld2 , "fld3" = :fld3  FROM "table2" ON table2.id = test.id WHERE fld1 = :id',
-                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']
+                ['id' => 10, 'fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );
@@ -224,9 +231,10 @@ class UpdateQueryTest extends TestCase
 
         $sqlStatement = $this->object->build();
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE test SET counter = counter + 1  WHERE id = :id',
-                ['id' => 10]
+                ['id' => 10],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );
@@ -234,9 +242,10 @@ class UpdateQueryTest extends TestCase
         // Test with database helper
         $sqlStatement = $this->object->build(new MysqlDialect());
         $this->assertEquals(
-            new SqlStatement(
+            new OrmSqlStatement(
                 'UPDATE `test` SET `counter` = counter + 1  WHERE id = :id',
-                ['id' => 10]
+                ['id' => 10],
+                ObserverEvent::Update, 'test'
             ),
             $sqlStatement
         );

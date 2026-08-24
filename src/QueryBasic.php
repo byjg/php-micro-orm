@@ -167,6 +167,122 @@ class QueryBasic implements QueryBuilderInterface
         return $this;
     }
 
+    /**
+     * Add an INNER JOIN to $table using the registered parentTable relationships,
+     * deriving the ON condition instead of writing it by hand. $table is connected to
+     * a table already in the query (base or a previous join); if they are not directly
+     * related, the intermediate tables on the shortest relationship path are joined too
+     * — so you don't have to remember them — while tables already in the query are
+     * skipped. The query keeps its own base table, so this composes on top of an
+     * existing query, including one a repository has scoped to its table.
+     *
+     * $table may be a table name or a model class. Passing a class (e.g.
+     * Project::class) registers that entity's mapper on demand — reflection only, no DB
+     * connection — so its table and parentTable relationships are known even on a
+     * request that never touched its repository. To join across a hidden intermediate,
+     * name each entity in the path (like Eloquent's hasManyThrough through-model):
+     * joinRelated(Task::class)->joinRelated(Project::class).
+     *
+     * Example:
+     *    $query->table('task')->joinRelated('project');
+     *    // INNER JOIN project ON project.id = task.project_id
+     *
+     *    $query->table('project')->joinRelated('note');
+     *    // auto-joins task in between: INNER JOIN task ON … INNER JOIN note ON …
+     *
+     * For aliased joins, use join()/leftJoin()/rightJoin() with an explicit ON.
+     *
+     * @param string $table Table name or model class-string.
+     * @throws InvalidArgumentException When no relationship path connects $table to the query.
+     */
+    public function joinRelated(string $table): static
+    {
+        return $this->addRelatedJoin($table, 'INNER');
+    }
+
+    /**
+     * Like joinRelated(), but every hop it adds is a LEFT JOIN.
+     *
+     * @throws InvalidArgumentException When no relationship path connects $table to the query.
+     */
+    public function leftJoinRelated(string $table): static
+    {
+        return $this->addRelatedJoin($table, 'LEFT');
+    }
+
+    /**
+     * Like joinRelated(), but every hop it adds is a RIGHT JOIN.
+     *
+     * @throws InvalidArgumentException When no relationship path connects $table to the query.
+     */
+    public function rightJoinRelated(string $table): static
+    {
+        return $this->addRelatedJoin($table, 'RIGHT');
+    }
+
+    /**
+     * Walk the relationship path from a table already in the query to $table and join
+     * each hop's not-yet-present table, delegating to join()/leftJoin()/rightJoin().
+     *
+     * @throws InvalidArgumentException When no relationship path connects $table to the query.
+     */
+    private function addRelatedJoin(string $table, string $type): static
+    {
+        // Accept either a table name or a model class. A class is resolved to its
+        // table and registered on demand (reflection only, no DB connection), so the
+        // intermediate/target entities of the join become known even on a request that
+        // never touched their repositories.
+        if (class_exists($table)) {
+            $table = ORM::getTableFromClass($table);
+        }
+
+        foreach ($this->relatedTables() as $present) {
+            $path = ORM::getRelationshipData($present, $table);
+            if (empty($path)) {
+                continue;
+            }
+
+            foreach ($path as $rel) {
+                $current = $this->relatedTables();
+                $parentPresent = in_array($rel['parent'], $current, true);
+                if ($parentPresent && in_array($rel['child'], $current, true)) {
+                    continue; // both tables already in the query
+                }
+                $newTable = $parentPresent ? $rel['child'] : $rel['parent'];
+                $on = "{$rel['parent']}.{$rel['pk']} = {$rel['child']}.{$rel['fk']}";
+                match ($type) {
+                    'LEFT' => $this->leftJoin($newTable, $on),
+                    'RIGHT' => $this->rightJoin($newTable, $on),
+                    default => $this->join($newTable, $on),
+                };
+            }
+
+            return $this;
+        }
+
+        throw new InvalidArgumentException("No relationship registered between '$table' and the query tables.");
+    }
+
+    /**
+     * Table names already present in the query (base + joined), used to resolve a
+     * relationship for joinRelated().
+     *
+     * @return string[]
+     */
+    private function relatedTables(): array
+    {
+        $tables = [];
+        if (is_string($this->table) && $this->table !== '') {
+            $tables[] = $this->table;
+        }
+        foreach ($this->join as $item) {
+            if (is_string($item['table'])) {
+                $tables[] = $item['table'];
+            }
+        }
+        return $tables;
+    }
+
     public function withRecursive(Recursive $recursive): static
     {
         $this->recursive = $recursive;
@@ -335,7 +451,7 @@ class QueryBasic implements QueryBuilderInterface
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params);
     }
 
     #[Override]
