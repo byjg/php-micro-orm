@@ -12,7 +12,7 @@ This library intended to be very small and very simple to use;
 [![Build Status](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml)
 [![Opensource ByJG](https://img.shields.io/badge/opensource-byjg-success.svg)](http://opensource.byjg.com)
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-micro-orm/)
-[![GitHub license](https://img.shields.io/github/license/byjg/php-micro-orm.svg)](https://opensource.byjg.com/opensource/licensing.html)
+[![GitHub license](https://img.shields.io/github/license/byjg/php-micro-orm.svg)](https://opensource.byjg.com/license/)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-micro-orm.svg)](https://github.com/byjg/php-micro-orm/releases/)
 
 Key Features:
@@ -224,14 +224,6 @@ composer require "byjg/micro-orm"
 * [PHP Rest Template](https://github.com/byjg/php-rest-template)
 * [USDocker](https://github.com/usdocker/usdocker)
 * [Serializer](https://github.com/byjg/serializer)
-
-## Dependencies
-
-```mermaid
-flowchart TD
-    byjg/micro-orm --> byjg/anydataset-db
-    byjg/micro-orm --> ext-json
-```
 
 ----
 [Open source ByJG](http://opensource.byjg.com)

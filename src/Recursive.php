@@ -60,7 +60,7 @@ class Recursive
         $sql .= " UNION ALL ";
         $sql .= $this->getRecursion();
         $sql .= ") ";
-        return new SqlStatement($sql);
+        return new OrmSqlStatement($sql);
     }
 
     protected function getBase(): string

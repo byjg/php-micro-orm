@@ -3,6 +3,8 @@
 namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
+use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
 use ByJG\MicroOrm\Interface\UpdateBuilderInterface;
 use Override;
 
@@ -25,6 +27,14 @@ abstract class Updatable implements UpdateBuilderInterface
 
         return $this;
     }
+
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+    #[Override]
+    abstract public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): OrmSqlStatement;
 
     #[Override]
     public function buildAndExecute(DatabaseExecutor $executor, $params = []): bool

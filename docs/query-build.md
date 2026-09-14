@@ -166,15 +166,16 @@ $query = Query::getInstance()
 $sqlStatement = $query->build();
 
 // Use the same statement with different parameters
+$executor = DatabaseExecutor::using($dbDriver);
 $params1 = ['min_age' => 18];
-$iterator1 = $dbDriver->getIterator($sqlStatement->withParams($params1));
+$iterator1 = $executor->getIterator($sqlStatement->withParams($params1));
 foreach ($iterator1 as $row) {
     echo "Adult user: {$row['name']}\n";
 }
 
 // Reuse with different parameters
 $params2 = ['min_age' => 21];
-$iterator2 = $dbDriver->getIterator($sqlStatement->withParams($params2));
+$iterator2 = $executor->getIterator($sqlStatement->withParams($params2));
 foreach ($iterator2 as $row) {
     echo "Legal age user: {$row['name']}\n";
 }

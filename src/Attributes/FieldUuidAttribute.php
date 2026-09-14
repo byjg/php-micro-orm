@@ -13,9 +13,18 @@ class FieldUuidAttribute extends FieldAttribute
         ?bool   $primaryKey = null,
         ?string $fieldName = null,
         ?string $fieldAlias = null,
-        ?bool   $syncWithDb = null
+        ?bool   $syncWithDb = null,
+        ?string $parentTable = null
     )
     {
-        parent::__construct($primaryKey, $fieldName, $fieldAlias, $syncWithDb, FormatUpdateUuidMapper::class, FormatSelectUuidMapper::class);
+        parent::__construct(
+            primaryKey: $primaryKey,
+            fieldName: $fieldName,
+            fieldAlias: $fieldAlias,
+            syncWithDb: $syncWithDb,
+            updateFunction: FormatUpdateUuidMapper::class,
+            selectFunction: FormatSelectUuidMapper::class,
+            parentTable: $parentTable
+        );
     }
 }
