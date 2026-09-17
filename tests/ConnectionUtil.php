@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\Util\Uri;
@@ -11,7 +12,7 @@ class ConnectionUtil
     public static function getConnection(string $database): DbDriverInterface
     {
         $dbDriver = Factory::getDbInstance(ConnectionUtil::getUri());
-        $dbDriver->execute("create database if not exists $database;");
+        DatabaseExecutor::using($dbDriver)->execute("create database if not exists $database;");
         return Factory::getDbInstance(ConnectionUtil::getUri($database));
     }
 

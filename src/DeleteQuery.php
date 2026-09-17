@@ -4,7 +4,7 @@ namespace ByJG\MicroOrm;
 
 use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Enum\ObserverEvent;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use Override;
@@ -17,7 +17,7 @@ class DeleteQuery extends Updatable
     }
 
     #[Override]
-    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): SqlStatement
+    public function build(SqlDialectInterface|DbDriverInterface|null $dbDriverOrHelper = null): OrmSqlStatement
     {
         $whereStr = $this->getWhere();
         if (is_null($whereStr)) {
@@ -31,7 +31,7 @@ class DeleteQuery extends Updatable
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params, ObserverEvent::Delete, $this->table);
     }
 
     #[Override]

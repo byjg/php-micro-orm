@@ -5,7 +5,7 @@ namespace Tests;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\OrmSqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\Constraint\CustomConstraint;
@@ -28,7 +28,6 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ORM;
-use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
@@ -80,7 +79,6 @@ class RepositoryTest extends TestCase
         $this->infoMapper->addFieldMapping(FieldMapping::create('registrationId')->withFieldName('registration_id'));
 
         $this->repository = new Repository($executor, $this->userMapper);
-        ORMSubject::getInstance()->clearObservers();
 
         $executor->execute('create table users (
             id integer primary key  auto_increment,
@@ -374,7 +372,7 @@ class RepositoryTest extends TestCase
         $sqlStatement = $insertQuery->build();
 
         $this->assertEquals(
-            new SqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"]),
+            new OrmSqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"], ObserverEvent::Insert, 'users'),
             $sqlStatement
         );
 
@@ -614,7 +612,7 @@ class RepositoryTest extends TestCase
 
         $sqlStatement = $updateQuery->build();
         $this->assertEquals(
-            new SqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1]),
+            new OrmSqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1], ObserverEvent::Update, 'users'),
             $sqlStatement
         );
 

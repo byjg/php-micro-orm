@@ -96,7 +96,7 @@ class Query extends QueryBasic
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params);
     }
 
     protected function addOrderBy(): string

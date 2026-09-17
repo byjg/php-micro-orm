@@ -24,7 +24,7 @@ class QueryRaw implements QueryBuilderInterface
     #[Override]
     public function build(?DbDriverInterface $dbDriver = null): SqlStatement
     {
-        return new SqlStatement($this->sql, $this->parameters);
+        return new OrmSqlStatement($this->sql, $this->parameters);
     }
 
     #[Override]
