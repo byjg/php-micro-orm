@@ -1,3 +1,7 @@
+---
+sidebar_position: 19
+---
+
 # QueryRaw
 
 QueryRaw lets you execute a raw SQL statement while still benefiting from the repository pipeline (parameter binding,

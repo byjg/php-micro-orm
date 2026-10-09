@@ -102,7 +102,7 @@ class MapperFunctionsTest extends TestCase
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');
 
-        $executorMock = $this->createMock(DatabaseExecutor::class);
+        $executorMock = $this->createStub(DatabaseExecutor::class);
         $executorMock->method('getHelper')
             ->willReturn($dbHelperMock);
 
@@ -120,7 +120,7 @@ class MapperFunctionsTest extends TestCase
             ->with('Y-m-d H:i:s')
             ->willReturn('2024-01-15 12:30:45');
 
-        $executorMock = $this->createMock(DatabaseExecutor::class);
+        $executorMock = $this->createStub(DatabaseExecutor::class);
         $executorMock->method('getHelper')
             ->willReturn($dbHelperMock);
 
