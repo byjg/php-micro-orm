@@ -41,7 +41,7 @@ class OrmEventContext
     }
 
     /**
-     * Postpone observer notification: at AFTER_EXECUTE the bridge parks itself
+     * Postpone observer notification: at AfterExecute the bridge parks itself
      * here instead of dispatching, and the caller flushes via drainPendingBridges()
      * once the entity is fully hydrated (e.g. generated keys copied back).
      */

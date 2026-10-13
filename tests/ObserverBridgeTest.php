@@ -59,7 +59,7 @@ class RecordingObserver implements ObserverProcessorInterface
 }
 
 /**
- * A processor that also hooks BEFORE_EXECUTE and can veto the write.
+ * A processor that also hooks BeforeExecute and can veto the write.
  */
 class VetoObserver extends RecordingObserver implements StatementHookInterface
 {
@@ -89,7 +89,7 @@ class RawRecordingObserver implements DatabaseEventObserverInterface
     #[Override]
     public function subscribedEvents(): array
     {
-        return [DatabaseEventTypeEnum::BEFORE_EXECUTE, DatabaseEventTypeEnum::AFTER_EXECUTE];
+        return [DatabaseEventTypeEnum::BeforeExecute, DatabaseEventTypeEnum::AfterExecute];
     }
 
     #[Override]
@@ -323,8 +323,8 @@ class ObserverBridgeTest extends TestCase
 
         $this->assertNotEmpty($rawObserver->events);
         $types = array_map(fn($event) => $event->getType(), $rawObserver->events);
-        $this->assertContains(DatabaseEventTypeEnum::BEFORE_EXECUTE, $types);
-        $this->assertContains(DatabaseEventTypeEnum::AFTER_EXECUTE, $types);
+        $this->assertContains(DatabaseEventTypeEnum::BeforeExecute, $types);
+        $this->assertContains(DatabaseEventTypeEnum::AfterExecute, $types);
     }
 
     public function testAddDbDriverForWriteAttachesObservers()

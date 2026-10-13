@@ -128,7 +128,7 @@ use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Core\Enum\Relation;
 
 $filter = new IteratorFilter();
-$filter->addRelation('name', Relation::EQUAL, 'John');
+$filter->addRelation('name', Relation::Equal, 'John');
 
 $result = $repository->getByFilter($filter);
 ```

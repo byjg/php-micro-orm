@@ -230,4 +230,4 @@ Notes:
   non-SELECT statements and safely renames parameters to avoid collisions; the trailing SELECT (if present) is executed
   separately.
 - If you need a specific transaction isolation level, pass it as the second argument, e.g.,
-  `IsolationLevelEnum::SERIALIZABLE`.
+  `IsolationLevelEnum::Serializable`.

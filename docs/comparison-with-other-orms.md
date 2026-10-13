@@ -819,7 +819,7 @@ $user->name = 'New Name';
 $user->save();
 
 $activeUsers = User::filter(
-    (new IteratorFilter())->and('status', Relation::EQUAL, 'active')
+    (new IteratorFilter())->and('status', Relation::Equal, 'active')
 );
 ```
 

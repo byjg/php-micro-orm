@@ -460,7 +460,7 @@ class Repository
         }
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->and($field, Relation::IN, $arrValues);
+        $iteratorFilter->and($field, Relation::In, $arrValues);
 
         return $this->getByFilter($iteratorFilter);
     }
@@ -669,7 +669,7 @@ class Repository
 
     /**
      * Build the statement and mark it for deferred observer notification:
-     * the bridges seeing AFTER_EXECUTE park themselves in the statement context
+     * the bridges seeing AfterExecute park themselves in the statement context
      * and save() flushes them after the entity is rehydrated.
      */
     private function prepareForDeferredNotify(Updatable $updatable, mixed $instance, mixed $oldInstance): OrmSqlStatement
@@ -789,7 +789,7 @@ class Repository
      * same DatabaseExecutor instance(s) used by this repository.
      *
      * A raw DatabaseEventObserverInterface is attached directly to the executors
-     * and receives the low-level anydataset-db events (BEFORE/AFTER QUERY/EXECUTE).
+     * and receives the low-level anydataset-db events (BeforeQuery, AfterQuery, BeforeExecute, AfterExecute).
      *
      * @throws InvalidArgumentException
      */

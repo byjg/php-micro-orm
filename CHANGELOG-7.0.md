@@ -42,7 +42,7 @@ no observers are registered), and multi-connection safe.
 ### Raw low-level observers through the Repository
 - `Repository::addObserver()` also accepts a raw
   `ByJG\AnyDataset\Db\Interfaces\DatabaseEventObserverInterface`, attached directly to the
-  repository executors (receives `BEFORE/AFTER_QUERY` and `BEFORE/AFTER_EXECUTE` for every
+  repository executors (receives `BeforeQuery`/`AfterQuery` and `BeforeExecute`/`AfterExecute` for every
   statement, including reads and raw SQL)
 - New `Repository::removeObserver()` for both observer kinds
 

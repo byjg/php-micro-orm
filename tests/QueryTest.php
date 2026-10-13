@@ -106,7 +106,7 @@ class QueryTest extends TestCase
         );
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->and('fld4', Relation::EQUAL, 40);
+        $iteratorFilter->and('fld4', Relation::Equal, 40);
         $this->object->where($iteratorFilter);
         $this->assertEquals(
             new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2 AND  fld4 = :fld4  GROUP BY fld1, fld2, fld3 HAVING count(fld1) > 1 ORDER BY fld1', ['teste' => 10, 'teste2' => 40, 'fld4' => 40]),
@@ -119,9 +119,9 @@ class QueryTest extends TestCase
         $this->object->table('test');
 
         $filter = IteratorFilter::getInstance()
-            ->and('fld1', Relation::EQUAL, 10)
-            ->and('fld2', Relation::EQUAL, 20)
-            ->or('fld1', Relation::EQUAL, 30);
+            ->and('fld1', Relation::Equal, 10)
+            ->and('fld2', Relation::Equal, 20)
+            ->or('fld1', Relation::Equal, 30);
 
         $this->object->where($filter);
 

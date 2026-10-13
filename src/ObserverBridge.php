@@ -111,7 +111,7 @@ final class ObserverBridge implements DatabaseEventObserverInterface
     #[Override]
     public function subscribedEvents(): array
     {
-        return [DatabaseEventTypeEnum::BEFORE_EXECUTE, DatabaseEventTypeEnum::AFTER_EXECUTE];
+        return [DatabaseEventTypeEnum::BeforeExecute, DatabaseEventTypeEnum::AfterExecute];
     }
 
     #[Override]
@@ -126,7 +126,7 @@ final class ObserverBridge implements DatabaseEventObserverInterface
             return;
         }
 
-        if ($event->getType() === DatabaseEventTypeEnum::BEFORE_EXECUTE) {
+        if ($event->getType() === DatabaseEventTypeEnum::BeforeExecute) {
             foreach ($this->processors[$table] as $observer) {
                 $processor = $observer->getObservedProcessor();
                 if ($processor instanceof StatementHookInterface) {
@@ -137,7 +137,7 @@ final class ObserverBridge implements DatabaseEventObserverInterface
             return;
         }
 
-        // AFTER_EXECUTE
+        // AfterExecute
         $context = $statement->getOrmContext();
         $context->markExecuted();
         if ($context->isDeferred()) {

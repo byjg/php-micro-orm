@@ -184,7 +184,7 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-05-02 00:00:00', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
-        $filter->and('id', Relation::EQUAL, 2);
+        $filter->and('id', Relation::Equal, 2);
         $users = $this->repository->getByFilter($filter);
         $this->assertCount(1, $users);
         $this->assertEquals(2, $users[0]->getId());
@@ -1470,7 +1470,7 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->and('iduser', Relation::EQUAL, 3);
+        $iteratorFilter->and('iduser', Relation::Equal, 3);
         $result = $infoRepository->getByFilter($iteratorFilter);
 
         $this->assertEquals(3, $result[0]->getPk());
@@ -1700,7 +1700,7 @@ class RepositoryTest extends TestCase
     {
         ActiveRecordModel::initialize($this->repository->getExecutor());
 
-        $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::EQUAL, 1));
+        $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::Equal, 1));
 
         $this->assertCount(2, $model);
         $this->assertEquals(1, $model[0]->getPk());

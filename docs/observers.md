@@ -16,7 +16,7 @@ executed directly on the executor.
 ```mermaid
 flowchart TD
     A[MyRepository] --> |1. addObserver| B[ObserverBridge attached to the DatabaseExecutor]
-    C[Any write through the same executor] --> |2. BEFORE/AFTER_EXECUTE| B
+    C[Any write through the same executor] --> |2. BeforeExecute / AfterExecute| B
     B --> |3. Execute Callback| A
 ```
 
@@ -106,5 +106,5 @@ class MyObserver implements ObserverProcessorInterface, StatementHookInterface
 
 `Repository::addObserver()` also accepts a raw
 `ByJG\AnyDataset\Db\Interfaces\DatabaseEventObserverInterface`. It is attached directly to the
-repository executors and receives the anydataset-db events (`BEFORE_QUERY`, `AFTER_QUERY`,
-`BEFORE_EXECUTE`, `AFTER_EXECUTE`) for every statement, including reads and raw SQL.
+repository executors and receives the anydataset-db events (`BeforeQuery`, `AfterQuery`,
+`BeforeExecute`, `AfterExecute`) for every statement, including reads and raw SQL.
