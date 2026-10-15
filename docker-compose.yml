@@ -11,3 +11,31 @@ services:
       timeout: 20s
       interval: 10s
       retries: 10
+
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-h", "localhost", "-U", "postgres" ]
+      timeout: 20s
+      interval: 10s
+      retries: 10
+
+  sqlserver:
+    # Pinned to 2022: the SQL Server 2025 image (current "latest") crashes on startup on
+    # hybrid CPUs (e.g. Intel P/E-cores) with a topology assert. 2019/2022 are not affected.
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Pa55word
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-C", "-S", "localhost,1433", "-U", "sa", "-P", "Pa55word", "-Q", "SELECT 1"]
+      timeout: 20s
+      interval: 10s
+      retries: 10

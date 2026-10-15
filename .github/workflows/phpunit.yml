@@ -37,11 +37,39 @@ jobs:
           --health-timeout=20s 
           --health-retries=10
 
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      sqlserver:
+        # Pinned to 2022: the 2025 image ("latest") crashes on startup on hybrid
+        # CPUs with a topology assert (see docker-compose.yml)
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Pa55word
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -U sa -P Pa55word -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       MYSQL_TEST_HOST: mysql
+      PSQL_TEST_HOST: postgres
+      MSSQL_TEST_HOST: sqlserver
 
     steps:
       - uses: actions/checkout@v7
+      - name: Install pdo_dblib for the SQL Server tests
+        run: apk add --no-cache ${PHP_VARIANT}-pdo_dblib
       - run: composer install
       - run: composer test
 
