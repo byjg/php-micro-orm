@@ -299,6 +299,26 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
     }
 
+    public function testInsertWithAGivenKeyKeepsIt()
+    {
+        $users = new Users();
+        $users->setId(100);
+        $users->setName('Given');
+        $users->setCreatedate('2015-08-09');
+
+        $this->repository->save($users);
+        $this->assertEquals(100, $users->getId());
+
+        $this->assertEquals('Given', $this->repository->get(100)->getName());
+
+        // The auto increment still fills in the next one
+        $next = new Users();
+        $next->setName('Next');
+        $next->setCreatedate('2015-08-09');
+        $this->repository->save($next);
+        $this->assertEquals(101, $next->getId());
+    }
+
     public function testInsertReadOnly()
     {
         $this->expectException(RepositoryReadOnlyException::class);

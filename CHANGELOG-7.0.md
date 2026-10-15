@@ -64,6 +64,12 @@ no observers are registered), and multi-connection safe.
 
 ## Breaking Changes
 
+### Fixed: a primary key set on the instance is kept on insert
+- `Repository::save()` replaced a primary key set on a new instance: the seed function of the table
+  attribute (e.g. `TableUuidPKAttribute`) generated a new one, and without a seed function the value
+  read back after the insert (the last insert id) took its place, so an `id` of 100 came back as 1.
+  The given key is now inserted as is; a key is only generated or read back when it is empty
+
 ### ORMSubject removed
 - `ORMSubject` (global singleton) no longer exists. `Repository::addObserver()` keeps working with
   the same signature for `ObserverProcessorInterface`

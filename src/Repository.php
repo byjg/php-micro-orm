@@ -620,14 +620,21 @@ class Repository
 
         // Execute the Insert or Update
         if ($isInsert) {
-            $keyGen = $this->getMapper()->generateKey($this->getExecutorWrite(), $instance) ?? [];
-            if (!empty($keyGen) && !is_array($keyGen)) {
-                $keyGen = [$keyGen];
-            }
-            $position = 0;
-            foreach ($keyGen as $value) {
-                $array[$pkList[$position]] = $value;
-                $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
+            // A primary key set on the instance is inserted as given. Only an empty one is
+            // generated (seed function) or read back from the database (auto increment).
+            $givenKey = array_filter(array_map(fn ($pk) => $array[$pk] ?? null, $pkList), fn ($value) => !empty($value));
+            if (!empty($givenKey)) {
+                $keyGen = $givenKey;
+            } else {
+                $keyGen = $this->getMapper()->generateKey($this->getExecutorWrite(), $instance) ?? [];
+                if (!empty($keyGen) && !is_array($keyGen)) {
+                    $keyGen = [$keyGen];
+                }
+                $position = 0;
+                foreach ($keyGen as $value) {
+                    $array[$pkList[$position]] = $value;
+                    $updatable->set($this->mapper->getPrimaryKey()[$position++], $value);
+                }
             }
             $sqlStatement = $this->prepareForDeferredNotify($updatable, $instance, $oldInstance);
             $keyReturned = $this->insert($sqlStatement, $keyGen);
