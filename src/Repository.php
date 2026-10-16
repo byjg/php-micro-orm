@@ -27,6 +27,7 @@ use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
+use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
 use ByJG\MicroOrm\PropertyHandler\PrepareToUpdateHandler;
 use ByJG\Serializer\ObjectCopy;
@@ -271,7 +272,7 @@ class Repository
         if ($this->mapper->isSoftDeleteEnabled()) {
             $updatable = UpdateQuery::getInstance()
                 ->table($this->mapper->getTable())
-                ->set('deleted_at', new Literal($this->getExecutorWrite()->getHelper()->sqlDate('Y-m-d H:i:s')))
+                ->set('deleted_at', new Literal(NowUtcMapper::NOW))
                 ->where($filterList, $filterKeys);
             // the SQL is an UPDATE, but the caller intent is a delete
             $sqlStatement = $updatable->build($this->getExecutorWrite()->getHelper())
@@ -769,6 +770,14 @@ class Repository
                 $fieldValue = $fieldMap->getInsertFunctionValue($array[$fieldMap->getFieldName()] ?? null, $instance, $this->getExecutorWrite());
                 if ($fieldValue !== false) {
                     $array[$fieldMap->getFieldName()] = $fieldValue;
+                }
+            }
+            // An empty primary key is not inserted: the database fills it in (auto increment,
+            // default) or save() sets the one of the seed function. An explicit NULL is accepted
+            // by MySQL and SQLite but rejected by PostgreSQL for a serial column.
+            foreach ($pkList as $pk) {
+                if (array_key_exists($pk, $array) && $array[$pk] === null) {
+                    unset($array[$pk]);
                 }
             }
             $updatable = InsertQuery::getInstance($this->mapper->getTable(), $array);

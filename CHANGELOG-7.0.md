@@ -85,6 +85,22 @@ no observers are registered), and multi-connection safe.
   read back after the insert (the last insert id) took its place, so an `id` of 100 came back as 1.
   The given key is now inserted as is; a key is only generated or read back when it is empty
 
+### Fixed: an empty primary key is left out of the INSERT
+- A new instance without a key was inserted with an explicit `NULL` for it. MySQL and SQLite
+  generate the key anyway, but PostgreSQL rejects it for a `serial` column
+  (`null value in column "id" … violates not-null constraint`). An empty primary key is now left
+  out of the INSERT, so the database fills it in, or the seed function's key is used
+
+### Fixed: created_at, updated_at and a soft delete write a real date
+- `NowUtcMapper` (the `CreatedAt` and `UpdatedAt` traits) and a soft delete (`deleted_at`) wrote
+  "now" as the dialect's `sqlDate('Y-m-d H:i:s')`, an expression that formats a date as text. On
+  PostgreSQL the text is rejected for a `timestamp` column (`expression is of type text`), and on
+  SQL Server the `FORMAT()` pattern produced `YYYY-10-16 …`, which no date column accepts. Both now
+  write `CURRENT_TIMESTAMP`, standard SQL that MySQL, PostgreSQL, SQLite, SQL Server and Oracle all
+  store as a date. As before, it is the database's current time (its session time zone; UTC on SQLite)
+- `NowUtcMapper` no longer needs a `DatabaseExecutor`; a test that mocked `sqlDate()` for it no
+  longer applies
+
 ### UUID literals
 - `PostgresUuidLiteral` writes `'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'`, the text form a `uuid`
   column takes. It wrote `\x...` without quotes, which is not valid SQL
