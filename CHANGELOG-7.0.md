@@ -77,6 +77,13 @@ no observers are registered), and multi-connection safe.
   `randomblob(16)`, a round trip for what PHP generates itself
 - See: `docs/uuid-support.md`
 
+### Backed enum properties
+- A property typed with a backed enum (`public ?Status $status`) is saved as the enum's value,
+  loaded back as the enum, and filters by its value in `queryInstance($model)`. It used to fail
+  on save (the enum object reached the query), on load (`TypeError` assigning `'PAID'`) and in
+  the filter. Done by `byjg/serializer` 7.0; tested in `RepositoryBackedEnumTest`
+- See: `docs/getting-started-model.md`
+
 ## Breaking Changes
 
 ### Fixed: a primary key set on the instance is kept on insert
