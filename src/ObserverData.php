@@ -21,13 +21,17 @@ class ObserverData
     // The repository is listening to the event (the same as $myRepository)
     protected Repository $repository;
 
-    public function __construct(string $table, ObserverEvent $event, mixed $data, mixed $oldData, Repository $repository)
+    // The SQL statement that triggered the event (null when not available)
+    protected ?OrmSqlStatement $statement;
+
+    public function __construct(string $table, ObserverEvent $event, mixed $data, mixed $oldData, Repository $repository, ?OrmSqlStatement $statement = null)
     {
         $this->table = $table;
         $this->event = $event;
         $this->data = $data;
         $this->oldData = $oldData;
         $this->repository = $repository;
+        $this->statement = $statement;
     }
 
     /**
@@ -68,5 +72,15 @@ class ObserverData
     public function getRepository(): Repository
     {
         return $this->repository;
+    }
+
+    /**
+     * The SQL statement (with SQL text and params) that triggered the event.
+     *
+     * @return OrmSqlStatement|null
+     */
+    public function getStatement(): ?OrmSqlStatement
+    {
+        return $this->statement;
     }
 }

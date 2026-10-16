@@ -1,3 +1,7 @@
+---
+sidebar_position: 21
+---
+
 # MicroORM vs Other ORMs
 
 ## Overview
@@ -127,9 +131,9 @@ class Post {
     public ?string $title;
 }
 
-// 2. Auto-generate JOIN query from relationship
-$query = ORM::getQueryInstance("users", "posts");
-// Automatically generates: JOIN posts ON posts.user_id = users.id
+// 2. Build a JOIN query from the relationship
+$query = Query::getInstance()->table("users")->joinRelated("posts");
+// Automatically generates: FROM users INNER JOIN posts ON users.id = posts.user_id
 
 $results = $userRepo->getByQuery($query, [$postMapper]);
 foreach ($results as [$user, $post]) {
@@ -815,7 +819,7 @@ $user->name = 'New Name';
 $user->save();
 
 $activeUsers = User::filter(
-    (new IteratorFilter())->and('status', Relation::EQUAL, 'active')
+    (new IteratorFilter())->and('status', Relation::Equal, 'active')
 );
 ```
 
@@ -928,7 +932,7 @@ class UserStatusChangedObserver implements ObserverProcessorInterface
 }
 
 // Register the observer
-ORMSubject::getInstance()->registerObserver(new UserStatusChangedObserver());
+$repository->addObserver(new UserStatusChangedObserver());
 
 // Now whenever a user's status changes, your domain event fires!
 $user = $repository->get(1);
@@ -1081,7 +1085,7 @@ class Order
 }
 
 // 2. Register domain event handlers (observers)
-ORMSubject::getInstance()->registerObserver(new class implements ObserverProcessorInterface {
+$repository->addObserver(new class implements ObserverProcessorInterface {
     public function getObservedTable(): string { return 'orders'; }
 
     public function process(ObserverData $data): void

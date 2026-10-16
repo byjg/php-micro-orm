@@ -21,7 +21,7 @@ MicroOrm handles the complexities of working with UUIDs, including:
 
 - Converting between string UUID representations and binary database storage
 - Generating new UUIDs for primary keys automatically
-- Database-specific UUID handling (MySQL, PostgreSQL, SQLite)
+- Database-specific UUID syntax (MySQL, SQLite, PostgreSQL, SQL Server)
 - Automatic formatting when reading from and writing to the database
 - Support for UUID fields beyond just primary keys
 
@@ -29,51 +29,45 @@ MicroOrm handles the complexities of working with UUIDs, including:
 
 ### 1. Database Schema
 
-First, set up your database table with a binary field to store the UUID:
+Store the UUID as 16 bytes, or in PostgreSQL's native `uuid` type:
 
 ```sql
--- MySQL example
+-- MySQL and SQLite
 CREATE TABLE my_table (
     id BINARY(16) PRIMARY KEY,  -- Binary format is more efficient than VARCHAR
-    name VARCHAR(100),
-    -- other fields
+    name VARCHAR(100)
 );
 
--- SQLite example
+-- SQL Server
 CREATE TABLE my_table (
     id BINARY(16) PRIMARY KEY,
-    name VARCHAR(100),
-    -- other fields
+    name VARCHAR(100)
 );
 
--- PostgreSQL example (can use native UUID type)
+-- PostgreSQL
 CREATE TABLE my_table (
     id UUID PRIMARY KEY,
-    name VARCHAR(100),
-    -- other fields
+    name VARCHAR(100)
 );
 ```
 
+On SQL Server use `BINARY(16)` rather than `UNIQUEIDENTIFIER`: SQL Server reorders the first 8 bytes of a
+`UNIQUEIDENTIFIER`, so the value read back would not be the one written.
+
 ### 2. Model Definition
 
-Then define your model using the appropriate UUID attributes:
+Then define your model with `TableUuidPKAttribute` and `FieldUuidAttribute`. The same model works on every database:
 
 ```php
 <?php
 
 namespace MyApp\Model;
 
-use ByJG\MicroOrm\Attributes\FieldUuidAttribute;
 use ByJG\MicroOrm\Attributes\FieldAttribute;
+use ByJG\MicroOrm\Attributes\FieldUuidAttribute;
+use ByJG\MicroOrm\Attributes\TableUuidPKAttribute;
 
-// Use the database-specific UUID table attribute
-use ByJG\MicroOrm\Attributes\TableMySqlUuidPKAttribute;  // For MySQL
-// OR
-use ByJG\MicroOrm\Attributes\TableSqliteUuidPKAttribute; // For SQLite
-// OR
-use ByJG\MicroOrm\Attributes\TableUuidPKAttribute;       // Generic implementation
-
-#[TableMySqlUuidPKAttribute(tableName: 'my_table')]
+#[TableUuidPKAttribute(tableName: 'my_table')]
 class MyModel
 {
     #[FieldUuidAttribute(primaryKey: true)]
@@ -105,32 +99,50 @@ class MyModel
 }
 ```
 
+After `save()`, `getId()` returns the new UUID as a formatted string. A UUID set on the model before the first
+`save()` is kept: a key is only generated when it is empty.
+
 ## Available UUID Attributes
 
-### Table Attributes
+### Table Attribute
 
-MicroOrm provides several table attributes for UUID primary keys:
+`TableUuidPKAttribute` generates the primary key in PHP when a row is inserted, with no database round trip:
 
-1. `TableUuidPKAttribute` - Base class for UUID tables (uses generic implementation)
-2. `TableMySqlUuidPKAttribute` - MySQL-specific implementation (uses MySQL's UUID functions)
-3. `TableSqliteUuidPKAttribute` - SQLite-specific implementation
+- It is a **version 7** UUID (RFC 9562): the first 48 bits are the time in milliseconds and the rest is random, so a
+  key created later sorts after the earlier ones and new rows go to the end of the primary key index.
+- It is written in the syntax of the database the repository uses (see [UUID literals](#working-with-uuid-literals)).
 
-Each attribute automatically configures a primary key seed function that generates appropriate UUID values for the
-specific database.
+`TableMySqlUuidPKAttribute`, `TableSqliteUuidPKAttribute` and `TablePgsqlUuidPKAttribute` are **deprecated**. They
+are now the same as `TableUuidPKAttribute` and only remain so existing models keep working. (The MySQL one used to ask
+MySQL for `uuid_to_bin(uuid())`, which failed on any other database.)
 
 ### Field Attribute
 
 The `FieldUuidAttribute` is used to mark UUID fields (both primary keys and regular fields). It internally configures:
 
-- `FormatUpdateUuidMapper` - Handles converting string UUIDs to `HexUuidLiteral` (binary format) when saving to database
-- `FormatSelectUuidMapper` - Handles converting binary UUIDs from database to formatted string (with dashes) when
-  reading
+- `FormatUpdateUuidMapper` - Converts the UUID to the literal of the database when saving (a string, or a
+  `HexUuidLiteral` made without knowing the database, e.g. in a setter)
+- `FormatSelectUuidMapper` - Converts the value read from the database to a formatted string (with dashes)
 
 These mapper functions ensure that:
 
 - Your application code works with human-readable UUID strings (e.g., `'550e8400-e29b-41d4-a716-446655440000'`)
-- The database stores UUIDs efficiently as 16-byte binary values
+- The database stores UUIDs efficiently as 16-byte binary values (or as `uuid` on PostgreSQL)
 - Conversions happen automatically during save and retrieve operations
+
+## Generating a UUID
+
+`HexUuidLiteral::v7()` returns a new version 7 UUID as a formatted string, the same value `TableUuidPKAttribute`
+generates:
+
+```php
+use ByJG\MicroOrm\Literal\HexUuidLiteral;
+
+$id = HexUuidLiteral::v7(); // e.g. '01A141AF-F7F3-7498-B30C-E7C6C3D82E68'
+```
+
+A version 7 UUID tells when it was created. For a secret, such as a password-reset token, use a random (version 4)
+UUID instead.
 
 ## Using UUID Fields Beyond Primary Keys
 
@@ -202,20 +214,22 @@ UUID to a `HexUuidLiteral` before querying.
 
 ### Manual Queries with WHERE Clauses
 
-When using manual queries with `where()` clauses, you **must** explicitly use UUID literals:
+When using manual queries with `where()` clauses, you **must** pass the UUID as a literal, in the syntax of the
+database. `HexUuidLiteral::forDatabase()` picks it from the executor:
 
 ```php
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 
 $uuid = '550e8400-e29b-41d4-a716-446655440000';
+$executor = $repository->getExecutor();
 
-// ✓ CORRECT - Wrap in HexUuidLiteral for WHERE clauses
+// ✓ CORRECT - The literal for the repository's database
 $query = $repository->getMapper()->getQuery();
-$query->where('id = :id', ['id' => new HexUuidLiteral($uuid)]);
+$query->where('id = :id', ['id' => HexUuidLiteral::forDatabase($executor, $uuid)]);
 $results = $repository->getByQuery($query);
 
 // ✓ Also correct for non-primary key UUID fields
-$query->where('user_id = :user_id', ['user_id' => new HexUuidLiteral($userId)]);
+$query->where('user_id = :user_id', ['user_id' => HexUuidLiteral::forDatabase($executor, $userId)]);
 
 // ✗ INCORRECT - This won't work correctly
 $query->where('id = :id', ['id' => $uuid]); // String won't match binary in DB
@@ -228,49 +242,21 @@ $query->where('id = :id', ['id' => $uuid]); // String won't match binary in DB
 - **`where()` clauses**: These are generic and don't know which fields are UUIDs, so you must explicitly wrap UUID
   values in the appropriate literal class
 
-### Database-Specific Literals
-
-You can use database-specific literal classes if needed:
-
-```php
-use ByJG\MicroOrm\Literal\MySqlUuidLiteral;
-use ByJG\MicroOrm\Literal\SqliteUuidLiteral;
-use ByJG\MicroOrm\Literal\PostgresUuidLiteral;
-
-// MySQL - uses UUID_TO_BIN()
-$query->where('id = :id', ['id' => new MySqlUuidLiteral($uuid)]);
-
-// PostgreSQL - uses ::uuid cast
-$query->where('id = :id', ['id' => new PostgresUuidLiteral($uuid)]);
-
-// SQLite/Generic - uses hex format
-$query->where('id = :id', ['id' => new HexUuidLiteral($uuid)]);
-```
-
 ## Working with UUID Literals
 
-UUID Literal classes help you work with UUIDs in raw SQL queries. Each database has its own literal format:
+A UUID literal is written into the SQL as it is. Each database has its own syntax:
 
-- `HexUuidLiteral` - Generic hexadecimal format: `X'550E8400E29B41D4A716446655440000'`
-- `MySqlUuidLiteral` - MySQL-specific: `UUID_TO_BIN('550e8400-e29b-41d4-a716-446655440000')`
-- `PostgresUuidLiteral` - PostgreSQL: `'550e8400-e29b-41d4-a716-446655440000'::uuid`
-- `SqliteUuidLiteral` - SQLite hexadecimal format
+| Class                  | Written as                                 | Database / column             |
+|------------------------|--------------------------------------------|-------------------------------|
+| `HexUuidLiteral`       | `X'550E8400E29B41D4A716446655440000'`      | MySQL, SQLite: `BINARY(16)`   |
+| `SqlServerUuidLiteral` | `0x550E8400E29B41D4A716446655440000`       | SQL Server: `BINARY(16)`      |
+| `PostgresUuidLiteral`  | `'550E8400-E29B-41D4-A716-446655440000'`   | PostgreSQL: `uuid`            |
 
-### Example Usage
+`MySqlUuidLiteral` and `SqliteUuidLiteral` are the same as `HexUuidLiteral`.
 
-```php
-use ByJG\MicroOrm\Literal\HexUuidLiteral;
-
-// Create a literal from a UUID string
-$uuid = '550e8400-e29b-41d4-a716-446655440000';
-$literal = new HexUuidLiteral($uuid);
-
-// Use in queries
-$query->where('id = :id', ['id' => $literal]);
-
-// The literal will be converted to the appropriate format for your database
-// e.g., X'550E8400E29B41D4A716446655440000' for direct SQL
-```
+`HexUuidLiteral::forDatabase($executor, $uuid)` returns the right one for the executor's database (and
+`HexUuidLiteral` when the executor is `null`). Every class accepts a UUID in any of the formats listed under
+[Supported Input Formats](#supported-input-formats), or another UUID literal.
 
 ## Format Helpers
 
@@ -323,19 +309,18 @@ All formats are automatically detected and converted to the standard formatted s
 
 ## Database-Specific Notes
 
-### MySQL
+### MySQL and SQLite
 
-MySQL doesn't have a native UUID type, so UUIDs are stored as BINARY(16). The `TableMySqlUuidPKAttribute` uses MySQL's
-`UUID_TO_BIN()` and `BIN_TO_UUID()` functions.
-
-### SQLite
-
-SQLite also doesn't have a native UUID type. The `TableSqliteUuidPKAttribute` uses SQLite's `randomblob()` function to
-generate UUIDs.
+Neither has a native UUID type, so UUIDs are stored as `BINARY(16)` and written as `X'...'`.
 
 ### PostgreSQL
 
-PostgreSQL has a native UUID type. The library provides support through the `PostgresUuidLiteral` class.
+PostgreSQL has a native `uuid` type. The UUID is written as its quoted text form, which PostgreSQL converts to `uuid`,
+and read back as text.
+
+### SQL Server
+
+UUIDs are stored as `BINARY(16)` and written as `0x...`. Both `pdo_dblib` and `pdo_sqlsrv` are supported.
 
 ## Performance Considerations
 
@@ -447,7 +432,7 @@ $order->setStatus('pending');
 $repository->save($order);
 
 // ID is automatically generated
-echo $order->getId(); // e.g., '3B4E18A0-C719-4ED0-C9B2-026A91889DC0'
+echo $order->getId(); // e.g., '01A141AF-F7F3-7498-B30C-E7C6C3D82E68'
 
 // Query by UUID
 $found = $repository->get($order->getId());

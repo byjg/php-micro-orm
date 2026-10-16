@@ -142,7 +142,7 @@ $results = $query->toArray();
 ### Complex Filtering (Legacy)
 
 ```php
-$myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::EQUAL, 123));
+$myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::Equal, 123));
 foreach ($myClassList as $myClass) {
     echo $myClass->someProperty;
 }

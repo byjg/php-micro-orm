@@ -104,21 +104,19 @@ See also [Controlling the Data](controlling-the-data.md) for more information ab
 
 ## Special Table Attributes for UUID primary keys
 
-MicroOrm provides specialized table attributes for tables with UUID primary keys:
+`TableUuidPKAttribute` is the table attribute for a table whose primary key is a UUID. On insert it generates a
+version 7 UUID (time-ordered) in PHP and writes it in the syntax of the repository's database. It works on MySQL,
+SQLite, PostgreSQL and SQL Server.
 
-* `TableUuidPKAttribute` - Base class for UUID primary key tables (generic implementation)
-* `TableMySqlUuidPKAttribute` - Specific implementation for MySQL databases with UUID primary keys
-* `TableSqliteUuidPKAttribute` - Specific implementation for SQLite databases with UUID primary keys
-
-These attributes automatically configure the primary key generation for UUID fields. They handle the creation of binary
-UUID values in a format appropriate for the specific database engine.
+`TableMySqlUuidPKAttribute`, `TableSqliteUuidPKAttribute` and `TablePgsqlUuidPKAttribute` are deprecated aliases of
+`TableUuidPKAttribute`, kept so existing models keep working.
 
 ### Using UUID attributes
 
 Here's an example of how to use the UUID attributes:
 
 ```php
-#[TableSqliteUuidPKAttribute(tableName: 'my_table')]
+#[TableUuidPKAttribute(tableName: 'my_table')]
 class MyModelWithUuid
 {
     #[FieldUuidAttribute(primaryKey: true)]
@@ -131,47 +129,41 @@ class MyModelWithUuid
 
 In this example:
 
-- `TableSqliteUuidPKAttribute` sets up the model to work with SQLite's UUID handling
+- `TableUuidPKAttribute` generates the UUID for new records
 - `FieldUuidAttribute` marks the `$id` field as a UUID primary key
-- The library will automatically generate UUID values for new records
 
 ### Field UUID Attribute
 
 The `FieldUuidAttribute` is a specialized field attribute designed for UUID fields. It internally configures the
-appropriate mapper functions for handling binary UUID values:
+appropriate mapper functions for handling UUID values:
 
-- For reading from the database: Uses `FormatSelectUuidMapper` to convert binary UUID to string format
-- For writing to the database: Uses `FormatUpdateUuidMapper` to convert string UUID to binary format
+- For reading from the database: Uses `FormatSelectUuidMapper` to convert the stored UUID to string format
+- For writing to the database: Uses `FormatUpdateUuidMapper` to convert the UUID to the literal of the database
 
 ### Database Schema Requirements
 
-To use UUID primary keys, you need to define your table with a binary field for the UUID. For example:
+Define the UUID column as `BINARY(16)`, or as `uuid` on PostgreSQL:
 
 ```sql
--- SQLite example
+-- MySQL, SQLite and SQL Server
 CREATE TABLE my_table
 (
     id   BINARY(16) PRIMARY KEY,
     name VARCHAR(45)
 );
 
--- MySQL example
+-- PostgreSQL
 CREATE TABLE my_table
 (
-    id   BINARY(16) PRIMARY KEY,
+    id   UUID PRIMARY KEY,
     name VARCHAR(45)
 );
 ```
 
 ### UUID Literals
 
-The library provides specialized literal classes for handling UUID values in different database engines:
-
-- `HexUuidLiteral` - Base class for UUID literals
-- `MySqlUuidLiteral` - MySQL-specific UUID literal
-- `SqliteUuidLiteral` - SQLite-specific UUID literal
-- `PostgresUuidLiteral` - PostgreSQL-specific UUID literal
-
-These literals help ensure the UUID values are properly formatted for each database engine.
+Each database writes a UUID its own way: `HexUuidLiteral` (`X'...'`, MySQL and SQLite), `SqlServerUuidLiteral`
+(`0x...`) and `PostgresUuidLiteral` (`'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'`). `HexUuidLiteral::forDatabase()`
+returns the right one for an executor. See [UUID Support](uuid-support.md).
 
 

@@ -7,3 +7,4 @@ vendor
 !.idea/runConfigurations
 .phpunit.result.cache
 phpunit.xml.dist.bak
+.vscode
