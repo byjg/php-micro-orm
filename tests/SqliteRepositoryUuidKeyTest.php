@@ -5,7 +5,9 @@ namespace Tests;
 use ByJG\AnyDataset\Db\Factory;
 use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use Override;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
+#[RequiresPhpExtension('pdo_sqlite')]
 class SqliteRepositoryUuidKeyTest extends RepositoryUuidKeyTestCase
 {
     #[Override]

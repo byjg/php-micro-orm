@@ -4,7 +4,9 @@ namespace Tests;
 
 use ByJG\AnyDataset\Db\Interfaces\DbDriverInterface;
 use Override;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
+#[RequiresPhpExtension('pdo_mysql')]
 class MysqlRepositoryUuidKeyTest extends RepositoryUuidKeyTestCase
 {
     #[Override]
