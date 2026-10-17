@@ -6,7 +6,7 @@ sidebar_position: 15
 
 Some tables don't have auto-increment fields, for example, when you have a table with UUID binary or varchar primary
 keys.
-In this case, you need to provide a function to calculate the unique ID.
+In this case, you can provide a seed function (a `MapperFunctionInterface`) to calculate the unique ID.
 
 ```php
 <?php
@@ -14,18 +14,19 @@ In this case, you need to provide a function to calculate the unique ID.
 $mapper = new \ByJG\MicroOrm\Mapper(
     Users::class,   // The full qualified name of the class
     'users',        // The table that represents this entity
-    'id',            // The primary key field
-    function () {
-        // calculate and return the unique ID
-    }
+    'id'            // The primary key field
 );
+$mapper->withPrimaryKeySeedFunction(MyIdSeedFunction::class); // calculates and returns the unique ID
 ```
+
+A primary key set on the instance before the first `save()` is inserted as given; the seed function is only called
+when the key is empty.
 
 ## Varchar Primary Keys
 
 For tables with varchar primary keys where you want to provide the value yourself (e.g., SKU codes, custom IDs),
-you need to create a seed function that returns the value from the instance. This prevents the ORM from trying
-to use auto-increment behavior.
+setting the key on the instance is enough: it is inserted as given. A seed function that returns the value from the
+instance, as below, is optional.
 
 ### Using Repository Pattern
 
@@ -120,7 +121,6 @@ $product->save();
 $retrieved = Product::get('PROD-001');
 ```
 
-**Important Note:** When using varchar primary keys, the seed function is required to prevent the ORM from
-attempting to retrieve an auto-increment ID from the database. Without this function, the ORM will call
-`executeAndGetInsertedId()` which may return unexpected values for non-integer primary keys.
+**Important Note:** Only when the primary key is empty and there is no seed function does the ORM read the
+auto-increment ID back from the database (`executeAndGetInsertedId()`).
 

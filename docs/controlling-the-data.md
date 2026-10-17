@@ -81,7 +81,7 @@ The `processedValue` method in your custom mapper class will receive three argum
 |--------------------------|------------------------------------------------------------------------------------------------------------|
 | `StandardMapper`         | Defines the basic behavior for select and update fields; You don't need to set it. Just know it exists.    |
 | `ReadOnlyMapper`         | Defines a read-only field. It can be retrieved from the database but will not be updated.                  |
-| `NowUtcMapper`           | Returns the current date/time in UTC. It is used to set the current date/time in the database.             |
+| `NowUtcMapper`           | Writes `CURRENT_TIMESTAMP`, the database's current date/time. It is used to set the current date/time.     |
 | `FormatUpdateUuidMapper` | Converts a UUID string to a binary representation. It is used to store UUID in a binary field.             |
 | `FormatSelectUuidMapper` | Converts a binary representation of a UUID to a string. It is used to retrieve a UUID from a binary field. |
 
@@ -125,36 +125,13 @@ $fieldMap = \ByJG\MicroOrm\FieldMapping::create('name')
 
 ## Generic function to be processed before any insert or update
 
-You can process entities before insert or update operations at the record level using two different approaches:
+You can process entities before insert or update operations at the record level. `setBeforeInsert()` and
+`setBeforeUpdate()` accept an `EntityProcessorInterface` instance or the name of a class implementing it; closures are
+not accepted.
 
-### 1. Using Closures (Legacy Approach)
+### 1. Using EntityProcessorInterface
 
-```php
-<?php
-// Apply to a specific repository instance
-$repository->setBeforeInsert(function ($instance) {
-    // Manipulate the instance before insert
-    return $instance;
-});
-
-$repository->setBeforeUpdate(function ($instance) {
-    // Manipulate the instance before update
-    return $instance;
-});
-
-// Or apply globally to all repository instances
-\ByJG\MicroOrm\Repository::setBeforeInsert(function ($instance) {
-    return $instance;
-});
-
-\ByJG\MicroOrm\Repository::setBeforeUpdate(function ($instance) {
-    return $instance;
-});
-```
-
-### 2. Using EntityProcessorInterface (Recommended Approach)
-
-A more structured approach is to implement the `EntityProcessorInterface`:
+Implement the `EntityProcessorInterface`:
 
 ```php
 <?php
@@ -205,7 +182,7 @@ $repository->setBeforeUpdate(new BeforeUpdateProcessor());
 
 The return of the process method will be the instance that will be used to insert or update the record.
 
-### 3. Using TableAttribute (Class-Level Approach)
+### 2. Using TableAttribute (Class-Level Approach)
 
 You can also define processors at the class level using the `TableAttribute`:
 

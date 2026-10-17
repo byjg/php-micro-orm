@@ -76,6 +76,9 @@ The `ObserverData` class contains the following properties:
 *Note*: Raw SQL strings executed on the executor (not built by a MicroOrm query builder) do not fire
 entity events. Attach a raw `DatabaseEventObserverInterface` (below) if you need to see everything.
 
+`Repository::removeObserver()` detaches an observer added with `addObserver()`. Adding the same observer class twice
+for the same table and repository class throws `InvalidArgumentException` ("Observer already exists").
+
 ## Observer scope
 
 Observers are scoped to the `DatabaseExecutor` instance(s) of the repository where

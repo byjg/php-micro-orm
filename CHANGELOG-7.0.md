@@ -6,7 +6,7 @@
 ## Overview
 
 Version 7.0 rewires the entire observer system on top of the low-level `DatabaseExecutor` observer
-introduced by `byjg/anydataset-db` 6.0. The global `ORMSubject` singleton is removed: observer
+introduced by `byjg/anydataset-db` 7.0. The global `ORMSubject` singleton is removed: observer
 dispatch now happens at the database-connection level, which makes observation complete (every
 write built by MicroOrm notifies, not only `save()` and `deleteByQuery()`), faster (zero cost when
 no observers are registered), and multi-connection safe.
@@ -30,6 +30,8 @@ no observers are registered), and multi-connection safe.
   `ByJG\AnyDataset\Db\SqlStatement`), stamped with the ORM event (`Insert`, `Update`, `Delete`,
   `SoftDelete`) and the affected table for write builders
 - `ObserverData::getStatement()` exposes it to observers (SQL text + params)
+- `Updatable::build()` is declared to return `OrmSqlStatement`, so a custom `Updatable` subclass must return one.
+  New `Updatable::getTable()`
 
 ### SoftDelete observer event
 - New `ObserverEvent::SoftDelete` case: `delete()` on a mapper with soft delete enabled now fires
@@ -75,6 +77,7 @@ no observers are registered), and multi-connection safe.
   deprecated aliases of `TableUuidPKAttribute`. The MySQL one asked MySQL for
   `uuid_to_bin(uuid())`, so it failed on any other database; the SQLite one asked SQLite for
   `randomblob(16)`, a round trip for what PHP generates itself
+- `FieldUuidAttribute` accepts `parentTable`, like `FieldAttribute`, to declare a foreign key relationship
 - See: `docs/uuid-support.md`
 
 ### Backed enum properties
@@ -148,6 +151,11 @@ no observers are registered), and multi-connection safe.
   `Query::getInstance()->table($base)->joinRelated($related)` (or `Model::joinWith(...)` for Active
   Record) — it keeps your base table, supports INNER/LEFT/RIGHT, and auto-joins intermediates. The
   relationship registry (`addRelationship`/`getRelationship`/`getRelationshipData`) is unchanged
+
+## Bug Fixes
+
+- Relationships declared before the parent mapper was registered (`parentTable` pointing to a table not yet known)
+  were never completed. `ORM::getRelationship()` now resolves them once the parent mapper is registered
 
 ## Migration from 6.x
 

@@ -14,7 +14,7 @@ To pass a literal value you need to use the `Literal` object.
 
 ```php
 <?php
-use ByJG\MicroOrm\Literal;
+use ByJG\MicroOrm\Literal\Literal;
 
 $user = new Users();
 $user->name = "John";
@@ -31,9 +31,9 @@ The same applies when you are doing a query:
 
 ```php
 <?php
-use ByJG\MicroOrm\Literal;
+use ByJG\MicroOrm\Literal\Literal;
 
-$query = new Query()::getInstance()
+$query = Query::getInstance()
     ->field('name')
     ->where('createdate < :date', ['date' => new Literal('NOW()')]);
 ```

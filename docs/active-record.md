@@ -65,16 +65,19 @@ class MyClass
 If you have more than one database connection, you can define a default database connection:
 
 ```php
-// Set a default DBDriver
-ORM::defaultDriver($dbDriver);
+// Set a default DatabaseExecutor
+ORM::defaultDbDriver(DatabaseExecutor::using($dbDriver));
 ```
 
 or call the `initialize` method with the database connection:
 
 ```php
-// Initialize the Active Record with a specific DBDriver
-MyClass::initialize($dbDriver);
+// Initialize the Active Record with a specific DatabaseExecutor
+MyClass::initialize(DatabaseExecutor::using($dbDriver));
 ```
+
+`MyClass::reset($executor)` discards the current connection and, when an executor is given, initializes the model
+with it.
 
 ## Using the Active Record
 
@@ -118,6 +121,9 @@ $myClass = MyClass::where('someProperty = :value', ['value' => 123])
 if (MyClass::where('someProperty > :min', ['min' => 100])->exists()) {
     echo "Records found!";
 }
+
+// Or throw an exception if none is found
+MyClass::where('someProperty > :min', ['min' => 100])->existsOrFail();
 
 // Get all matching records as array
 $myClassList = MyClass::where('someProperty = :value', ['value' => 123])

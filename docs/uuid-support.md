@@ -124,6 +124,14 @@ The `FieldUuidAttribute` is used to mark UUID fields (both primary keys and regu
   `HexUuidLiteral` made without knowing the database, e.g. in a setter)
 - `FormatSelectUuidMapper` - Converts the value read from the database to a formatted string (with dashes)
 
+Like `FieldAttribute`, it accepts `parentTable` to declare a foreign key to another table
+(see [Auto Discovering Relationship](auto-discovering-relationship.md)):
+
+```php
+#[FieldUuidAttribute(fieldName: 'user_id', parentTable: 'users')]
+protected ?string $userId = null;
+```
+
 These mapper functions ensure that:
 
 - Your application code works with human-readable UUID strings (e.g., `'550e8400-e29b-41d4-a716-446655440000'`)
@@ -199,7 +207,7 @@ When querying by UUID primary keys using `get()` or `delete()`, the conversion i
 ```php
 use ByJG\MicroOrm\Repository;
 
-$repository = new Repository($dbDriver, MyModel::class);
+$repository = new Repository($executor, MyModel::class);
 $uuid = '550e8400-e29b-41d4-a716-446655440000';
 
 // For UUID primary keys, just pass the string directly - NO need to wrap in HexUuidLiteral
@@ -422,7 +430,7 @@ CREATE TABLE orders (
 */
 
 // Usage
-$repository = new Repository($dbDriver, Order::class);
+$repository = new Repository($executor, Order::class);
 
 // Create new order
 $order = new Order();

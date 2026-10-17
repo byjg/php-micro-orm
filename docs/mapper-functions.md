@@ -63,15 +63,15 @@ included in the update statement.
 
 ### NowUtcMapper
 
-Automatically sets the field value to the current UTC date and time. This is particularly useful for timestamp fields
+Automatically sets the field value to the current date and time. This is particularly useful for timestamp fields
 like `created_at` and `updated_at`.
 
 ```php
 use ByJG\MicroOrm\MapperFunctions\NowUtcMapper;
 ```
 
-When applied, this function will generate a SQL statement that sets the field to the current timestamp using the
-database server's date/time functions.
+When applied, this function writes `CURRENT_TIMESTAMP` (standard SQL, accepted by MySQL, PostgreSQL, SQLite,
+SQL Server and Oracle), so the value is the database's current time in its session time zone (UTC on SQLite).
 
 ### FormatUpdateUuidMapper and FormatSelectUuidMapper
 

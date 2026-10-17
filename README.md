@@ -121,7 +121,7 @@ class MyModel
     #[FieldAttribute()]
     public ?string $name = null;
 
-    #[FieldAttribute(fieldName: 'company_id')
+    #[FieldAttribute(fieldName: 'company_id')]
     public ?int $companyId = null;
 }
 ```
@@ -140,7 +140,8 @@ After defining the Model, you can connect the Model with the repository.
 
 ```php
 $dbDriver = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
-$repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
+$executor = \ByJG\AnyDataset\Db\DatabaseExecutor::using($dbDriver);
+$repository = new \ByJG\MicroOrm\Repository($executor, MyModel::class);
 ```
 
 ### Querying the database
@@ -204,6 +205,14 @@ $result = $repository->getByQuery($query);
 * [Building SQL Queries](docs/query-build.md)
 * [UUID Support](docs/uuid-support.md)
 
+## Related Projects
+
+* [Database Migration](https://github.com/byjg/migration)
+* [Anydataset](https://github.com/byjg/anydataset)
+* [PHP Rest Template](https://github.com/byjg/php-rest-template)
+* [USDocker](https://github.com/usdocker/usdocker)
+* [Serializer](https://github.com/byjg/serializer)
+
 ## Installation
 
 Just type:
@@ -217,14 +226,6 @@ composer require "byjg/micro-orm"
 ```bash
 ./vendor/bin/phpunit
 ```
-
-## Related Projects
-
-* [Database Migration](https://github.com/byjg/migration)
-* [Anydataset](https://github.com/byjg/anydataset)
-* [PHP Rest Template](https://github.com/byjg/php-rest-template)
-* [USDocker](https://github.com/usdocker/usdocker)
-* [Serializer](https://github.com/byjg/serializer)
 
 ----
 [Open source ByJG](https://opensource.byjg.com)

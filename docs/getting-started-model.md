@@ -158,7 +158,7 @@ After defining the Model, you can connect the Model with the repository.
 
 ```php
 $dbDriver = Factory::getDbInstance('mysql://user:password@server/schema');
-$repository = new Repository($dbDriver, MyModel::class);
+$repository = new Repository(DatabaseExecutor::using($dbDriver), MyModel::class);
 ```
 
 ### Querying the database

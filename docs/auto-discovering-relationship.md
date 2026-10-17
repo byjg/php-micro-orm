@@ -33,8 +33,8 @@ class Class2
     public ?int $idTable1;
 }
 
-$repository1 = new Repository($dbDriver, Class1::class);
-$repository2 = new Repository($dbDriver, Class2::class);
+$repository1 = new Repository($executor, Class1::class);
+$repository2 = new Repository($executor, Class2::class);
 ```
 
 This will automatically create the relationship between `table1` and `table2` through the ORM system's internal
