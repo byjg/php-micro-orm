@@ -440,7 +440,8 @@ class Repository
         }
 
         if (!is_null($limit)) {
-            $query->limit($page, ($page + 1) * $limit);
+            // limit(start, quantity): page is zero-based
+            $query->limit($page * $limit, $limit);
         }
 
         return $this->getByQuery($query);

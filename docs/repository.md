@@ -142,7 +142,7 @@ $result = $repository->getByFilter($filter);
 You can also add pagination:
 
 ```php
-// Get page 2 with 10 items per page
+// Pages start at 0: page 2 with 10 items per page returns items 21 to 30
 $result = $repository->getByFilter($filter, page: 2, limit: 10);
 ```
 

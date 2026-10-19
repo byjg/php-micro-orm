@@ -154,6 +154,12 @@ no observers are registered), and multi-connection safe.
 
 ## Bug Fixes
 
+- `Repository::getByFilter()` paging (and `ActiveRecord::all()`, which uses it) returned the wrong rows past the
+  first page: it called `limit($page, ($page + 1) * $limit)`, which reads as start and quantity, so page 2 with
+  limit 10 returned 30 rows from the 3rd. It now returns `$limit` rows starting at `$page * $limit`.
+- `ActiveRecord::where()` declared `array|string $filter`, but an array was forwarded to
+  `ActiveRecordQuery::createWhere(string $filter)` and always threw a `TypeError`. The parameter is now `string`,
+  matching what it actually supports
 - Relationships declared before the parent mapper was registered (`parentTable` pointing to a table not yet known)
   were never completed. `ORM::getRelationship()` now resolves them once the parent mapper is registered
 

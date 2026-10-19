@@ -192,6 +192,16 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-04 00:00:00', $users[0]->getCreatedate());
     }
 
+    public function testGetByFilterPaging()
+    {
+        $ids = fn(array $users) => array_map(fn($user) => $user->getId(), $users);
+
+        $this->assertEquals([1, 2], $ids($this->repository->getByFilter(page: 0, limit: 2)));
+        $this->assertEquals([3], $ids($this->repository->getByFilter(page: 1, limit: 2)));
+        $this->assertEquals([2], $ids($this->repository->getByFilter(page: 1, limit: 1)));
+        $this->assertEquals([], $this->repository->getByFilter(page: 3, limit: 1));
+    }
+
     public function testGetSelectFunction()
     {
         $this->userMapper = new Mapper(UsersMap::class, 'users', 'id');

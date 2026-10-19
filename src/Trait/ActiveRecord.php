@@ -177,11 +177,11 @@ trait ActiveRecord
      *
      * Example: User::where('email = :email', ['email' => 'test@example.com'])->first()
      *
-     * @param array|string $filter
+     * @param string $filter
      * @param array $params
      * @return ActiveRecordQuery
      */
-    public static function where(array|string $filter, array $params = []): ActiveRecordQuery
+    public static function where(string $filter, array $params = []): ActiveRecordQuery
     {
         self::initialize();
         return ActiveRecordQuery::createWhere(self::$repository, $filter, $params);

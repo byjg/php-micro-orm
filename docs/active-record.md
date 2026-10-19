@@ -106,7 +106,9 @@ $myClass->save();
 
 ### Query with Fluent API
 
-The new fluent query API provides a more intuitive way to build and execute queries:
+The new fluent query API provides a more intuitive way to build and execute queries.
+`MyClass::where()` takes a SQL condition string and its parameters; to filter with an `IteratorFilter`,
+use `MyClass::filter()` or `MyClass::newQuery()->where($iteratorFilter)`.
 
 ```php
 // Get first record matching criteria
@@ -160,7 +162,7 @@ foreach ($myClassList as $myClass) {
 // Get all records (paginated, default is page 0, limit 50)
 $myClassList = MyClass::all();
 
-// Get page 2 with 20 records per page
+// Pages start at 0: page 2 with 20 records per page returns records 41 to 60
 $myClassList = MyClass::all(2, 20);
 ```
 
