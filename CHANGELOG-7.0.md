@@ -152,6 +152,14 @@ no observers are registered), and multi-connection safe.
   Record) — it keeps your base table, supports INNER/LEFT/RIGHT, and auto-joins intermediates. The
   relationship registry (`addRelationship`/`getRelationship`/`getRelationshipData`) is unchanged
 
+### Query::limit() second parameter renamed to $limit
+- `Query::limit()` and `Union::limit()` named their second parameter `$end`, but it has always been the number
+  of rows to return (the dialects build `LIMIT start, quantity`), not an end position. It is now `$limit`:
+  `limit(int $start, int $limit)`. Positional calls are unaffected; calls using the named argument
+  `limit(end: ...)` must change to `limit(limit: ...)`
+- The protected property `Query::$limitEnd` that stores it is renamed to `Query::$limitQuantity`. Subclasses of
+  `Query` reading or writing `$this->limitEnd` must use `$this->limitQuantity`
+
 ## Bug Fixes
 
 - `Repository::getByFilter()` paging (and `ActiveRecord::all()`, which uses it) returned the wrong rows past the
@@ -173,6 +181,7 @@ no observers are registered), and multi-connection safe.
 | Observer watching writes made through another connection | Register the observer on a repository of each connection |
 | `Repository` subclass overriding `insert()`/`update()`   | Update to the new `OrmSqlStatement` signatures           |
 | `match` over `ObserverEvent`                             | Add the `SoftDelete` arm                                 |
+| `->limit(start: $s, end: $n)` (named argument)           | `->limit(start: $s, limit: $n)`                          |
 
 ## Requirements
 

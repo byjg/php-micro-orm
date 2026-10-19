@@ -952,6 +952,20 @@ class RepositoryTest extends TestCase
         $this->assertEquals(1, count($result));
     }
 
+    public function testLimitNamedArguments()
+    {
+        // The second argument is the number of rows, not an end position
+        $query = $this->repository->queryInstance()
+            ->orderBy(['id'])
+            ->limit(start: 1, limit: 2);
+
+        $result = $this->repository->getByQuery($query);
+
+        $this->assertCount(2, $result);
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals(3, $result[1]->getId());
+    }
+
     public function testQueryRaw()
     {
         $query = $this->repository->queryInstance()

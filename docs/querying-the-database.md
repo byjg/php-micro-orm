@@ -197,14 +197,16 @@ e.g.:
 ->orderBy(['field1', 'field2'])
 ```
 
-#### limit(int $start, int $pageSize)
+#### limit(int $start, int $limit)
 
-Limit the number of records to retrieve.
+Return `$limit` records starting at the zero-based offset `$start`. The second argument is the number of
+records, not an end position.
 
 e.g.:
 
 ```php
-->limit(10, 20)
+->limit(10, 20)                   // 20 records, starting at the 11th
+->limit(start: 10, limit: 20)     // the same, with named arguments
 ```
 
 #### top(int $top)

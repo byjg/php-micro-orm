@@ -64,14 +64,14 @@ class Union implements QueryBuilderInterface
     }
 
     /**
-     * @param int $start
-     * @param int $end
+     * @param int $start Zero-based offset of the first row
+     * @param int $limit Number of rows to return (not an end position)
      * @return $this
      * @throws InvalidArgumentException
      */
-    public function limit(int $start, int $end): Union
+    public function limit(int $start, int $limit): Union
     {
-        $this->queryAggregation->limit($start, $end);
+        $this->queryAggregation->limit($start, $limit);
         return $this;
     }
 
