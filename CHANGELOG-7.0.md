@@ -123,6 +123,21 @@ no observers are registered), and multi-connection safe.
 - Remove any `ORMSubject::getInstance()->clearObservers()` calls (typically in test suites) —
   bridges die with their executors, there is no global state to clear
 
+### MapperFunctions removed
+
+The `MapperFunctions` class, deprecated since 6.0, is removed. Its constants only named the mapper
+classes: use the classes directly.
+
+| Before | After |
+|---|---|
+| `MapperFunctions::STANDARD` | `StandardMapper::class` |
+| `MapperFunctions::READ_ONLY` | `ReadOnlyMapper::class` |
+| `MapperFunctions::UPDATE_BINARY_UUID` | `FormatUpdateUuidMapper::class` |
+| `MapperFunctions::SELECT_BINARY_UUID` | `FormatSelectUuidMapper::class` |
+| `MapperFunctions::NOW_UTC` | `NowUtcMapper::class` |
+
+All of them are in the `ByJG\MicroOrm\MapperFunctions` namespace.
+
 ### Observer scope: global → per executor
 - Observers now fire for writes flowing through the `DatabaseExecutor` instance(s) of the
   repository where they were registered. Two repositories over different executors no longer
