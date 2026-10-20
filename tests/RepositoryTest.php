@@ -5,7 +5,7 @@ namespace Tests;
 use ByJG\AnyDataset\Core\Enum\Relation;
 use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\OrmSqlStatement;
 use ByJG\Cache\Psr16\ArrayCacheEngine;
 use ByJG\MicroOrm\CacheQueryResult;
 use ByJG\MicroOrm\Constraint\CustomConstraint;
@@ -28,7 +28,6 @@ use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Mapper;
 use ByJG\MicroOrm\ObserverData;
 use ByJG\MicroOrm\ORM;
-use ByJG\MicroOrm\ORMSubject;
 use ByJG\MicroOrm\Query;
 use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\Union;
@@ -80,7 +79,6 @@ class RepositoryTest extends TestCase
         $this->infoMapper->addFieldMapping(FieldMapping::create('registrationId')->withFieldName('registration_id'));
 
         $this->repository = new Repository($executor, $this->userMapper);
-        ORMSubject::getInstance()->clearObservers();
 
         $executor->execute('create table users (
             id integer primary key  auto_increment,
@@ -186,12 +184,22 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-05-02 00:00:00', $users[0]->getCreatedate());
 
         $filter = new IteratorFilter();
-        $filter->and('id', Relation::EQUAL, 2);
+        $filter->and('id', Relation::Equal, 2);
         $users = $this->repository->getByFilter($filter);
         $this->assertCount(1, $users);
         $this->assertEquals(2, $users[0]->getId());
         $this->assertEquals('Jane Doe', $users[0]->getName());
         $this->assertEquals('2017-01-04 00:00:00', $users[0]->getCreatedate());
+    }
+
+    public function testGetByFilterPaging()
+    {
+        $ids = fn(array $users) => array_map(fn($user) => $user->getId(), $users);
+
+        $this->assertEquals([1, 2], $ids($this->repository->getByFilter(page: 0, limit: 2)));
+        $this->assertEquals([3], $ids($this->repository->getByFilter(page: 1, limit: 2)));
+        $this->assertEquals([2], $ids($this->repository->getByFilter(page: 1, limit: 1)));
+        $this->assertEquals([], $this->repository->getByFilter(page: 3, limit: 1));
     }
 
     public function testGetSelectFunction()
@@ -301,6 +309,26 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2015-08-09 00:00:00', $users2->getCreatedate());
     }
 
+    public function testInsertWithAGivenKeyKeepsIt()
+    {
+        $users = new Users();
+        $users->setId(100);
+        $users->setName('Given');
+        $users->setCreatedate('2015-08-09');
+
+        $this->repository->save($users);
+        $this->assertEquals(100, $users->getId());
+
+        $this->assertEquals('Given', $this->repository->get(100)->getName());
+
+        // The auto increment still fills in the next one
+        $next = new Users();
+        $next->setName('Next');
+        $next->setCreatedate('2015-08-09');
+        $this->repository->save($next);
+        $this->assertEquals(101, $next->getId());
+    }
+
     public function testInsertReadOnly()
     {
         $this->expectException(RepositoryReadOnlyException::class);
@@ -374,7 +402,7 @@ class RepositoryTest extends TestCase
         $sqlStatement = $insertQuery->build();
 
         $this->assertEquals(
-            new SqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"]),
+            new OrmSqlStatement("INSERT INTO users( name, createdate )  values ( X'6565', :createdate ) ", ["createdate" => "2015-08-09"], ObserverEvent::Insert, 'users'),
             $sqlStatement
         );
 
@@ -614,7 +642,7 @@ class RepositoryTest extends TestCase
 
         $sqlStatement = $updateQuery->build();
         $this->assertEquals(
-            new SqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1]),
+            new OrmSqlStatement("UPDATE users SET name = X'6565' , createdate = :createdate  WHERE id = :pkid", ["createdate" => "2020-01-02", "pkid" => 1], ObserverEvent::Update, 'users'),
             $sqlStatement
         );
 
@@ -922,6 +950,20 @@ class RepositoryTest extends TestCase
         $this->assertEquals('2017-01-04 00:00:00', $result[0]->getCreatedate());
 
         $this->assertEquals(1, count($result));
+    }
+
+    public function testLimitNamedArguments()
+    {
+        // The second argument is the number of rows, not an end position
+        $query = $this->repository->queryInstance()
+            ->orderBy(['id'])
+            ->limit(start: 1, limit: 2);
+
+        $result = $this->repository->getByQuery($query);
+
+        $this->assertCount(2, $result);
+        $this->assertEquals(2, $result[0]->getId());
+        $this->assertEquals(3, $result[1]->getId());
     }
 
     public function testQueryRaw()
@@ -1472,7 +1514,7 @@ class RepositoryTest extends TestCase
         $infoRepository = new Repository($this->repository->getExecutor(), ModelWithAttributes::class);
 
         $iteratorFilter = new IteratorFilter();
-        $iteratorFilter->and('iduser', Relation::EQUAL, 3);
+        $iteratorFilter->and('iduser', Relation::Equal, 3);
         $result = $infoRepository->getByFilter($iteratorFilter);
 
         $this->assertEquals(3, $result[0]->getPk());
@@ -1702,7 +1744,7 @@ class RepositoryTest extends TestCase
     {
         ActiveRecordModel::initialize($this->repository->getExecutor());
 
-        $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::EQUAL, 1));
+        $model = ActiveRecordModel::filter((new IteratorFilter())->and('iduser', Relation::Equal, 1));
 
         $this->assertCount(2, $model);
         $this->assertEquals(1, $model[0]->getPk());

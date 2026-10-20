@@ -1,3 +1,7 @@
+---
+sidebar_position: 21
+---
+
 # MicroORM vs Other ORMs
 
 ## Overview
@@ -43,7 +47,7 @@ these differences will help you choose the right tool for your project.
 
 // 1. Repository + Data Mapper (recommended for complex apps)
 $repository = new Repository($executor, User::class);
-$users = $repository->getByFilter(['status' => 'active']);
+$users = $repository->getByFilter((new IteratorFilter())->and('status', Relation::Equal, 'active'));
 
 // 2. Active Record (simple apps)
 class User {
@@ -127,9 +131,9 @@ class Post {
     public ?string $title;
 }
 
-// 2. Auto-generate JOIN query from relationship
-$query = ORM::getQueryInstance("users", "posts");
-// Automatically generates: JOIN posts ON posts.user_id = users.id
+// 2. Build a JOIN query from the relationship
+$query = Query::getInstance()->table("users")->joinRelated("posts");
+// Automatically generates: FROM users INNER JOIN posts ON users.id = posts.user_id
 
 $results = $userRepo->getByQuery($query, [$postMapper]);
 foreach ($results as [$user, $post]) {
@@ -425,10 +429,7 @@ $update = UpdateQuery::getInstance()
 $update->buildAndExecute(DatabaseExecutor::using($driver));
 
 // 4. InsertQuery - INSERT statements
-$insert = InsertQuery::getInstance()
-    ->table('users')
-    ->fields(['name', 'email'])
-    ->values(['name' => 'John', 'email' => 'john@example.com']);
+$insert = InsertQuery::getInstance('users', ['name' => 'John', 'email' => 'john@example.com']);
 $insert->buildAndExecute(DatabaseExecutor::using($driver));
 
 // 5. QueryRaw - Raw SQL with parameter binding
@@ -815,7 +816,7 @@ $user->name = 'New Name';
 $user->save();
 
 $activeUsers = User::filter(
-    (new IteratorFilter())->and('status', Relation::EQUAL, 'active')
+    (new IteratorFilter())->and('status', Relation::Equal, 'active')
 );
 ```
 
@@ -912,9 +913,9 @@ class UserStatusChangedObserver implements ObserverProcessorInterface
 
     public function process(ObserverData $observerData): void
     {
-        if ($observerData->getEvent() === ObserverEvent::UPDATE) {
-            $oldInstance = $observerData->getOldInstance();
-            $newInstance = $observerData->getNewInstance();
+        if ($observerData->getEvent() === ObserverEvent::Update) {
+            $oldInstance = $observerData->getOldData();
+            $newInstance = $observerData->getData();
 
             // Detect domain event: status changed
             if ($oldInstance->getStatus() !== $newInstance->getStatus()) {
@@ -928,7 +929,7 @@ class UserStatusChangedObserver implements ObserverProcessorInterface
 }
 
 // Register the observer
-ORMSubject::getInstance()->registerObserver(new UserStatusChangedObserver());
+$repository->addObserver(new UserStatusChangedObserver());
 
 // Now whenever a user's status changes, your domain event fires!
 $user = $repository->get(1);
@@ -1014,7 +1015,7 @@ class EventStoreObserver implements ObserverProcessorInterface
     {
         // Store event in event store
         $event = new DomainEvent(
-            aggregateId: $observerData->getNewInstance()->getId(),
+            aggregateId: $observerData->getData()->getId(),
             eventType: $observerData->getEvent()->value,
             eventData: $this->serializeChanges($observerData),
             timestamp: new DateTime()
@@ -1081,13 +1082,13 @@ class Order
 }
 
 // 2. Register domain event handlers (observers)
-ORMSubject::getInstance()->registerObserver(new class implements ObserverProcessorInterface {
+$repository->addObserver(new class implements ObserverProcessorInterface {
     public function getObservedTable(): string { return 'orders'; }
 
     public function process(ObserverData $data): void
     {
-        if ($data->getEvent() === ObserverEvent::UPDATE) {
-            $newOrder = $data->getNewInstance();
+        if ($data->getEvent() === ObserverEvent::Update) {
+            $newOrder = $data->getData();
 
             // Domain Event: Order Completed
             if ($newOrder->status === 'completed') {

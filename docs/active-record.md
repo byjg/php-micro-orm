@@ -65,16 +65,19 @@ class MyClass
 If you have more than one database connection, you can define a default database connection:
 
 ```php
-// Set a default DBDriver
-ORM::defaultDriver($dbDriver);
+// Set a default DatabaseExecutor
+ORM::defaultDbDriver(DatabaseExecutor::using($dbDriver));
 ```
 
 or call the `initialize` method with the database connection:
 
 ```php
-// Initialize the Active Record with a specific DBDriver
-MyClass::initialize($dbDriver);
+// Initialize the Active Record with a specific DatabaseExecutor
+MyClass::initialize(DatabaseExecutor::using($dbDriver));
 ```
+
+`MyClass::reset($executor)` discards the current connection and, when an executor is given, initializes the model
+with it.
 
 ## Using the Active Record
 
@@ -103,7 +106,9 @@ $myClass->save();
 
 ### Query with Fluent API
 
-The new fluent query API provides a more intuitive way to build and execute queries:
+The new fluent query API provides a more intuitive way to build and execute queries.
+`MyClass::where()` takes a SQL condition string and its parameters; to filter with an `IteratorFilter`,
+use `MyClass::filter()` or `MyClass::newQuery()->where($iteratorFilter)`.
 
 ```php
 // Get first record matching criteria
@@ -118,6 +123,9 @@ $myClass = MyClass::where('someProperty = :value', ['value' => 123])
 if (MyClass::where('someProperty > :min', ['min' => 100])->exists()) {
     echo "Records found!";
 }
+
+// Or throw an exception if none is found
+MyClass::where('someProperty > :min', ['min' => 100])->existsOrFail();
 
 // Get all matching records as array
 $myClassList = MyClass::where('someProperty = :value', ['value' => 123])
@@ -142,7 +150,7 @@ $results = $query->toArray();
 ### Complex Filtering (Legacy)
 
 ```php
-$myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::EQUAL, 123));
+$myClassList = MyClass::filter((new IteratorFilter())->and('someProperty', Relation::Equal, 123));
 foreach ($myClassList as $myClass) {
     echo $myClass->someProperty;
 }
@@ -154,7 +162,7 @@ foreach ($myClassList as $myClass) {
 // Get all records (paginated, default is page 0, limit 50)
 $myClassList = MyClass::all();
 
-// Get page 2 with 20 records per page
+// Pages start at 0: page 2 with 20 records per page returns records 41 to 60
 $myClassList = MyClass::all(2, 20);
 ```
 

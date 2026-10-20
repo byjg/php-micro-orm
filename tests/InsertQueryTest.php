@@ -3,7 +3,8 @@
 namespace Tests;
 
 use ByJG\AnyDataset\Db\SqlDialect\SqliteDialect;
-use ByJG\AnyDataset\Db\SqlStatement;
+use ByJG\MicroOrm\Enum\ObserverEvent;
+use ByJG\MicroOrm\OrmSqlStatement;
 use ByJG\MicroOrm\InsertQuery;
 use Override;
 use PHPUnit\Framework\TestCase;
@@ -37,13 +38,13 @@ class InsertQueryTest extends TestCase
 
         $sqlStatement = $this->object->build();
         $this->assertEquals(
-            new SqlStatement('INSERT INTO test( fld1, fld2, fld3 )  values ( :fld1, :fld2, :fld3 ) ', ['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']),
+            new OrmSqlStatement('INSERT INTO test( fld1, fld2, fld3 )  values ( :fld1, :fld2, :fld3 ) ', ['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'], ObserverEvent::Insert, 'test'),
             $sqlStatement
         );
 
         $sqlStatement = $this->object->build(new SqliteDialect());
         $this->assertEquals(
-            new SqlStatement('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( :fld1, :fld2, :fld3 ) ', ['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C']),
+            new OrmSqlStatement('INSERT INTO `test`( `fld1`, `fld2`, `fld3` )  values ( :fld1, :fld2, :fld3 ) ', ['fld1' => 'A', 'fld2' => 'B', 'fld3' => 'C'], ObserverEvent::Insert, 'test'),
             $sqlStatement
         );
     }
@@ -52,7 +53,7 @@ class InsertQueryTest extends TestCase
     {
         $this->object->table('test');
         $this->assertEquals(
-            new SqlStatement('SELECT  * FROM test'),
+            new OrmSqlStatement('SELECT  * FROM test'),
             $this->object->convert()->build()
         );
 
@@ -61,7 +62,7 @@ class InsertQueryTest extends TestCase
         $this->object->set('fld3', 'C');
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test'),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test'),
             $this->object->convert()->build()
         );
 
@@ -69,7 +70,7 @@ class InsertQueryTest extends TestCase
             ->where('fld2 = :teste', [ 'teste' => 10 ]);
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', ['teste' => 10]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -77,7 +78,7 @@ class InsertQueryTest extends TestCase
             ->where('fld3 = 20');
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', ['teste' => 10]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20', ['teste' => 10]),
             $this->object->convert()->build()
         );
 
@@ -85,7 +86,7 @@ class InsertQueryTest extends TestCase
             ->where('fld1 = :teste2', [ 'teste2' => 40 ]);
 
         $this->assertEquals(
-            new SqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', ['teste' => 10, 'teste2' => 40]),
+            new OrmSqlStatement('SELECT  fld1, fld2, fld3 FROM test WHERE fld2 = :teste AND fld3 = 20 AND fld1 = :teste2', ['teste' => 10, 'teste2' => 40]),
             $this->object->convert()->build()
         );
     }

@@ -11,7 +11,7 @@ class Query extends QueryBasic
 {
     protected array $orderBy = [];
     protected ?int $limitStart = null;
-    protected ?int $limitEnd = null;
+    protected ?int $limitQuantity = null;
     protected ?int $top = null;
     protected bool $forUpdate = false;
 
@@ -44,18 +44,18 @@ class Query extends QueryBasic
     }
 
     /**
-     * @param int $start
-     * @param int $end
+     * @param int $start Zero-based offset of the first row
+     * @param int $limit Number of rows to return (not an end position)
      * @return $this
      * @throws InvalidArgumentException
      */
-    public function limit(int $start, int $end): static
+    public function limit(int $start, int $limit): static
     {
         if (!is_null($this->top)) {
             throw new InvalidArgumentException('You cannot mix TOP and LIMIT');
         }
         $this->limitStart = $start;
-        $this->limitEnd = $end;
+        $this->limitQuantity = $limit;
         return $this;
     }
 
@@ -96,7 +96,7 @@ class Query extends QueryBasic
 
         $sql = ORMHelper::processLiteral($sql, $params);
 
-        return new SqlStatement($sql, $params);
+        return new OrmSqlStatement($sql, $params);
     }
 
     protected function addOrderBy(): string
@@ -162,11 +162,11 @@ class Query extends QueryBasic
             throw new InvalidArgumentException('To get Limit and Top working you have to pass the DbDriver');
         }
 
-        if ($this->limitEnd === null) {
-            throw new InvalidArgumentException('Limit end cannot be null');
+        if ($this->limitQuantity === null) {
+            throw new InvalidArgumentException('Limit quantity cannot be null');
         }
 
-        return $dbDriver->getSqlDialect()->limit($sql, $this->limitStart, $this->limitEnd);
+        return $dbDriver->getSqlDialect()->limit($sql, $this->limitStart, $this->limitQuantity);
     }
 
     /**

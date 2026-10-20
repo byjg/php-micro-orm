@@ -64,9 +64,9 @@ class MyModel
 
 ```php
 <?php
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Mapper;
-use ByJG\MicroOrm\Mapper\FieldMapper;
-use ByJG\MicroOrm\MapperFunctions;
+use ByJG\MicroOrm\MapperFunctions\ReadOnlyMapper;
 
 class MyModel
 {
@@ -84,13 +84,18 @@ $mapper = new Mapper(
 
 // Optionally you can define table mappings between the propoerties
 // and the database fields;
-// The example below will map the property 'createdate' to the database field 'created';
+// The example below will map the property 'deletedAt' to the database field 'deleted_at';
 $mapper->addFieldMapping(
-    FieldMap::create('deletedAt')
+    FieldMapping::create('deletedAt')
         ->withFieldName('deleted_at')
-        ->withUpdateFunction(MapperFunctions::READ_ONLY));
+        ->withUpdateFunction(ReadOnlyMapper::class));
 
 ```
+
+## Deleting a record
+
+With soft delete enabled, `$repository->delete($id)` does not remove the row: it sets `deleted_at` to
+`CURRENT_TIMESTAMP` and fires the `ObserverEvent::SoftDelete` observer event (see [Observers](observers.md)).
 
 ## Disabling Soft Delete Temporarily
 

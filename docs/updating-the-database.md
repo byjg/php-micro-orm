@@ -181,10 +181,11 @@ use ByJG\MicroOrm\Repository;
 use ByJG\MicroOrm\InsertQuery;
 use ByJG\MicroOrm\UpdateQuery;
 use ByJG\MicroOrm\DeleteQuery;
+use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Factory;
 
 $db = Factory::getDbInstance('sqlite:///tmp/example.db');
-$repository = new Repository($db, MyModel::class);
+$repository = new Repository(DatabaseExecutor::using($db), MyModel::class);
 
 $insert = InsertQuery::getInstance('users', [
     'name' => 'Alice',
@@ -230,4 +231,4 @@ Notes:
   non-SELECT statements and safely renames parameters to avoid collisions; the trailing SELECT (if present) is executed
   separately.
 - If you need a specific transaction isolation level, pass it as the second argument, e.g.,
-  `IsolationLevelEnum::SERIALIZABLE`.
+  `IsolationLevelEnum::Serializable`.

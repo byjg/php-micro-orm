@@ -1,3 +1,7 @@
+---
+sidebar_position: 20
+---
+
 # Architecture Layers: Infrastructure vs Domain
 
 ## Overview
@@ -164,7 +168,8 @@ $users = $userRepo->getIterator($query)->toEntities(); // Returns User[] objects
 
 ```php
 // Business logic: Find user by email
-$user = $repository->getByFilter(['email' => 'user@example.com']);
+$filter = (new IteratorFilter())->and('email', Relation::Equal, 'user@example.com');
+$user = $repository->getByFilter($filter)[0];
 
 // Update user
 $user->setName('New Name');

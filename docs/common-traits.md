@@ -11,8 +11,8 @@ These traits make it easy to implement standard fields like `created_at`, `updat
 
 ### CreatedAt Trait
 
-The `CreatedAt` trait automatically handles the `created_at` timestamp field, setting it to the current UTC time when a
-record is created,
+The `CreatedAt` trait automatically handles the `created_at` timestamp field, setting it to the database's current time
+(`CURRENT_TIMESTAMP`) when a record is created,
 and preventing it from being updated on subsequent saves.
 
 ```php
@@ -34,8 +34,8 @@ When you use this trait, it adds a `created_at` field to your model with the fol
 
 ### UpdatedAt Trait
 
-The `UpdatedAt` trait automatically handles the `updated_at` timestamp field, setting it to the current UTC time
-whenever a record is updated.
+The `UpdatedAt` trait automatically handles the `updated_at` timestamp field, setting it to the database's current
+time (`CURRENT_TIMESTAMP`) whenever a record is updated.
 
 ```php
 use ByJG\MicroOrm\Trait\UpdatedAt;
@@ -71,7 +71,7 @@ class MyModel
 
 When you use this trait, it adds a `deleted_at` field to your model with the following features:
 
-- Field is marked with `syncWithDb: false` which ensures it is included in database operations
+- Field is marked with `syncWithDb: false`, so `save()` does not update it (the soft delete sets it)
 - Enables soft delete functionality in the Repository class
 - Provides getter and setter methods for the field
 

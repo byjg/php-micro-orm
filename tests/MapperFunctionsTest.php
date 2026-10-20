@@ -95,40 +95,21 @@ class MapperFunctionsTest extends TestCase
 
     // NowUtcMapper Tests
 
-    public function testNowUtcMapperReturnsLiteral()
+    public function testNowUtcMapperReturnsCurrentTimestamp()
     {
-        $dbHelperMock = $this->createMock(SqlDialectInterface::class);
-        $dbHelperMock->method('sqlDate')
-            ->with('Y-m-d H:i:s')
-            ->willReturn('2024-01-15 12:30:45');
-
-        $executorMock = $this->createMock(DatabaseExecutor::class);
-        $executorMock->method('getHelper')
-            ->willReturn($dbHelperMock);
-
         $mapper = new NowUtcMapper();
-        $result = $mapper->processedValue(null, new stdClass(), $executorMock);
+        $result = $mapper->processedValue(null, new stdClass());
 
         $this->assertInstanceOf(LiteralInterface::class, $result);
-        $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
+        $this->assertEquals('CURRENT_TIMESTAMP', $result->getLiteralValue());
     }
 
     public function testNowUtcMapperIgnoresInputValue()
     {
-        $dbHelperMock = $this->createMock(SqlDialectInterface::class);
-        $dbHelperMock->method('sqlDate')
-            ->with('Y-m-d H:i:s')
-            ->willReturn('2024-01-15 12:30:45');
-
-        $executorMock = $this->createMock(DatabaseExecutor::class);
-        $executorMock->method('getHelper')
-            ->willReturn($dbHelperMock);
-
         $mapper = new NowUtcMapper();
-        $result = $mapper->processedValue('ignored value', new stdClass(), $executorMock);
+        $result = $mapper->processedValue('ignored value', new stdClass());
 
-        $this->assertInstanceOf(LiteralInterface::class, $result);
-        $this->assertEquals('2024-01-15 12:30:45', $result->getLiteralValue());
+        $this->assertEquals('CURRENT_TIMESTAMP', $result->getLiteralValue());
     }
 
     // FormatUpdateUuidMapper Tests

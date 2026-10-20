@@ -59,9 +59,10 @@ class ORM
 
     public static function getRelationship(string ...$tables): array
     {
-        // First time we try to fix the incomplete relationships
+        // Retry incomplete relationships whose parent mapper is now registered,
+        // so the parent primary key ('?') can finally be resolved.
         foreach (static::$incompleteRelationships as $relationship) {
-            if (isset(static::$mapper[$relationship["parent"]])) {
+            if (!isset(static::$mapper[$relationship["parent"]])) {
                 continue;
             }
             static::addRelationship($relationship["parent"], $relationship["child"], $relationship["fk"]);
@@ -125,39 +126,26 @@ class ORM
         return static::$mapper[$tableName] ?? null;
     }
 
-    public static function getQueryInstance(string ...$tables): Query
+    /**
+     * Resolve a model class to its table name, registering its mapper on demand.
+     *
+     * Building the Mapper only reads the class attributes (reflection) — it does not
+     * open a database connection — so calling this at any point simply makes the
+     * entity's table and its parentTable relationships known to the ORM. This is what
+     * lets joinRelated()/joinWith() take a model class and discover the relationship
+     * graph on the current request, without every mapper being pre-registered.
+     *
+     * @param class-string $class
+     */
+    public static function getTableFromClass(string $class): string
     {
-        $query = new Query();
-
-        $relationships = static::getRelationshipData(...$tables);
-
-        if (empty($relationships)) {
-            if (count($tables) === 1) {
-                $query->table($tables[0]);
-                return $query;
-            } else {
-                throw new InvalidArgumentException("No relationship found between the tables");
+        foreach (static::$mapper as $mapper) {
+            if ($mapper->getEntity() === $class) {
+                return $mapper->getTable();
             }
         }
 
-        $first = true;
-        foreach ($relationships as $relationship) {
-            $parent = $relationship["parent"];
-            $child = $relationship["child"];
-            $foreignKey = $relationship["fk"];
-            $primaryKey = $relationship["pk"];
-
-            $parentAlis = static::$mapper[$parent]->getTableAlias();
-            $childAlias = static::$mapper[$child]->getTableAlias();
-
-            if ($first) {
-                $query->table($parent, $parentAlis);
-                $first = false;
-            }
-            $query->join($child, "{$parentAlis}.{$primaryKey} = {$childAlias}.{$foreignKey}", $childAlias);
-        }
-
-        return $query;
+        return (new Mapper($class))->getTable();
     }
 
     private static function getNormalizedKey(string $table1, string $table2): string

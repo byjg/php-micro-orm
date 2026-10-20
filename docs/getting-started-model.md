@@ -50,6 +50,32 @@ public function setId(?int $id): void
 | Property without type      | No need to set default value                             | `public $id;`                                                                                                                |
 | Protected/Private property | Must have getter and setter public methods               | `protected ?int $id = null;`<br />`public function getId(): ?int {...};`<br />`public function setId(?int $id): void {...};` |
 
+### Backed enum properties
+
+A property (or a setter parameter) typed with a backed enum is stored as the enum's value and
+loaded back as the enum, so the column holds `'PAID'` and the model holds `Status::Paid`:
+
+```php
+enum Status: string
+{
+    case Pending = 'PENDING';
+    case Paid = 'PAID';
+}
+
+#[TableAttribute(tableName: 'orders')]
+class Order
+{
+    #[FieldAttribute(primaryKey: true)]
+    public ?int $id = null;
+
+    #[FieldAttribute]
+    public ?Status $status = null;
+}
+```
+
+A value in the database that the enum does not have throws a `ValueError` when the row is loaded.
+The conversion is done by `byjg/serializer`; a pure (non-backed) enum is not supported.
+
 ## Property Mapping Strategy with the Database
 
 | Strategy            | Description                                                                                     | Example                                                                                                 |
@@ -132,7 +158,7 @@ After defining the Model, you can connect the Model with the repository.
 
 ```php
 $dbDriver = Factory::getDbInstance('mysql://user:password@server/schema');
-$repository = new Repository($dbDriver, MyModel::class);
+$repository = new Repository(DatabaseExecutor::using($dbDriver), MyModel::class);
 ```
 
 ### Querying the database

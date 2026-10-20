@@ -252,6 +252,18 @@ class ActiveRecordQueryTest extends TestCase
         $this->assertCount(4, $results);
     }
 
+    public function testWhereFilterTypeMatchesCreateWhere()
+    {
+        // ActiveRecord::where() forwards $filter to ActiveRecordQuery::createWhere(), so it must not accept more
+        $where = new \ReflectionMethod(ActiveRecordModel::class, 'where');
+        $createWhere = new \ReflectionMethod(ActiveRecordQuery::class, 'createWhere');
+
+        $this->assertSame(
+            (string)$createWhere->getParameters()[1]->getType(),
+            (string)$where->getParameters()[0]->getType()
+        );
+    }
+
     public function testWhereWithNoResults()
     {
         $result = ActiveRecordModel::where('1 = 0')->first();

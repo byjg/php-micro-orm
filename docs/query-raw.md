@@ -1,3 +1,7 @@
+---
+sidebar_position: 19
+---
+
 # QueryRaw
 
 QueryRaw lets you execute a raw SQL statement while still benefiting from the repository pipeline (parameter binding,
@@ -22,9 +26,9 @@ When NOT to use QueryRaw
 
 Behavior
 
-- build(): returns a SqlObject with your SQL and parameters unchanged. The optional DbDriver parameter is ignored for
+- build(): returns a SqlStatement with your SQL and parameters unchanged. The optional DbDriver parameter is ignored for
   SQL generation.
-- buildAndGetIterator($dbDriver): executes your SQL against the provided driver and returns a GenericIterator.
+- buildAndGetIterator($executor): executes your SQL against the provided DatabaseExecutor and returns a GenericIterator.
 - Parameter binding: pass parameters as an array (named or positional) and the underlying driver will bind them.
 
 Examples

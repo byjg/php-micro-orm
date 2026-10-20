@@ -15,7 +15,7 @@ In that scenario, the value of ID will be overridden. The solution is use the Fi
 $orderMapper  = new \ByJG\MicroOrm\Mapper(...);
 $orderMapper->addFieldMapping(FieldMapping::create('id')->withFieldAlias('orderid'));
 $itemMapper  = new \ByJG\MicroOrm\Mapper(...);
-$itemMapper->addFieldMappping(FieldMapping::create('id')->withFieldAlias('itemid'));
+$itemMapper->addFieldMapping(FieldMapping::create('id')->withFieldAlias('itemid'));
 
 $query = \ByJG\MicroOrm\Query::getInstance()
     ->field('order.id', 'orderid')
@@ -46,6 +46,6 @@ You can also add a MAPPER as a Field. In that case the MAPPER will create the fi
 $query = \ByJG\MicroOrm\Query::getInstance()
     ->fields([
         $orderRepository->getMapper(),
-        $itemRepository->getMapper,
+        $itemRepository->getMapper(),
     ]);
 ```

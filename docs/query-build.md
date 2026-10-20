@@ -26,7 +26,7 @@ $sqlStatement = $query->build($dbDriver);
 
 ## Return Value
 
-Returns a `SqlStatement` object containing:
+Returns a `SqlStatement` object (an `OrmSqlStatement`, which extends it) containing:
 
 - The generated SQL query string
 - The parameters to be used in the prepared statement
@@ -129,7 +129,7 @@ $query = Query::getInstance()
     ->table('users')
     ->fields(['id', 'name', 'email']);
 
-$iterator = $query->buildAndGetIterator($dbDriver);
+$iterator = $query->buildAndGetIterator(DatabaseExecutor::using($dbDriver));
 
 foreach ($iterator as $row) {
     // Process each row
@@ -143,7 +143,7 @@ You can also use iterators with caching to improve performance for frequently ac
 
 ```php
 $cache = new CacheQueryResult($cacheDriver, 'users_list', 3600); // Cache for 1 hour
-$iterator = $query->buildAndGetIterator($dbDriver, $cache);
+$iterator = $query->buildAndGetIterator(DatabaseExecutor::using($dbDriver), $cache);
 
 foreach ($iterator as $row) {
     // Process cached results
@@ -166,15 +166,16 @@ $query = Query::getInstance()
 $sqlStatement = $query->build();
 
 // Use the same statement with different parameters
+$executor = DatabaseExecutor::using($dbDriver);
 $params1 = ['min_age' => 18];
-$iterator1 = $dbDriver->getIterator($sqlStatement->withParams($params1));
+$iterator1 = $executor->getIterator($sqlStatement->withParams($params1));
 foreach ($iterator1 as $row) {
     echo "Adult user: {$row['name']}\n";
 }
 
 // Reuse with different parameters
 $params2 = ['min_age' => 21];
-$iterator2 = $dbDriver->getIterator($sqlStatement->withParams($params2));
+$iterator2 = $executor->getIterator($sqlStatement->withParams($params2));
 foreach ($iterator2 as $row) {
     echo "Legal age user: {$row['name']}\n";
 }

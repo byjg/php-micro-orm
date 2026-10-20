@@ -100,8 +100,8 @@ echo $user->name;  // ← Comes from 'full_name' column
 $user->name = "New name";
 $repository->save($user);  // ← Updates 'full_name' column
 
-// Delete
-$repository->delete($user);
+// Delete by primary key
+$repository->delete(10);
 ```
 
 **Key Point**: The `Users` class remains completely untouched - all mapping happens externally!
@@ -177,10 +177,11 @@ class UserMapper
         $mapper->addFieldMapping(
             FieldMapping::create('createdAt')
                 ->withFieldName('created_at')
+                // Classes implementing MapperFunctionInterface (see Controlling the data)
                 // Transform DateTime to string for DB
-                ->withUpdateFunction(fn($value) => $value->format('Y-m-d H:i:s'))
+                ->withUpdateFunction(DateTimeToStringMapper::class)
                 // Transform string from DB to DateTime
-                ->withSelectFunction(fn($value) => new \DateTimeImmutable($value))
+                ->withSelectFunction(StringToDateTimeMapper::class)
         );
 
         return $mapper;

@@ -2,6 +2,9 @@
 
 namespace ByJG\MicroOrm\Literal;
 
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\SqlDialect\DblibDialect;
+use ByJG\AnyDataset\Db\SqlDialect\PgsqlDialect;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 
 class HexUuidLiteral extends Literal
@@ -14,6 +17,44 @@ class HexUuidLiteral extends Literal
     public function __construct(LiteralInterface|string $value)
     {
         parent::__construct($this->binaryString($value));
+    }
+
+    /**
+     * A new version 7 UUID (RFC 9562), formatted as XXXXXXXX-XXXX-7XXX-YXXX-XXXXXXXXXXXX.
+     *
+     * The first 48 bits are the Unix time in milliseconds and the rest is random, so a key
+     * created later sorts after the earlier ones and a new row goes to the end of the index.
+     * It tells when it was created: for a secret token use a random (version 4) UUID instead.
+     */
+    public static function v7(): string
+    {
+        $bytes = substr(pack('J', (int)floor(microtime(true) * 1000.0)), 2) . random_bytes(10);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x70);   // version 7
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);   // RFC 9562 variant
+
+        return (string)self::getFormattedUuid($bytes);
+    }
+
+    /**
+     * The UUID literal in the syntax of the executor's database: a native uuid on PostgreSQL,
+     * 0x... for a binary(16) on SQL Server, and X'...' for a binary(16) on MySQL and SQLite
+     * (also the default when there is no executor).
+     *
+     * @throws InvalidArgumentException
+     */
+    public static function forDatabase(?DatabaseExecutor $executor, LiteralInterface|string $value): HexUuidLiteral
+    {
+        $dialect = $executor?->getHelper();
+        $class = match (true) {
+            $dialect instanceof PgsqlDialect => PostgresUuidLiteral::class,
+            $dialect instanceof DblibDialect => SqlServerUuidLiteral::class,
+            default => HexUuidLiteral::class,
+        };
+
+        if ($value instanceof HexUuidLiteral && get_class($value) === $class) {
+            return $value;
+        }
+        return new $class($value);
     }
 
     public static function create(mixed $value): mixed

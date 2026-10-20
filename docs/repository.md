@@ -10,8 +10,9 @@ To achieve this, you need to create an instance of the Repository class and pass
 
 ```php
 $dbDriver = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@server/schema');
+$executor = \ByJG\AnyDataset\Db\DatabaseExecutor::using($dbDriver);
 
-$repository = new \ByJG\MicroOrm\Repository($dbDriver, MyModel::class);
+$repository = new \ByJG\MicroOrm\Repository($executor, MyModel::class);
 ```
 
 ## Read and Write Separation
@@ -22,17 +23,21 @@ However, in some cases, you may want to use separate database connections for re
 for database replication scenarios where you have a master database for writing and one or more read-only replicas for
 reading.
 
-To configure separate database connections, you can use the `addDbDriverForWrite` method:
+To configure separate database connections, you can use the `addDbDriverForWrite` method, which receives a
+`DatabaseExecutor`:
 
 ```php
+use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\AnyDataset\Db\Factory;
+
 // Main connection used for reading
-$dbDriverRead = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@readserver/schema');
+$executorRead = DatabaseExecutor::using(Factory::getDbInstance('mysql://user:password@readserver/schema'));
 
 // Separate connection for write operations
-$dbDriverWrite = \ByJG\AnyDataset\Db\Factory::getDbInstance('mysql://user:password@writeserver/schema');
+$executorWrite = DatabaseExecutor::using(Factory::getDbInstance('mysql://user:password@writeserver/schema'));
 
-$repository = new \ByJG\MicroOrm\Repository($dbDriverRead, MyModel::class);
-$repository->addDbDriverForWrite($dbDriverWrite);
+$repository = new \ByJG\MicroOrm\Repository($executorRead, MyModel::class);
+$repository->addDbDriverForWrite($executorWrite);
 ```
 
 Alternatively, you can use the `setRepositoryReadOnly` method to make the repository read-only:
@@ -66,10 +71,11 @@ $model->setCompanyId(1);
 $query = $repository->queryInstance($model);
 ```
 
-You can also add additional tables for joins:
+To join related tables, chain `joinRelated()` on the query
+(see [Auto Discovering Relationship](auto-discovering-relationship.md)):
 
 ```php
-$query = $repository->queryInstance($model, 'other_table', 'third_table');
+$query = $repository->queryInstance($model)->joinRelated('other_table');
 ```
 
 ### getMapper
@@ -80,25 +86,25 @@ The `getMapper` method returns the Mapper object that defines the relationship b
 $mapper = $repository->getMapper();
 ```
 
-### getDbDriver
+### getExecutor
 
-The `getDbDriver` method returns the database driver used for read operations. It allows you to use SQL commands
+The `getExecutor` method returns the `DatabaseExecutor` used for read operations. It allows you to use SQL commands
 directly.
-To find more about the database driver, please refer to the [AnyDataset documentation](https://github.com/byjg/anydataset)
+To find more about the executor, please refer to the [AnyDataset documentation](https://github.com/byjg/anydataset)
 and the [Query](querying-the-database.md).
 
 ```php
-$dbDriver = $repository->getDbDriver();
-$iterator = $dbDriver->getIterator('select * from mytable');
+$executor = $repository->getExecutor();
+$iterator = $executor->getIterator('select * from mytable');
 ```
 
-### getDbDriverWrite
+### getExecutorWrite
 
-The `getDbDriverWrite` method returns the database driver used for write operations. If no separate write driver was
-configured, it returns the same driver as `getDbDriver()`.
+The `getExecutorWrite` method returns the `DatabaseExecutor` used for write operations. If no separate write executor
+was configured, it returns the same executor as `getExecutor()`.
 
 ```php
-$dbDriverWrite = $repository->getDbDriverWrite();
+$executorWrite = $repository->getExecutorWrite();
 ```
 
 ## Repository Query Methods
@@ -128,7 +134,7 @@ use ByJG\AnyDataset\Core\IteratorFilter;
 use ByJG\AnyDataset\Core\Enum\Relation;
 
 $filter = new IteratorFilter();
-$filter->addRelation('name', Relation::EQUAL, 'John');
+$filter->addRelation('name', Relation::Equal, 'John');
 
 $result = $repository->getByFilter($filter);
 ```
@@ -136,7 +142,7 @@ $result = $repository->getByFilter($filter);
 You can also add pagination:
 
 ```php
-// Get page 2 with 10 items per page
+// Pages start at 0: page 2 with 10 items per page returns items 21 to 30
 $result = $repository->getByFilter($filter, page: 2, limit: 10);
 ```
 
@@ -227,21 +233,17 @@ $myModel->setName('New Name');
 $repository->save($myModel);
 ```
 
-You can also use update constraints:
+You can also pass one or more update constraints, checked before an update
+(see [Update Constraints](update-constraints.md)):
 
 ```php
-use ByJG\MicroOrm\UpdateConstraint;
-
-$updateConstraint = new UpdateConstraint();
-$updateConstraint->addField('name');
-$updateConstraint->addField('email');
+use ByJG\MicroOrm\Constraint\RequireChangedValuesConstraint;
 
 $myModel = $repository->get(1);
 $myModel->setName('New Name');
-$myModel->setEmail('newemail@example.com');
-$myModel->setAge(30); // This won't be updated due to constraint
 
-$repository->save($myModel, $updateConstraint);
+// Throws RequireChangedValuesConstraintException if 'name' did not change
+$repository->save($myModel, new RequireChangedValuesConstraint('name'));
 ```
 
 ### delete
@@ -274,18 +276,10 @@ $repository->deleteByQuery($deleteQuery);
 
 ### setBeforeInsert
 
-Set a processor to be called before inserting a record. You can use either a closure or an implementation of
-`EntityProcessorInterface`.
+Set a processor to be called before inserting a record. It accepts an implementation of `EntityProcessorInterface`
+or the name of a class implementing it.
 
 ```php
-// Using a closure
-$repository->setBeforeInsert(function($instance) {
-    // Modify the instance before inserting
-    $instance->createdAt = date('Y-m-d H:i:s');
-    return $instance;
-});
-
-// Using EntityProcessorInterface (recommended)
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use Override;
 
@@ -307,18 +301,10 @@ $repository->setBeforeInsert(new BeforeInsertProcessor());
 
 ### setBeforeUpdate
 
-Set a processor to be called before updating a record. You can use either a closure or an implementation of
-`EntityProcessorInterface`.
+Set a processor to be called before updating a record. It accepts an implementation of `EntityProcessorInterface`
+or the name of a class implementing it.
 
 ```php
-// Using a closure
-$repository->setBeforeUpdate(function($instance) {
-    // Modify the instance before updating
-    $instance->updatedAt = date('Y-m-d H:i:s');
-    return $instance;
-});
-
-// Using EntityProcessorInterface (recommended)
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
 use Override;
 
@@ -347,16 +333,26 @@ Add an observer to the repository to monitor database operations.
 ```php
 class MyObserver implements ObserverProcessorInterface
 {
-    public function update(ObserverData $observerData): void
+    public function process(ObserverData $observerData): void
     {
-        // Process the update event
-        $action = $observerData->getAction(); // INSERT, UPDATE, DELETE
-        $model = $observerData->getModel();
-        $oldModel = $observerData->getOldModel();
+        $event = $observerData->getEvent();      // ObserverEvent::Insert, Update, Delete or SoftDelete
+        $data = $observerData->getData();
+        $oldData = $observerData->getOldData();
+    }
+
+    public function onError(Throwable $exception, ObserverData $observerData): void
+    {
+    }
+
+    public function getObservedTable(): string
+    {
+        return 'mytable';
     }
 }
 
 $repository->addObserver(new MyObserver());
 ```
+
+`removeObserver()` detaches it again.
 
 See [Observers](observers.md) for more details.

@@ -16,8 +16,10 @@ class FormatUpdateUuidMapper implements MapperFunctionInterface
         if (empty($value)) {
             return null;
         }
-        if (!($value instanceof LiteralInterface)) {
-            $value = new HexUuidLiteral($value);
+        // A UUID literal made without knowing the database (e.g. new HexUuidLiteral() in a
+        // setter) is written in the syntax of the database it goes to. Other literals pass as is.
+        if ($value instanceof HexUuidLiteral || !($value instanceof LiteralInterface)) {
+            return HexUuidLiteral::forDatabase($executor, $value);
         }
         return $value;
     }

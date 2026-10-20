@@ -120,11 +120,25 @@ trait ActiveRecord
         return self::$repository->getByFilter(page: $page, limit: $limit);
     }
 
+    /**
+     * Start a query on this model's table, optionally joining related tables via their
+     * registered parentTable relationships. Built on Query::joinRelated(), so the
+     * model's own table stays the base. Each argument may be a table name or a model
+     * class; passing a class registers that entity's mapper on demand (reflection only,
+     * no DB connection). Name each entity in a multi-hop path — including the
+     * intermediate — so its mapper is known, e.g.:
+     *
+     *    Note::joinWith(Task::class, Project::class)
+     *    // FROM note JOIN task ON … JOIN project ON …  (note has no project_id)
+     */
     public static function joinWith(string ...$tables): Query
     {
         self::initialize();
-        $tables[] = self::$repository->getMapper()->getTable();
-        return ORM::getQueryInstance(...$tables);
+        $query = Query::getInstance()->table(self::$repository->getMapper()->getTable());
+        foreach ($tables as $table) {
+            $query->joinRelated($table);
+        }
+        return $query;
     }
 
     public function toArray(bool $includeNullValue = false): array
@@ -163,11 +177,11 @@ trait ActiveRecord
      *
      * Example: User::where('email = :email', ['email' => 'test@example.com'])->first()
      *
-     * @param array|string $filter
+     * @param string $filter
      * @param array $params
      * @return ActiveRecordQuery
      */
-    public static function where(array|string $filter, array $params = []): ActiveRecordQuery
+    public static function where(string $filter, array $params = []): ActiveRecordQuery
     {
         self::initialize();
         return ActiveRecordQuery::createWhere(self::$repository, $filter, $params);

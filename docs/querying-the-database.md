@@ -48,8 +48,7 @@ $collection = $orderRepository->getByQuery(
         $itemRepository->getMapper()
     ]
 );
-
-
+```
 
 ## QueryBasic Object
 
@@ -149,6 +148,19 @@ Left Join another table.
 
 Right Join another table.
 
+#### crossJoin(string $table, string $alias = null)
+
+Cross Join another table.
+
+#### joinRelated(string $table), leftJoinRelated(string $table), rightJoinRelated(string $table)
+
+Join a table (or a model class) deriving the `ON` condition from the registered `parentTable` relationships.
+See [Auto Discovering Relationship](auto-discovering-relationship.md).
+
+#### distinct()
+
+Add `DISTINCT` to the select.
+
 #### groupBy(array $field)
 
 Group by a field or an array of fields.
@@ -185,14 +197,16 @@ e.g.:
 ->orderBy(['field1', 'field2'])
 ```
 
-#### limit(int $start, int $pageSize)
+#### limit(int $start, int $limit)
 
-Limit the number of records to retrieve.
+Return `$limit` records starting at the zero-based offset `$start`. The second argument is the number of
+records, not an end position.
 
 e.g.:
 
 ```php
-->limit(10, 20)
+->limit(10, 20)                   // 20 records, starting at the 11th
+->limit(start: 10, limit: 20)     // the same, with named arguments
 ```
 
 #### top(int $top)
@@ -204,6 +218,10 @@ e.g.:
 ```php
 ->top(10)
 ```
+
+#### forUpdate()
+
+Add `FOR UPDATE` to the select, locking the rows read.
 
 ## Union Object
 
