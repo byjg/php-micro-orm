@@ -1,5 +1,5 @@
 ---
-sidebar_position: 21
+sidebar_position: 25
 ---
 
 # MicroORM vs Other ORMs
@@ -1154,6 +1154,7 @@ features.
 
 ## See Also
 
+- [Choosing a Pattern](patterns.md)
 - [Architecture Layers](architecture-layers.md)
 - [Active Record](active-record.md)
 - [Repository Documentation](repository.md)

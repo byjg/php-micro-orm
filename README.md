@@ -30,11 +30,13 @@ MicroORM implements **Martin Fowler's enterprise patterns**:
 
 - **[Repository](https://martinfowler.com/eaaCatalog/repository.html)**: Mediates between domain and data mapping layers
 - **[Data Mapper](https://martinfowler.com/eaaCatalog/dataMapper.html)**: Separates domain objects from database tables
-- **[Active Record](https://martinfowler.com/eaaCatalog/activeRecord.html)**: Wraps database rows with domain logic (
-  alternative approach)
+- **[Active Record](https://martinfowler.com/eaaCatalog/activeRecord.html)**: Wraps database rows with domain logic,
+  as a facade over the two above
 
-You can choose the pattern that best fits your application: use Repository + Data Mapper for complex domains, or Active
-Record for simpler CRUD-focused applications.
+They are layers, not alternatives. The **Mapper** (Data Mapper) and the **Repository** are always there; the
+`ActiveRecord` trait is a facade that creates them for the model. What you choose is where the mapping lives (a `Mapper`
+object or attributes on the model) and where the persistence calls live (a repository or the model itself). See
+[Choosing a Pattern](docs/patterns.md).
 
 These are the key components:
 
@@ -178,6 +180,7 @@ $result = $repository->getByQuery($query);
 ## Basics
 
 * [Defining the Model](docs/getting-started-model.md)
+* [Choosing a Pattern](docs/patterns.md)
 * [Querying the Database](docs/querying-the-database.md)
 * [Updating the database](docs/updating-the-database.md)
 * [Using the Mapper Object](docs/using-mapper-object.md)
