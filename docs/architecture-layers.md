@@ -1,5 +1,5 @@
 ---
-sidebar_position: 20
+sidebar_position: 24
 ---
 
 # Architecture Layers: Infrastructure vs Domain
@@ -9,79 +9,9 @@ sidebar_position: 20
 The MicroORM is designed with a clear separation between **Infrastructure Layer** (raw data access) and **Domain Layer
 ** (entity-aware operations). Understanding when to use each layer is crucial for writing maintainable code.
 
-## Architectural Foundation
-
-This architecture follows **Martin Fowler's Enterprise Application Architecture patterns**, specifically:
-
-### Repository Pattern
-
-> *"Mediates between the domain and data mapping layers using a collection-like interface for accessing domain
-objects."*
->
-> — Martin
-> Fowler, [Patterns of Enterprise Application Architecture](https://martinfowler.com/eaaCatalog/repository.html)
-
-**In MicroORM:**
-
-- The `Repository` class acts as a collection-like interface
-- Isolates domain objects from database access code
-- Provides a clean separation between domain and data layers
-- Handles entity lifecycle (CRUD operations)
-
-### Data Mapper Pattern
-
-> *"A layer of software that separates the in-memory objects from the database. Its responsibility is to transfer data
-between the two and also to isolate them from each other."*
->
-> — Martin
-> Fowler, [Patterns of Enterprise Application Architecture](https://martinfowler.com/eaaCatalog/dataMapper.html)
-
-**In MicroORM:**
-
-- The `Mapper` class defines the relationship between entities and database tables
-- Translates between domain objects (entities) and database rows
-- Keeps domain objects independent of database schema
-- Allows field name mapping, transformations, and type conversions
-
-**Why These Patterns Matter:**
-
-- ✅ **Testability**: Mock repositories without touching the database
-- ✅ **Flexibility**: Change database schema without changing domain objects
-- ✅ **Separation of Concerns**: Domain logic stays pure, database logic stays isolated
-- ✅ **Maintainability**: Clear boundaries make code easier to understand and modify
-
-### Active Record Pattern (Alternative Approach)
-
-> *"An object that wraps a row in a database table or view, encapsulates the database access, and adds domain logic on
-that data."*
->
-> — Martin
-> Fowler, [Patterns of Enterprise Application Architecture](https://martinfowler.com/eaaCatalog/activeRecord.html)
-
-**In MicroORM:**
-
-- The `ActiveRecord` trait provides static methods like `get()`, `save()`, `delete()`, etc.
-- Each Active Record instance represents a single database row
-- Database operations are directly available on domain objects
-- Simpler than Repository/Data Mapper for straightforward CRUD applications
-
-**Pattern Comparison:**
-
-```
-Repository + Data Mapper           Active Record
-├─ Domain objects are pure          ├─ Domain objects know about DB
-├─ More layers/complexity           ├─ Fewer layers/simpler
-├─ Better for complex domains       ├─ Better for simple domains
-├─ Easier to test (DI)              ├─ Harder to test (static methods)
-└─ More flexible                    └─ More convenient
-```
-
-**Choosing Your Pattern:**
-
-- Use **Active Record** for: Simple apps, prototypes, CRUD-heavy applications
-- Use **Repository + Data Mapper** for: Complex domain logic, Domain-Driven Design, enterprise applications
-
-See [Active Record Documentation](active-record.md) for detailed usage examples.
+This page is about using the `Repository` versus building a `Query` directly. For the
+Data Mapper, Repository and Active Record patterns, and how to choose between them, see
+[Choosing a Pattern](patterns.md).
 
 ## The Two Layers
 
@@ -381,6 +311,7 @@ operations where entity transformation is not needed or not desired.
 
 ## See Also
 
+- [Choosing a Pattern](patterns.md)
 - [Repository Documentation](repository.md)
 - [Querying the Database](querying-the-database.md)
 - [Query Building](query-build.md)

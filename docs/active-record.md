@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 7
 ---
 
 # Active Record
@@ -25,18 +25,9 @@ business objects whose data requires persistent storage to a database.
 - Provides methods like `save()`, `delete()`, `get()`, `all()`, etc.
 - Database operations are directly available on the domain object
 
-**When to use Active Record vs Repository/Data Mapper:**
-
-| Aspect             | Active Record                      | Repository + Data Mapper      |
-|--------------------|------------------------------------|-------------------------------|
-| **Complexity**     | Simple, straightforward            | More complex, more layers     |
-| **Best for**       | Simple domains, CRUD-heavy apps    | Complex domain logic, DDD     |
-| **Coupling**       | Domain objects know about database | Domain objects are pure       |
-| **Learning curve** | Lower                              | Higher                        |
-| **Testability**    | Harder (objects tied to DB)        | Easier (dependency injection) |
-
-💡 **Tip**: For simple applications or prototypes, Active Record is perfect. For complex domain logic or when following
-Domain-Driven Design principles, prefer Repository + Data Mapper.
+Behind the trait is the same `Repository` and `Mapper` used everywhere else in MicroORM:
+the trait creates them for the model on the first call. To compare Active Record with
+the repository approach, see [Choosing a Pattern](patterns.md).
 
 ## How to Use Active Record
 
@@ -266,15 +257,4 @@ The Active Record pattern offers several advantages:
 
 ## When to Use Active Record vs. Repository
 
-Both patterns have their place in application development:
-
-- **Use Active Record when**:
-  - You prefer a simpler, more direct approach
-  - Your application has straightforward database operations
-  - You want to reduce the number of classes in your codebase
-
-- **Use Repository when**:
-  - You need more control over database operations
-  - Your application requires complex queries
-  - You prefer a more explicit separation between models and database operations
-  - You're implementing a domain-driven design approach 
+See [Choosing a Pattern](patterns.md). Both can be used in the same application.

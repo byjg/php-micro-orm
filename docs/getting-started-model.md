@@ -94,17 +94,16 @@ _See also: [Controlling the data](controlling-the-data.md) for advanced mapping_
 
 ### When to use each Mapper or Attribute?
 
-The `Mapper` class is more flexible and can be used in any PHP version. Use cases:
+Both produce the same `Mapper`. The difference is where the mapping lives:
 
-* You have a legacy class and cannot change it
-* You don't want change the Model class
-* You can't change the Model class
+* **Attributes** put the mapping on the model. It is the simplest option when you own the
+  class.
+* **A `Mapper` object** keeps the mapping outside the model, so the model has no
+  database knowledge. Use it for legacy or third-party classes you cannot change, or
+  when the domain model must stay free of database concerns.
 
-The `Attributes` is more simple and can be used in PHP 8.3 or later. Use cases:
-
-* You want a more simple way to define the Model
-* You want to use the latest PHP features
-* You can have a more simple way to define the Model
+See [Choosing a Pattern](patterns.md) for how this combines with the Repository and
+Active Record.
 
 ### Example
 
