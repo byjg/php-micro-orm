@@ -1,5 +1,6 @@
 ---
 sidebar_key: micro-orm
+sidebar_category: data-access
 tags: [php, databases, orm]
 ---
 
