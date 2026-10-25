@@ -5,8 +5,7 @@ tags: [php, databases, orm]
 
 # MicroOrm for PHP
 
-A micro framework for create a very simple decoupled ORM.
-This library intended to be very small and very simple to use;
+A small ORM that maps any class to a table, and lets you choose the pattern per entity: Repository, Data Mapper or Active Record.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%23ea4aaa?logo=githubsponsors&logoColor=white&labelColor=0d1117)](https://github.com/sponsors/byjg)
 [![Build Status](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml/badge.svg?branch=master)](https://github.com/byjg/php-micro-orm/actions/workflows/phpunit.yml)
@@ -15,6 +14,27 @@ This library intended to be very small and very simple to use;
 [![GitHub source](https://img.shields.io/badge/Github-source-informational?logo=github)](https://github.com/byjg/php-micro-orm/)
 [![GitHub license](https://img.shields.io/github/license/byjg/php-micro-orm.svg)](https://opensource.byjg.com/license/)
 [![GitHub release](https://img.shields.io/github/release/byjg/php-micro-orm.svg)](https://github.com/byjg/php-micro-orm/releases/)
+
+## Why
+
+Full ORMs pick the pattern for the whole application: Eloquent is Active Record and your
+models extend its base class, Doctrine is Data Mapper with its unit of work. Changing your
+mind later means rewriting the models.
+
+MicroORM maps a plain class (public properties, or getters and setters) with attributes or
+a separate `Mapper`, and every way of using it shares that mapper:
+
+```php
+$repository = new Repository($executor, User::class);   // Repository + Data Mapper
+$user = $repository->get(1);
+
+$user = User::get(1);                                   // Active Record (the ActiveRecord trait)
+```
+
+- **Choose the pattern per entity.** A simple lookup table can be Active Record while the
+  entity with the business rules gets a repository. See [Choosing a Pattern](docs/patterns.md).
+- **Observers on every write.** An observer is notified of each insert, update and delete
+  on its table, whatever code path made the write.
 
 Key Features:
 
