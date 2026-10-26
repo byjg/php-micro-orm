@@ -324,6 +324,17 @@ class BeforeUpdateProcessor implements EntityProcessorInterface
 $repository->setBeforeUpdate(new BeforeUpdateProcessor());
 ```
 
+### setValidator
+
+Set a validator to be called on every `save()`, before the processors. It receives the instance, before any field
+is mapped or converted, and whether the save is an insert; it rejects the instance by throwing an exception. It
+accepts an implementation of `EntityValidatorInterface` or the name of a class implementing it. See
+[Validating the entity before it is saved](controlling-the-data.md#validating-the-entity-before-it-is-saved).
+
+```php
+$repository->setValidator(new ProductValidator());
+```
+
 ## Observers
 
 ### addObserver

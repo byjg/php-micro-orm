@@ -217,3 +217,40 @@ class MyModel
 This approach allows you to associate processors directly with your model class, making the relationship more explicit
 and self-contained.
 
+## Validating the entity before it is saved
+
+A processor works on the record as it is written to the table: the fields are already mapped to their columns and
+converted by the mapper functions (a UUID is already binary, for example). To check the entity itself, use a
+validator. It receives the instance before anything is mapped or converted, on every `save()`, and rejects it by
+throwing an exception, which stops the save before any SQL is run:
+
+```php
+<?php
+use ByJG\MicroOrm\Attributes\TableAttribute;
+use ByJG\MicroOrm\Interface\EntityValidatorInterface;
+use InvalidArgumentException;
+use Override;
+
+class ProductValidator implements EntityValidatorInterface
+{
+    #[Override]
+    public function validate(mixed $instance, bool $isInsert): void
+    {
+        if (trim((string)$instance->getName()) === '') {
+            throw new InvalidArgumentException('The name is required');
+        }
+    }
+}
+
+#[TableAttribute(tableName: 'product', validator: ProductValidator::class)]
+class Product
+{
+    // Model properties and methods
+}
+```
+
+`$isInsert` tells a new record from an update. The validator is set like a processor: in the `TableAttribute` (or
+`TableUuidPKAttribute`), as a class name or an instance, or with `$repository->setValidator()`. It runs on
+`save()` in both the Repository and the ActiveRecord patterns. Queries built and executed directly
+(`UpdateQuery`, `InsertBulkQuery`, raw SQL) do not go through it.
+

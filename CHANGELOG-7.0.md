@@ -87,6 +87,14 @@ no observers are registered), and multi-connection safe.
   the filter. Done by `byjg/serializer` 7.0; tested in `RepositoryBackedEnumTest`
 - See: `docs/getting-started-model.md`
 
+### Entity validator
+- `EntityValidatorInterface::validate(mixed $instance, bool $isInsert)` checks an entity before it is saved and
+  rejects it by throwing an exception. Unlike `beforeInsert`/`beforeUpdate`, which receive the record already
+  mapped to columns and converted for the database, it receives the instance itself
+- Set with `TableAttribute(validator: ...)`, `TableUuidPKAttribute(validator: ...)` or
+  `Repository::setValidator()`; it runs on every `save()`, in the Repository and the ActiveRecord patterns
+- See: `docs/controlling-the-data.md`
+
 ## Breaking Changes
 
 ### Fixed: a primary key set on the instance is kept on insert

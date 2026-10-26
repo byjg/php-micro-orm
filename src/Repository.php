@@ -22,6 +22,7 @@ use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Exception\RepositoryReadOnlyException;
 use ByJG\MicroOrm\Exception\UpdateConstraintException;
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use ByJG\MicroOrm\Interface\EntityValidatorInterface;
 use ByJG\MicroOrm\Interface\ObserverProcessorInterface;
 use ByJG\MicroOrm\Interface\QueryBuilderInterface;
 use ByJG\MicroOrm\Interface\UpdateConstraintInterface;
@@ -66,6 +67,8 @@ class Repository
      */
     protected EntityProcessorInterface|null $beforeInsert = null;
 
+    protected EntityValidatorInterface|null $validator = null;
+
     /**
      * @var ObserverProcessorInterface[]
      */
@@ -99,6 +102,10 @@ class Repository
         }
         if (!empty($this->mapper->getBeforeUpdate())) {
             $this->setBeforeUpdate($this->mapper->getBeforeUpdate());
+        }
+        $validator = $this->mapper->getValidator();
+        if (!empty($validator)) {
+            $this->setValidator($validator);
         }
     }
 
@@ -762,6 +769,11 @@ class Repository
         }
         $isInsert = empty($oldInstance);
 
+        // The validator sees the instance as it is, before the processors and the mapper functions
+        if (!empty($this->validator)) {
+            $this->validator->validate($instance, $isInsert);
+        }
+
         // Execute Before Statements
         if ($isInsert) {
             if (!empty($this->beforeInsert)) {
@@ -950,5 +962,30 @@ class Repository
             $processor = new $processor();
         }
         $this->beforeInsert = $processor;
+    }
+
+    /**
+     * Sets a validator to be executed before inserting or updating an entity
+     *
+     * @param EntityValidatorInterface|string $validator The validator, or the name of its class
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function setValidator(EntityValidatorInterface|string $validator): void
+    {
+        if (is_string($validator)) {
+            if (!class_exists($validator)) {
+                throw new InvalidArgumentException("The class '$validator' does not exist");
+            }
+
+            $interfaces = class_implements($validator);
+            if ($interfaces === false || !in_array(EntityValidatorInterface::class, $interfaces)) {
+                throw new InvalidArgumentException("The class '$validator' must implement EntityValidatorInterface");
+            }
+
+            /** @var EntityValidatorInterface $validator */
+            $validator = new $validator();
+        }
+        $this->validator = $validator;
     }
 }

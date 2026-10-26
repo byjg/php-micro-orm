@@ -8,6 +8,7 @@ use ByJG\MicroOrm\Attributes\TableAttribute;
 use ByJG\MicroOrm\Exception\InvalidArgumentException;
 use ByJG\MicroOrm\Exception\OrmModelInvalidException;
 use ByJG\MicroOrm\Interface\EntityProcessorInterface;
+use ByJG\MicroOrm\Interface\EntityValidatorInterface;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
@@ -28,6 +29,7 @@ class Mapper
     private bool $softDelete = false;
     private string|EntityProcessorInterface|null $beforeInsert = null;
     private string|EntityProcessorInterface|null $beforeUpdate = null;
+    private string|EntityValidatorInterface|null $validator = null;
 
     /**
      * @var FieldMapping[]
@@ -101,6 +103,10 @@ class Mapper
         if ($beforeUpdate !== null && $beforeUpdate !== '') {
             $this->withBeforeUpdate($beforeUpdate);
         }
+        $validator = $tableAttribute->getValidator();
+        if ($validator !== null && $validator !== '') {
+            $this->withValidator($validator);
+        }
         ORM::addMapper($this);
 
         $this->primaryKey = [];
@@ -148,6 +154,12 @@ class Mapper
     public function withBeforeUpdate(EntityProcessorInterface|string $processor): static
     {
         $this->beforeUpdate = $processor;
+        return $this;
+    }
+
+    public function withValidator(EntityValidatorInterface|string $validator): static
+    {
+        $this->validator = $validator;
         return $this;
     }
 
@@ -399,5 +411,10 @@ class Mapper
     public function getBeforeUpdate(): mixed
     {
         return $this->beforeUpdate;
+    }
+
+    public function getValidator(): EntityValidatorInterface|string|null
+    {
+        return $this->validator;
     }
 }
