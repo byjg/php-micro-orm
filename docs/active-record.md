@@ -223,6 +223,25 @@ $myClassList = MyClass::query($query);
 $tableName = MyClass::tableName();
 ```
 
+### Validate Before Saving
+
+Declare a validator in the table attribute, and `save()` checks the instance before it writes it. The call does
+not change; an invalid instance throws the validator's exception and nothing is written:
+
+```php
+#[TableAttribute(tableName: 'my_table', validator: MyClassValidator::class)]
+class MyClass
+{
+    use ActiveRecord;
+    // ...
+}
+
+$myClass = MyClass::new(['someProperty' => -1]);
+$myClass->save();   // MyClassValidator::validate($myClass, true) throws: no INSERT runs
+```
+
+See [Validating the entity before it is saved](controlling-the-data.md#validating-the-entity-before-it-is-saved).
+
 ## Custom Mapper Configuration
 
 By default, the Active Record uses the class attributes to discover the mapper configuration.

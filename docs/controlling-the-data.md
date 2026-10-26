@@ -250,7 +250,43 @@ class Product
 ```
 
 `$isInsert` tells a new record from an update. The validator is set like a processor: in the `TableAttribute` (or
-`TableUuidPKAttribute`), as a class name or an instance, or with `$repository->setValidator()`. It runs on
-`save()` in both the Repository and the ActiveRecord patterns. Queries built and executed directly
-(`UpdateQuery`, `InsertBulkQuery`, raw SQL) do not go through it.
+`TableUuidPKAttribute`), as a class name or an instance, or with `$repository->setValidator()`.
+
+### Saving with a validator
+
+Nothing changes in the code that saves: you pass the model to `save()` as always, and `save()` calls the validator
+first. A valid instance is saved; an invalid one throws the validator's exception, and no SQL is run, so a new
+record is not inserted and an existing one keeps its stored values.
+
+With the ActiveRecord pattern:
+
+```php
+<?php
+$product = Product::new(['name' => 'Keyboard', 'price' => 49.90]);
+$product->save();                 // validate($product, true) passes, then the INSERT runs
+
+$product->setName('');
+try {
+    $product->save();             // validate($product, false) throws: no UPDATE runs
+} catch (InvalidArgumentException $ex) {
+    echo $ex->getMessage();       // "The name is required"; the stored name is still 'Keyboard'
+}
+```
+
+With the Repository pattern, the repository takes the validator from the model's attribute:
+
+```php
+<?php
+$repository = new Repository($executor, Product::class);
+
+$product = new Product();
+$product->setName('');
+$repository->save($product);      // throws InvalidArgumentException: no INSERT runs
+```
+
+For a model without the attribute, set it on the repository: `$repository->setValidator(new ProductValidator())`.
+
+The validator runs on every `save()`, whoever calls it: a controller, a command line script, a queue consumer.
+Queries built and executed directly (`UpdateQuery`, `InsertBulkQuery`, `InsertQuery`, raw SQL with the
+`DatabaseExecutor`) do not go through `save()`, so they are not validated.
 
