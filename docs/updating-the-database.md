@@ -31,6 +31,15 @@ $users->name = "New name";
 $repository->save($users);
 ```
 
+## Validation before saving
+
+When the model declares a validator, `save()` checks the instance before the insert or the update, and an invalid
+one throws without writing anything. See
+[Validating the entity before it is saved](controlling-the-data.md#validating-the-entity-before-it-is-saved).
+
+The queries in the next sections (`UpdateQuery`, `InsertQuery`, `InsertSelectQuery`, `InsertBulkQuery`) write to
+the table directly. They do not go through `save()`, so the model's validator and processors are not called.
+
 ## Using the UpdateQuery for Multiple Records
 
 UpdateQuery allows you to update multiple records simultaneously with a single query. This is more efficient than

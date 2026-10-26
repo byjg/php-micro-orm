@@ -4,6 +4,7 @@ namespace ByJG\MicroOrm\Attributes;
 
 use Attribute;
 use ByJG\AnyDataset\Db\DatabaseExecutor;
+use ByJG\MicroOrm\Interface\EntityValidatorInterface;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use Override;
@@ -15,9 +16,9 @@ use Override;
 #[Attribute(Attribute::TARGET_CLASS)]
 class TableUuidPKAttribute extends TableAttribute implements MapperFunctionInterface
 {
-    public function __construct(string $tableName)
+    public function __construct(string $tableName, string|EntityValidatorInterface|null $validator = null)
     {
-        parent::__construct($tableName, primaryKeySeedFunction: $this);
+        parent::__construct($tableName, primaryKeySeedFunction: $this, validator: $validator);
     }
 
     #[Override]

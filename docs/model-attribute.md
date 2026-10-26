@@ -83,6 +83,7 @@ The `TableAttribute` has the following parameters:
 | **tableAlias**             | The alias of the table in the database.                                                                                                        |    No    |
 | **beforeInsert**           | A processor that is called before inserting a record into the database. Can be a string class name or an instance of EntityProcessorInterface. |    No    |
 | **beforeUpdate**           | A processor that is called before updating a record in the database. Can be a string class name or an instance of EntityProcessorInterface.    |    No    |
+| **validator**              | A validator that checks the instance before it is inserted or updated. Can be a string class name or an instance of EntityValidatorInterface. Also accepted by `TableUuidPKAttribute`. |    No    |
 
 ## Field Attributes parameters
 
