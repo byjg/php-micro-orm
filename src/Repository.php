@@ -35,6 +35,7 @@ use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
 use ByJG\XmlUtil\Exception\FileException;
 use ByJG\XmlUtil\Exception\XmlUtilException;
+use Closure;
 use Exception;
 use ReflectionException;
 use stdClass;
@@ -570,14 +571,12 @@ class Repository
         }
         $iterator = $this->getExecutor()->getIterator($sqlBuild);
 
-        // Manually map each row to multiple entities
+        // Map each row to the entity of each mapper, with the mapping of each resolved once for the query
+        $hydrators = array_map(fn(Mapper $item) => $item->entityHydrator(), $mapper);
         $result = [];
         foreach ($iterator as $row) {
-            $collection = [];
-            foreach ($mapper as $item) {
-                $instance = $item->getEntity($row->toArray());
-                $collection[] = $instance;
-            }
+            $values = $row->toArray();
+            $collection = array_map(fn(Closure $hydrate) => $hydrate($values), $hydrators);
             $result[] = count($collection) === 1 ? $collection[0] : $collection;
         }
 

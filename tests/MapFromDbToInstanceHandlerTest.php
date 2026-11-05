@@ -59,7 +59,8 @@ class MapFromDbToInstanceHandlerTest extends TestCase
     public function testHydrateFillsAsObjectCopyWithTheHandler(Mapper $mapper, array $rows): void
     {
         $class = $mapper->getEntityClass();
-        $defaults = Serialize::from(new $class())->toArray();
+        // As GenericDbIterator reads them: at the first level
+        $defaults = Serialize::from(new $class())->withStopAtFirstLevel()->toArray();
         // One handler per query, for each path
         $hydrator = new MapFromDbToInstanceHandler($mapper);
         $handler = new MapFromDbToInstanceHandler($mapper);
@@ -72,6 +73,29 @@ class MapFromDbToInstanceHandlerTest extends TestCase
             ObjectCopy::copy(array_merge($defaults, $row), $copied, $handler);
 
             $this->assertEquals((array)$copied, (array)$hydrated, "Row $i");
+        }
+    }
+
+    /**
+     * Mapper::getEntity() built each entity as ObjectCopy::copy() of the row merged over the properties of the
+     * entity, with the handler; it now uses the hydrator, with the same result
+     */
+    #[DataProvider('hydrateProvider')]
+    public function testGetEntityBuildsAsBefore(Mapper $mapper, array $rows): void
+    {
+        $hydrate = $mapper->entityHydrator();
+
+        foreach ($rows as $i => $row) {
+            $class = $mapper->getEntityClass();
+            $before = new $class();
+            ObjectCopy::copy(
+                array_merge(Serialize::from($before)->withStopAtFirstLevel()->toArray(), $row),
+                $before,
+                new MapFromDbToInstanceHandler($mapper)
+            );
+
+            $this->assertEquals((array)$before, (array)$mapper->getEntity($row), "getEntity, row $i");
+            $this->assertEquals((array)$before, (array)$hydrate($row), "entityHydrator, row $i");
         }
     }
 
