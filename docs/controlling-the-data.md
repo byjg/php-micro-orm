@@ -66,12 +66,19 @@ The `withUpdateFunction`, `withInsertFunction`, and `withSelectFunction` methods
 Unlike earlier versions, **you cannot pass a closure or callable directly**. You must create a class implementing
 `MapperFunctionInterface`.
 
+:::note One instance, reused
+A class name is created once per `FieldMapping` and reused for every row and query: keep a mapper function
+stateless. See [Keep a mapper function stateless](mapper-functions.md#keep-a-mapper-function-stateless).
+:::
+
 ## Arguments passed to the processedValue method
 
 The `processedValue` method in your custom mapper class will receive three arguments:
 
-- `$value`: The value of the field in the entity class
-- `$instance`: The instance of the entity class
+- `$value`: The value of the field
+- `$instance`: for an update or insert function, the instance of the entity class being saved (`null` when a
+  primary key is converted for a lookup, as in `get()`); for a select function, the row read: an array of the
+  columns, merged over the properties of a new entity
 - `$executor`: The instance of the DatabaseExecutor. You can use it to query the database or convert the value to the
   database format.
 

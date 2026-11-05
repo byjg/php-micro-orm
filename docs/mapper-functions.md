@@ -141,7 +141,9 @@ class MyCustomMapper implements MapperFunctionInterface
 The `processedValue` method receives:
 
 - `$value`: The current value of the field
-- `$instance`: The entity instance being processed
+- `$instance`: for an update or insert function, the entity instance being saved (`null` when a primary key is
+  converted for a lookup, as in `get()`); for a select function, the row read: an array of the columns, merged
+  over the properties of a new entity
 - `$executor`: The database executor that allows query the database or provides database-specific functions
 
 You can then use your custom mapper function just like the built-in ones:
@@ -149,6 +151,27 @@ You can then use your custom mapper function just like the built-in ones:
 ```php
 #[FieldAttribute(fieldName: "myfield", updateFunction: MyCustomMapper::class)]
 protected $myField;
+```
+
+### Keep a mapper function stateless
+
+A mapper function given as a class name (`MyCustomMapper::class`) is created **once** per field mapping, at its
+first use, and that instance is reused for every row, every save and every query, as an instance you pass
+(`new MyCustomMapper()`) is. Do not keep state between calls of `processedValue()` (a counter, the previous
+value, a cache of the entity): everything a call needs comes in its arguments.
+
+```php
+// Wrong: the second row sees the first row's value
+class RunningTotalMapper implements MapperFunctionInterface
+{
+    private int $total = 0;
+
+    public function processedValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
+    {
+        $this->total += (int)$value;
+        return $this->total;
+    }
+}
 ```
 
 ## How Mapper Functions Work

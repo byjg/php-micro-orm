@@ -146,6 +146,16 @@ classes: use the classes directly.
 
 All of them are in the `ByJG\MicroOrm\MapperFunctions` namespace.
 
+### A mapper function given as a class name is created once
+
+`FieldMapping` created a mapper function given as a class name (`withSelectFunction(StandardMapper::class)`,
+the default of every field) for **each value**: on reading, for every field of every row. It is now created
+once per `FieldMapping`, at its first use, and reused for every row and query, as a function given as an
+instance already was. Each `with*Function()` replaces it.
+
+Only a custom mapper class that keeps state between calls of `processedValue()` is affected: make it
+stateless (it gets the value, the instance and the executor in each call).
+
 ### Observer scope: global → per executor
 - Observers now fire for writes flowing through the `DatabaseExecutor` instance(s) of the
   repository where they were registered. Two repositories over different executors no longer
@@ -183,6 +193,24 @@ All of them are in the `ByJG\MicroOrm\MapperFunctions` namespace.
 - The protected property `Query::$limitEnd` that stores it is renamed to `Query::$limitQuantity`. Subclasses of
   `Query` reading or writing `$this->limitEnd` must use `$this->limitQuantity`
 
+## Performance
+
+Reading entities (`get()`, `getByQuery()`, `getByFilter()`, `ActiveRecord`) is about 5x faster than at the
+start of 7.0 development: 20,000 entities with `getByQuery()`, MySQL ~152 ms -> ~29 ms, SQLite ~147 ms ->
+~32 ms (PHP 8.5, Xdebug off). From this library:
+
+- `MapFromDbToInstanceHandler` fills each entity itself (byjg/anydataset-db `EntityHydratorInterface`):
+  the property, the field mapping (`selectFunction`) and how the entity takes each column
+  (byjg/serializer `ObjectCopy::writerFor()`) are resolved once per query, and each row is one loop, with
+  the same result as before (pinned by `MapFromDbToInstanceHandlerTest`).
+- The mapper functions given as a class name are created once (see Breaking Changes).
+- `getByQuery()` with several mappers (a join) builds the entities of each mapper with the mapping resolved once
+  per query (the new `Mapper::entityHydrator()`), instead of for each row; `Mapper::getEntity()` uses the same
+  hydrator. Same result as before (pinned by `MapFromDbToInstanceHandlerTest::testGetEntityBuildsAsBefore`).
+
+The rest comes from byjg/anydataset-db and byjg/serializer 7.0 (entity defaults read once per query,
+`ObjectCopy` direct array copy and write resolution cached per class).
+
 ## Bug Fixes
 
 - `Repository::getByFilter()` paging (and `ActiveRecord::all()`, which uses it) returned the wrong rows past the
@@ -205,6 +233,7 @@ All of them are in the `ByJG\MicroOrm\MapperFunctions` namespace.
 | `Repository` subclass overriding `insert()`/`update()`   | Update to the new `OrmSqlStatement` signatures           |
 | `match` over `ObserverEvent`                             | Add the `SoftDelete` arm                                 |
 | `->limit(start: $s, end: $n)` (named argument)           | `->limit(start: $s, limit: $n)`                          |
+| Custom mapper function class that keeps state per call   | Make it stateless: it is created once per `FieldMapping` |
 
 ## Requirements
 
