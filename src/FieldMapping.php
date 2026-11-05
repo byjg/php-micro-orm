@@ -40,6 +40,13 @@ class FieldMapping
      */
     private string $fieldAlias;
 
+    /**
+     * The instance of each function given as a class name, created once (at its first use) instead of for each value
+     *
+     * @var array<string, MapperFunctionInterface>
+     */
+    private array $functionInstances = [];
+
     private bool $syncWithDb = true;
 
     private ?string $parentTable = null;
@@ -83,6 +90,7 @@ class FieldMapping
         }
 
         $this->updateFunction = $updateFunction;
+        unset($this->functionInstances['update']);
         return $this;
     }
 
@@ -93,6 +101,7 @@ class FieldMapping
         }
 
         $this->selectFunction = $selectFunction;
+        unset($this->functionInstances['select']);
         return $this;
     }
 
@@ -103,6 +112,7 @@ class FieldMapping
         }
 
         $this->insertFunction = $insertFunction;
+        unset($this->functionInstances['insert']);
         return $this;
     }
 
@@ -165,30 +175,37 @@ class FieldMapping
         return $this->fieldAlias;
     }
 
+    /**
+     * The function itself, or the instance of its class name, created once and reused for every value
+     */
+    private function functionInstance(string $kind, MapperFunctionInterface|string $function): MapperFunctionInterface
+    {
+        if (!is_string($function)) {
+            return $function;
+        }
+        if (!isset($this->functionInstances[$kind])) {
+            /** @var MapperFunctionInterface $instance */
+            $instance = new $function();
+            $this->functionInstances[$kind] = $instance;
+        }
+        return $this->functionInstances[$kind];
+    }
+
     public function getSelectFunctionValue(mixed $value, mixed $instance): mixed
     {
-        $function = $this->selectFunction;
-        if (is_string($function)) {
-            $function = new $function();
-        }
+        $function = $this->functionInstance('select', $this->selectFunction);
         return $function->processedValue($value, $instance, null);
     }
 
     public function getUpdateFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
-        $function = $this->updateFunction;
-        if (is_string($function)) {
-            $function = new $function();
-        }
+        $function = $this->functionInstance('update', $this->updateFunction);
         return $function->processedValue($value, $instance, $executor);
     }
 
     public function getInsertFunctionValue(mixed $value, mixed $instance, ?DatabaseExecutor $executor = null): mixed
     {
-        $function = $this->insertFunction;
-        if (is_string($function)) {
-            $function = new $function();
-        }
+        $function = $this->functionInstance('insert', $this->insertFunction);
         return $function->processedValue($value, $instance, $executor);
     }
 

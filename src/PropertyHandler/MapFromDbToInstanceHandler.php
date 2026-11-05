@@ -11,6 +11,14 @@ class MapFromDbToInstanceHandler implements PropertyHandlerInterface
 {
 
     protected ?FieldMapping $fieldMap = null;
+
+    /**
+     * The property name and the field mapping of each field name, resolved once (the handler lives for a query)
+     *
+     * @var array<string, array{0: string, 1: FieldMapping|null}>
+     */
+    private array $fields = [];
+
     public function __construct(private Mapper $mapper)
     {
     }
@@ -26,8 +34,12 @@ class MapFromDbToInstanceHandler implements PropertyHandlerInterface
      */
     public function mapName(string $property): string
     {
-        $propertyName = $this->mapper->getPropertyName($property);
-        $this->fieldMap = $this->mapper->getFieldMap($propertyName);
+        if (!isset($this->fields[$property])) {
+            $propertyName = $this->mapper->getPropertyName($property);
+            $fieldMap = $this->mapper->getFieldMap($propertyName);
+            $this->fields[$property] = [$propertyName, $fieldMap instanceof FieldMapping ? $fieldMap : null];
+        }
+        [$propertyName, $this->fieldMap] = $this->fields[$property];
         return $propertyName;
     }
 
