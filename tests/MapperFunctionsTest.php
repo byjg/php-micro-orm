@@ -4,6 +4,7 @@ namespace Tests;
 
 use ByJG\AnyDataset\Db\DatabaseExecutor;
 use ByJG\AnyDataset\Db\Interfaces\SqlDialectInterface;
+use ByJG\MicroOrm\FieldMapping;
 use ByJG\MicroOrm\Literal\HexUuidLiteral;
 use ByJG\MicroOrm\Literal\Literal;
 use ByJG\MicroOrm\Literal\LiteralInterface;
@@ -14,9 +15,44 @@ use ByJG\MicroOrm\MapperFunctions\ReadOnlyMapper;
 use ByJG\MicroOrm\MapperFunctions\StandardMapper;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use Tests\Model\CountingMapper;
 
 class MapperFunctionsTest extends TestCase
 {
+    // A function given as a class name is created once and reused for every value
+
+    public function testFunctionClassNameIsCreatedOnceAndReused()
+    {
+        CountingMapper::$instances = 0;
+        $fieldMapping = FieldMapping::create('name')
+            ->withSelectFunction(CountingMapper::class)
+            ->withUpdateFunction(CountingMapper::class)
+            ->withInsertFunction(CountingMapper::class);
+
+        $this->assertEquals('mapped:a', $fieldMapping->getSelectFunctionValue('a', null));
+        $this->assertEquals('mapped:b', $fieldMapping->getSelectFunctionValue('b', null));
+        $this->assertEquals('mapped:c', $fieldMapping->getUpdateFunctionValue('c', null));
+        $this->assertEquals('mapped:d', $fieldMapping->getUpdateFunctionValue('d', null));
+        $this->assertEquals('mapped:e', $fieldMapping->getInsertFunctionValue('e', null));
+        $this->assertEquals('mapped:f', $fieldMapping->getInsertFunctionValue('f', null));
+
+        // One for each function (select, update, insert), not one for each value
+        $this->assertEquals(3, CountingMapper::$instances);
+        $this->assertEquals(CountingMapper::class, $fieldMapping->getSelectFunction());
+    }
+
+    public function testFunctionReplacedIsUsed()
+    {
+        $fieldMapping = FieldMapping::create('name')->withSelectFunction(CountingMapper::class);
+        $this->assertEquals('mapped:a', $fieldMapping->getSelectFunctionValue('a', null));
+
+        $fieldMapping->withSelectFunction(StandardMapper::class);
+        $this->assertEquals('b', $fieldMapping->getSelectFunctionValue('b', null));
+
+        $fieldMapping->withSelectFunction(new CountingMapper());
+        $this->assertEquals('mapped:c', $fieldMapping->getSelectFunctionValue('c', null));
+    }
+
     // StandardMapper Tests
 
     public function testStandardMapperWithNonEmptyValue()

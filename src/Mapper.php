@@ -12,8 +12,8 @@ use ByJG\MicroOrm\Interface\EntityValidatorInterface;
 use ByJG\MicroOrm\Interface\MapperFunctionInterface;
 use ByJG\MicroOrm\Literal\LiteralInterface;
 use ByJG\MicroOrm\PropertyHandler\MapFromDbToInstanceHandler;
-use ByJG\Serializer\ObjectCopy;
 use ByJG\Serializer\Serialize;
+use Closure;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
@@ -229,20 +229,28 @@ class Mapper
      */
     public function getEntity(array $fieldValues = []): object
     {
+        return ($this->entityHydrator())($fieldValues);
+    }
+
+    /**
+     * A function that builds an entity of this mapper from the values of a row (field names), with the mapping
+     * resolved once for all the rows it builds: the properties of a new entity are read once (at the first level,
+     * so the properties without a value in the row are processed too, e.g. by a selectFunction), and a
+     * MapFromDbToInstanceHandler fills each entity. For the rows of one query, such as a join of several mappers.
+     *
+     * @return Closure(array): object
+     */
+    public function entityHydrator(): Closure
+    {
         $class = $this->entity;
-        $instance = new $class();
+        $handler = new MapFromDbToInstanceHandler($this);
+        $defaults = Serialize::from(new $class())->withStopAtFirstLevel()->toArray();
 
-        // The command below is to get all properties of the class.
-        // This will allow processing all properties, even if they are not in the $fieldValues array.
-        // Particularly useful for processing the selectFunction.
-        $fieldValues = array_merge(Serialize::from($instance)->withStopAtFirstLevel()->toArray(), $fieldValues);
-        ObjectCopy::copy($fieldValues, $instance, new MapFromDbToInstanceHandler($this));
-
-        if (is_array($instance)) {
-            $instance = (object)$instance;
-        }
-
-        return $instance;
+        return static function (array $fieldValues) use ($class, $handler, $defaults): object {
+            $instance = new $class();
+            $handler->hydrate($fieldValues, $instance, $defaults);
+            return $instance;
+        };
     }
 
     public function getQuery(): Query

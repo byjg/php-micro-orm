@@ -254,6 +254,30 @@ $mapper->addFieldMapping(
 );
 ```
 
+### Building entities from rows
+
+The `Repository` builds the entities of its queries for you. To build them from values you already have (a raw
+query, an import, a test), use the mapper: the field names are mapped to the properties, and the select functions
+are applied, as when the repository reads them.
+
+```php
+<?php
+// One entity
+$user = $mapper->getEntity(['id' => 10, 'name' => 'Joao', 'createdate' => '2020-01-01']);
+
+// Many rows of one query: entityHydrator() resolves the mapping once, then builds each entity
+$hydrate = $mapper->entityHydrator();
+$users = [];
+foreach ($executor->getIterator('SELECT * FROM users') as $row) {
+    $users[] = $hydrate($row->toArray());
+}
+```
+
+`getEntity()` resolves the mapping on each call; for many rows, `entityHydrator()` is several times faster. The
+properties without a value in the row take the values of a new entity, read once per hydrator (see
+[Entity Mapping](https://github.com/byjg/php-anydataset-db/blob/master/docs/entity.md#property-mapping)).
+`getByQuery()` with several mappers (a join) uses one hydrator per mapper.
+
 ## Summary
 
 | Feature                 | Attributes               | Mapper Objects                          |
